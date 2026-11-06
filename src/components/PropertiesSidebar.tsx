@@ -161,15 +161,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
                     if (isNaN(val) || val <= 0) return;
-                    if (selectedAsset.aspectLocked && selectedAsset.targetWidth > 0) {
-                      const ratio = selectedAsset.targetHeight / selectedAsset.targetWidth;
-                      onUpdateAsset(selectedAsset.id, {
-                        targetWidth: val,
-                        targetHeight: Math.round(val * ratio * 100) / 100
-                      });
-                    } else {
-                      onUpdateAsset(selectedAsset.id, { targetWidth: val });
-                    }
+                    onUpdateAsset(selectedAsset.id, { targetWidth: val, aspectLocked: false });
                   }}
                   className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-indigo-500"
                 />
@@ -186,15 +178,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
                     if (isNaN(val) || val <= 0) return;
-                    if (selectedAsset.aspectLocked && selectedAsset.targetHeight > 0) {
-                      const ratio = selectedAsset.targetWidth / selectedAsset.targetHeight;
-                      onUpdateAsset(selectedAsset.id, {
-                        targetHeight: val,
-                        targetWidth: Math.round(val * ratio * 100) / 100
-                      });
-                    } else {
-                      onUpdateAsset(selectedAsset.id, { targetHeight: val });
-                    }
+                    onUpdateAsset(selectedAsset.id, { targetHeight: val, aspectLocked: false });
                   }}
                   className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-indigo-500"
                 />

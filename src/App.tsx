@@ -70,7 +70,7 @@ export const App: React.FC = () => {
     fixedLength: 30,
     fixedLengthMm: 30 * 25.4,
     exportDpi: 300,
-    allowItemRotation: true,
+    allowItemRotation: false,
     nestingAlgorithm: 'box',
     mode: 'multiple'
   });
@@ -331,9 +331,9 @@ export const App: React.FC = () => {
           targetHeight: mmToUnit(targetHMm, settings.unit),
           targetWidthMm: targetWMm,
           targetHeightMm: targetHMm,
-          aspectLocked: true,
+          aspectLocked: false,
           copies: 1,
-          allowRotation: true,
+          allowRotation: false,
           effectiveDpi,
           dpiStatus,
           status: 'ready'

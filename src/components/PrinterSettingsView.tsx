@@ -226,8 +226,8 @@ export const PrinterSettingsView: React.FC<PrinterSettingsViewProps> = ({
     setUnit('inch');
     setSpacing(0.3);
     setMargin(0.25);
-    setNestingAlgorithm('true-shape');
-    setAllowRotation(true);
+    setNestingAlgorithm('box');
+    setAllowRotation(false);
     setRipEngine('maintop');
     setWhiteChannel('W1');
     setVarnishChannel('W2');

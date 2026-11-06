@@ -239,16 +239,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       });
     }
 
-    if (asset.aspectLocked && asset.targetWidth > 0) {
-      const ratio = asset.targetHeight / asset.targetWidth;
-      const newHeight = Math.min(100, Math.round(clampedVal * ratio * 100) / 100);
-      onUpdateAsset(asset.id, {
-        targetWidth: clampedVal,
-        targetHeight: newHeight
-      });
-    } else {
-      onUpdateAsset(asset.id, { targetWidth: clampedVal });
-    }
+    // User decides dimensions independently: entering width does not change height
+    onUpdateAsset(asset.id, { targetWidth: clampedVal, aspectLocked: false });
   };
 
   const handleHeightChange = (asset: ArtworkAsset, valStr: string) => {
@@ -263,23 +255,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       });
     }
 
-    if (asset.aspectLocked && asset.targetHeight > 0) {
-      const ratio = asset.targetWidth / asset.targetHeight;
-      const newWidth = Math.min(22, Math.round(clampedVal * ratio * 100) / 100);
-      if (newWidth > settings.filmWidth) {
-        onUpdateSettings({
-          filmWidth: newWidth,
-          filmWidthMm: newWidth * 25.4,
-          filmWidthPreset: newWidth === 22 ? '22' : newWidth.toString()
-        });
-      }
-      onUpdateAsset(asset.id, {
-        targetHeight: clampedVal,
-        targetWidth: newWidth
-      });
-    } else {
-      onUpdateAsset(asset.id, { targetHeight: clampedVal });
-    }
+    // User decides dimensions independently: entering height does not change width
+    onUpdateAsset(asset.id, { targetHeight: clampedVal, aspectLocked: false });
   };
 
   const displayLength = mmToUnit(layout.usedLengthMm, settings.unit);
@@ -485,14 +462,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                         filmWidthPreset: clampedVal === 22 ? '22' : clampedVal.toString()
                                       });
                                     }
-                                    if (asset.aspectLocked && asset.targetWidth > 0) {
-                                      const ratio = asset.targetHeight / asset.targetWidth;
-                                      const newHeight = Math.min(100, Math.round(clampedVal * ratio * 100) / 100);
-                                      setHeightInputs((prev) => ({ ...prev, [asset.id]: newHeight.toString() }));
-                                      onUpdateAsset(asset.id, { targetWidth: clampedVal, targetHeight: newHeight });
-                                    } else {
-                                      onUpdateAsset(asset.id, { targetWidth: clampedVal });
-                                    }
+                                    // Independent width control: user decides width, height remains untouched
+                                    onUpdateAsset(asset.id, { targetWidth: clampedVal, aspectLocked: false });
                                   }
                                 }}
                                 onBlur={() => {
@@ -538,21 +509,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                         fixedLengthMm: clampedVal * 25.4
                                       });
                                     }
-                                    if (asset.aspectLocked && asset.targetHeight > 0) {
-                                      const ratio = asset.targetWidth / asset.targetHeight;
-                                      const newWidth = Math.min(22, Math.round(clampedVal * ratio * 100) / 100);
-                                      if (newWidth > settings.filmWidth) {
-                                        onUpdateSettings({
-                                          filmWidth: newWidth,
-                                          filmWidthMm: newWidth * 25.4,
-                                          filmWidthPreset: newWidth === 22 ? '22' : newWidth.toString()
-                                        });
-                                      }
-                                      setWidthInputs((prev) => ({ ...prev, [asset.id]: newWidth.toString() }));
-                                      onUpdateAsset(asset.id, { targetHeight: clampedVal, targetWidth: newWidth });
-                                    } else {
-                                      onUpdateAsset(asset.id, { targetHeight: clampedVal });
-                                    }
+                                    // Independent height control: user decides height, width remains untouched
+                                    onUpdateAsset(asset.id, { targetHeight: clampedVal, aspectLocked: false });
                                   }
                                 }}
                                 onBlur={() => {
