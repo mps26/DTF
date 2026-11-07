@@ -720,17 +720,39 @@ export function generateTextArtwork(opts: {
   return canvas.toDataURL('image/png');
 }
 
+export interface EmbroideryOptions {
+  stitchPitch?: number; // Thread thickness / row spacing (8 - 24px, default 10)
+  stitchLength?: number; // Stitch segment length before needle puncture (default ~3x pitch, e.g. 30px)
+  stitchAngle?: number; // Stitch angle in degrees: 45, -45, 0, 90 (default 45)
+  stitchType?: 'tatami' | 'satin' | 'crest'; // 'tatami' (interlocking fill), 'crest' (satin badge crest with border)
+  sheenIntensity?: number; // Rayon/polyester silk luster (30 - 100%, default 85)
+  reliefStrength?: number; // 3D bevel / pillowing relief (30 - 100%, default 80)
+  hasBorder?: boolean; // Outer embroidered satin border
+  borderWidth?: number; // 4 - 14px (default 8)
+  fabricBacking?: 'transparent' | 'twill-canvas' | 'dark-denim' | 'heather-gray'; // default 'transparent'
+}
+
 /**
- * Authentic High-Visibility Faux Embroidery Effect for DTF Printing:
- * Generates bold, highly distinct 3D thread stitches, satin directional ribbing,
- * deep seam crevices, silky specular sheen, and authentic raised embroidered badge relief.
- * Specially calibrated so stitch texture is crisp and clearly visible even from a distance without zooming.
+ * Authentic Photorealistic 3D Embroidery Effect for DTF Printing:
+ * Modeled after real computerized embroidery machinery (Tajima/Barudan):
+ * 1. Staggered Tatami Weave: individual stitch segments with realistic needle puncture holes.
+ * 2. Satin Contour Border: perpendicular satin stitches wrapping around badge perimeters.
+ * 3. 3D Cylindrical Lighting & Silk Sheen: anisotropic specular highlights along rayon/polyester thread.
+ * 4. Micro-Scalloped Edge Loops: authentic looped thread boundary instead of artificial vector cuts.
+ * 5. Color Seam Crevices: authentic needle seams at internal color transitions.
+ * 6. Optional Twill Fabric Backing: realistic woven canvas backing with soft drop shadow.
  */
 export async function applyEmbroideryEffect(
   img: HTMLImageElement,
-  stitchPitch: number = 16,
-  sheenIntensity: number = 85
+  optsOrPitch: number | EmbroideryOptions = 10,
+  legacySheen: number = 85
 ): Promise<string> {
+  // Normalize options
+  const opts: EmbroideryOptions =
+    typeof optsOrPitch === 'number'
+      ? { stitchPitch: optsOrPitch, sheenIntensity: legacySheen }
+      : optsOrPitch || {};
+
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
@@ -743,91 +765,329 @@ export async function applyEmbroideryEffect(
   const imgData = ctx.getImageData(0, 0, w, h);
   const data = imgData.data;
 
-  // Pre-calculate alpha channel for directional 3D relief/emboss
+  // Adaptive pitch based on image dimensions
+  const minDim = Math.min(w, h);
+  const autoPitch = Math.max(9, Math.round(minDim / 70));
+  const rawPitch = opts.stitchPitch ?? autoPitch;
+  const pitch = Math.max(7, Math.min(26, rawPitch));
+  const stitchLen = opts.stitchLength ?? Math.round(pitch * 3.1);
+  const angleDeg = opts.stitchAngle ?? 45;
+  const angleRad = (angleDeg * Math.PI) / 180;
+  const sheen = (opts.sheenIntensity ?? 85) / 100;
+  const relief = ((opts.reliefStrength ?? 80) / 100) * 8.5;
+  const hasBorder = opts.hasBorder !== false;
+  const borderWidth = Math.max(4, Math.min(14, opts.borderWidth ?? Math.round(pitch * 0.85)));
+  const fabric = opts.fabricBacking ?? 'transparent';
+
+  const cosT = Math.cos(angleRad);
+  const sinT = Math.sin(angleRad);
+
+  // 1. Extract Alpha and compute fast 2-pass Chamfer distance transform from edge
   const alphaMap = new Uint8Array(w * h);
+  const dist = new Float32Array(w * h);
+  let hasOpaque = false;
+
   for (let i = 0; i < data.length; i += 4) {
-    alphaMap[i / 4] = data[i + 3];
+    const a = data[i + 3];
+    alphaMap[i / 4] = a;
+    if (a > 15) hasOpaque = true;
   }
 
-  // Scale thread thickness adaptively with image resolution so stitches remain clearly visible without zooming in
-  const baseDim = Math.min(w, h);
-  const autoResolutionPitch = Math.max(12, Math.round(baseDim / 65));
-  const pitch = stitchPitch >= 10
-    ? stitchPitch
-    : Math.max(12, Math.round((stitchPitch / 5) * autoResolutionPitch));
+  if (!hasOpaque) return img.src;
 
-  const halfPitch = pitch / 2;
-  const sheen = (sheenIntensity / 100);
-  const step = Math.max(1, Math.round(pitch / 4));
-
+  // Pass 1: Top-Left to Bottom-Right
   for (let y = 0; y < h; y++) {
+    const row = y * w;
     for (let x = 0; x < w; x++) {
-      const idx = (y * w + x) * 4;
-      const alpha = data[idx + 3];
-      if (alpha < 10) continue;
-
-      let r = data[idx];
-      let g = data[idx + 1];
-      let b = data[idx + 2];
-
-      // 1. Thread stitch diagonal cylinder profile (Satin stitch ribbing at ~45° weave)
-      const coord = x * 0.707 + y * 0.707;
-      const mod = ((coord % pitch) + pitch) % pitch;
-      const dist = (mod - halfPitch) / halfPitch; // -1 to +1 across thread strand
-
-      // Thread curvature factor: rounded cylindrical peak in middle, valley between threads
-      const threadCurvature = Math.cos(dist * (Math.PI / 2));
-      const crevice = Math.pow(Math.abs(dist), 2.0);
-
-      // Deep, bold directional cylindrical shading (light from top-left):
-      // Apex gets direct illumination, lower half of thread cylinder drops into shadow
-      const directionalCylinder = -dist * 0.28;
-      const threadShading = Math.max(0.20, 1.0 - crevice * 0.72 + directionalCylinder);
-
-      // Distinct dark needle indentation line between adjacent threads (sharp seam accentuation)
-      const seamFactor = Math.abs(dist) > 0.80 ? (Math.abs(dist) - 0.80) / 0.20 : 0;
-      const seamCrevice = 1.0 - seamFactor * 0.45;
-
-      // 2. Thread Specular Sheen (Silky rayon/polyester thread highlight along thread ridge)
-      const specularRidge = Math.pow(Math.max(0, threadCurvature), 4) * 68 * sheen;
-
-      // 3. Directional 3D Emboss Relief (Light coming from top-left)
-      const leftIdx = y * w + Math.max(0, x - step);
-      const rightIdx = y * w + Math.min(w - 1, x + step);
-      const topIdx = Math.max(0, y - step) * w + x;
-      const bottomIdx = Math.min(h - 1, y + step) * w + x;
-
-      const deltaX = (alphaMap[rightIdx] - alphaMap[leftIdx]) / 255;
-      const deltaY = (alphaMap[bottomIdx] - alphaMap[topIdx]) / 255;
-      const bevel = (-deltaX - deltaY) * 45;
-
-      // 4. Thread Micro-Fibers (Subtle fiber grain)
-      const fiberNoise = (((x * 19 + y * 37) % 23) / 23) - 0.5;
-      const fiberMod = 1 + fiberNoise * 0.08;
-
-      // 5. Rich thread saturation boost for lustrous sheen
-      const avg = (r + g + b) / 3;
-      r = Math.min(255, r + (r - avg) * 0.28);
-      g = Math.min(255, g + (g - avg) * 0.28);
-      b = Math.min(255, b + (b - avg) * 0.28);
-
-      // Final modulated color: bold contrast between stitch peak and valley seam
-      const litR = r * threadShading * seamCrevice * fiberMod + specularRidge + bevel;
-      const litG = g * threadShading * seamCrevice * fiberMod + specularRidge + bevel;
-      const litB = b * threadShading * seamCrevice * fiberMod + specularRidge + bevel;
-
-      data[idx] = Math.max(0, Math.min(255, Math.round(litR)));
-      data[idx + 1] = Math.max(0, Math.min(255, Math.round(litG)));
-      data[idx + 2] = Math.max(0, Math.min(255, Math.round(litB)));
-
-      // Subtle edge stitch micro-variation for authentic embroidered perimeter
-      if (alpha > 0 && alpha < 255) {
-        data[idx + 3] = Math.min(255, Math.round(alpha * (0.80 + 0.20 * threadCurvature)));
+      const idx = row + x;
+      if (alphaMap[idx] < 15) {
+        dist[idx] = 0;
+      } else {
+        let d = 9999;
+        if (x > 0) d = Math.min(d, dist[idx - 1] + 1);
+        if (y > 0) d = Math.min(d, dist[idx - w] + 1);
+        if (x > 0 && y > 0) d = Math.min(d, dist[idx - w - 1] + 1.414);
+        if (x < w - 1 && y > 0) d = Math.min(d, dist[idx - w + 1] + 1.414);
+        dist[idx] = d;
       }
     }
   }
 
-  ctx.putImageData(imgData, 0, 0);
+  // Pass 2: Bottom-Right to Top-Left
+  for (let y = h - 1; y >= 0; y--) {
+    const row = y * w;
+    for (let x = w - 1; x >= 0; x--) {
+      const idx = row + x;
+      let d = dist[idx];
+      if (x < w - 1) d = Math.min(d, dist[idx + 1] + 1);
+      if (y < h - 1) d = Math.min(d, dist[idx + w] + 1);
+      if (x < w - 1 && y < h - 1) d = Math.min(d, dist[idx + w + 1] + 1.414);
+      if (x > 0 && y < h - 1) d = Math.min(d, dist[idx + w - 1] + 1.414);
+      dist[idx] = d;
+    }
+  }
+
+  // 2. Compute internal color seam map
+  const colorSeam = new Float32Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    const row = y * w;
+    for (let x = 1; x < w - 1; x++) {
+      const idx = row + x;
+      if (alphaMap[idx] < 15) continue;
+      const pIdx = idx * 4;
+      const rIdx = (idx + 1) * 4;
+      const bIdx = (idx + w) * 4;
+
+      const dr = Math.abs(data[pIdx] - data[rIdx]) + Math.abs(data[pIdx] - data[bIdx]);
+      const dg = Math.abs(data[pIdx + 1] - data[rIdx + 1]) + Math.abs(data[pIdx + 1] - data[bIdx + 1]);
+      const db = Math.abs(data[pIdx + 2] - data[rIdx + 2]) + Math.abs(data[pIdx + 2] - data[bIdx + 2]);
+      const diff = dr + dg + db;
+
+      if (diff > 55) {
+        colorSeam[idx] = Math.min(1.0, (diff - 55) / 120);
+      }
+    }
+  }
+
+  // 3. Compute 3D Embroidery Height Map
+  const H = new Float32Array(w * h);
+  const borderPitch = Math.max(4.5, pitch * 0.58);
+
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      const idx = row + x;
+      const a = alphaMap[idx];
+      if (a < 15) continue;
+
+      const dEdge = dist[idx];
+
+      // Edge normal gradient
+      const leftIdx = row + Math.max(0, x - 1);
+      const rightIdx = row + Math.min(w - 1, x + 1);
+      const topIdx = Math.max(0, y - 1) * w + x;
+      const bottomIdx = Math.min(h - 1, y + 1) * w + x;
+
+      const dGradX = dist[rightIdx] - dist[leftIdx];
+      const dGradY = dist[bottomIdx] - dist[topIdx];
+      const gradMag = Math.sqrt(dGradX * dGradX + dGradY * dGradY) + 1e-4;
+      const normX = dGradX / gradMag;
+      const normY = dGradY / gradMag;
+
+      // Outer satin border factor (wraps around perimeter of badge)
+      let borderFactor = 0;
+      let bHCyl = 0;
+      let bCrevice = 0;
+
+      if (hasBorder && dEdge <= borderWidth) {
+        borderFactor = Math.pow((borderWidth - dEdge) / borderWidth, 1.4);
+        const borderV = -x * normY + y * normX;
+        const bFracV = (((borderV % borderPitch + borderPitch) % borderPitch) / borderPitch - 0.5) * 2;
+        bHCyl = Math.sqrt(Math.max(0, 1.0 - bFracV * bFracV));
+        bCrevice = Math.pow(Math.max(0, (Math.abs(bFracV) - 0.55) / 0.45), 2);
+      }
+
+      // Interior Tatami weave
+      const posU = x * cosT + y * sinT;
+      const posV = -x * sinT + y * cosT;
+
+      const pIdx = idx * 4;
+      const r = data[pIdx];
+      const g = data[pIdx + 1];
+      const b = data[pIdx + 2];
+      const colorHash = ((r * 3 + g * 7 + b * 11) % 100);
+
+      const rIndex = Math.floor(posV / pitch);
+      const fracV = (((posV % pitch + pitch) % pitch) / pitch - 0.5) * 2;
+      const hCyl = Math.sqrt(Math.max(0, 1.0 - fracV * fracV));
+      const rowCrevice = Math.pow(Math.max(0, (Math.abs(fracV) - 0.65) / 0.35), 2);
+
+      // Staggered stitch pattern (Tatami weave)
+      const stagger = (rIndex * 0.382) * stitchLen + colorHash * 0.22;
+      const uOffset = posU + stagger;
+      const fracU = (((uOffset % stitchLen + stitchLen) % stitchLen) / stitchLen - 0.5) * 2;
+
+      // Needle puncture dimples at stitch ends
+      const holeDistU = (1.0 - Math.abs(fracU)) * (stitchLen / pitch);
+      const holeDistV = Math.abs(fracV);
+      const distToNeedle = Math.sqrt(holeDistU * holeDistU + holeDistV * holeDistV);
+      const needleHole = Math.pow(Math.max(0, 1.0 - distToNeedle / 1.3), 2);
+
+      // Blend border satin with interior tatami
+      const effHCyl = bHCyl * borderFactor + hCyl * (1.0 - borderFactor);
+      const effCrevice = bCrevice * borderFactor + rowCrevice * (1.0 - borderFactor);
+      const effNeedle = needleHole * (1.0 - borderFactor);
+
+      // Patch pillowing 3D height
+      const hPillow = Math.min(1.0, Math.pow(dEdge / 14.0, 0.62));
+      // Raised border crest ridge
+      const borderRidge = hasBorder
+        ? Math.sin(Math.min(1.0, dEdge / borderWidth) * Math.PI) * 0.45
+        : 0;
+
+      // Thread ply twist grain
+      const ply = Math.sin(posU * 1.4 + fracV * 2.5) * 0.07 * (1.0 - borderFactor);
+      const cSeam = colorSeam[idx];
+
+      H[idx] = hPillow * 0.60 + borderRidge + effHCyl * 0.35 - effNeedle * 0.42 - effCrevice * 0.28 - cSeam * 0.26 + ply;
+    }
+  }
+
+  // 4. Directional Lighting & Specular Silk Thread Rendering
+  const Lx = -0.55, Ly = -0.65, Lz = 0.70;
+  const lNorm = Math.sqrt(Lx * Lx + Ly * Ly + Lz * Lz);
+  const lx = Lx / lNorm, ly = Ly / lNorm, lz = Lz / lNorm;
+
+  const Hx = lx, Hy = ly, Hz = lz + 1.0;
+  const hNorm = Math.sqrt(Hx * Hx + Hy * Hy + Hz * Hz);
+  const hx = Hx / hNorm, hy = Hy / hNorm, hz = Hz / hNorm;
+
+  // Destination image data
+  const outImgData = ctx.createImageData(w, h);
+  const outData = outImgData.data;
+
+  // Optional Twill Canvas Fabric background values
+  const hasFabric = fabric !== 'transparent';
+
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      const idx = row + x;
+      const pIdx = idx * 4;
+      const alpha = alphaMap[idx];
+
+      if (alpha < 15) {
+        if (!hasFabric) {
+          outData[pIdx + 3] = 0;
+          continue;
+        }
+      }
+
+      if (alpha >= 15) {
+        const dEdge = dist[idx];
+
+        // Gradient of H for normal vector
+        const leftIdx = row + Math.max(0, x - 1);
+        const rightIdx = row + Math.min(w - 1, x + 1);
+        const topIdx = Math.max(0, y - 1) * w + x;
+        const bottomIdx = Math.min(h - 1, y + 1) * w + x;
+
+        const dhX = (H[rightIdx] - H[leftIdx]);
+        const dhY = (H[bottomIdx] - H[topIdx]);
+
+        let nx = -dhX * relief;
+        let ny = -dhY * relief;
+        let nz = 1.0;
+        const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+        nx /= nLen;
+        ny /= nLen;
+        nz /= nLen;
+
+        // Diffuse
+        const nDotL = Math.max(0, nx * lx + ny * ly + nz * lz);
+        const diffuse = 0.42 + 0.58 * nDotL;
+
+        // Specular (silk rayon luster)
+        const nDotH = Math.max(0, nx * hx + ny * hy + nz * hz);
+        const specular = Math.pow(nDotH, 22) * 115 * sheen;
+
+        // Ambient Occlusion
+        const hPillow = Math.min(1.0, Math.pow(dEdge / 14.0, 0.62));
+        const ao = 0.55 + 0.45 * hPillow;
+
+        let r = data[pIdx];
+        let g = data[pIdx + 1];
+        let b = data[pIdx + 2];
+
+        // Thread saturation boost for vibrant embroidery floss
+        const avg = (r + g + b) / 3;
+        r = Math.min(255, r + (r - avg) * 0.28);
+        g = Math.min(255, g + (g - avg) * 0.28);
+        b = Math.min(255, b + (b - avg) * 0.28);
+
+        // Final lit color
+        outData[pIdx] = Math.max(0, Math.min(255, Math.round(r * diffuse * ao + specular)));
+        outData[pIdx + 1] = Math.max(0, Math.min(255, Math.round(g * diffuse * ao + specular)));
+        outData[pIdx + 2] = Math.max(0, Math.min(255, Math.round(b * diffuse * ao + specular)));
+
+        // Authentic micro-scalloped loop turnarounds on perimeter
+        if (dEdge <= 3.5) {
+          const borderV = -x * sinT + y * cosT;
+          const loopScallop = Math.sin(borderV * 0.9) * 0.5;
+          const edgeAlpha = Math.min(1.0, Math.max(0, (dEdge + loopScallop - 0.4) / 1.5));
+          outData[pIdx + 3] = Math.round(alpha * edgeAlpha);
+        } else {
+          outData[pIdx + 3] = alpha;
+        }
+      }
+    }
+  }
+
+  // 5. Handle Fabric Backing & Drop Shadow if enabled
+  if (hasFabric) {
+    // Generate Twill Canvas / Denim texture
+    const fabricCanvas = document.createElement('canvas');
+    fabricCanvas.width = w;
+    fabricCanvas.height = h;
+    const fCtx = fabricCanvas.getContext('2d');
+    if (fCtx) {
+      const fImgData = fCtx.createImageData(w, h);
+      const fd = fImgData.data;
+
+      // Colors based on fabric selection
+      // 'twill-canvas' -> Khaki/Beige 215, 192, 158
+      // 'dark-denim'   -> Denim Blue 48, 62, 85
+      // 'heather-gray' -> Athletic Heather 198, 202, 206
+      let baseR = 215, baseG = 192, baseB = 158;
+      if (fabric === 'dark-denim') { baseR = 48; baseG = 62; baseB = 85; }
+      else if (fabric === 'heather-gray') { baseR = 198; baseG = 202; baseB = 206; }
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const fIdx = (y * w + x) * 4;
+          // 2/2 Twill diagonal weave formula
+          const rib = (x * 0.707 + y * 0.707) / 2.2;
+          const ribCross = (x * 0.707 - y * 0.707) / 2.2;
+          const yarnWarp = Math.sin(rib * Math.PI);
+          const yarnWeft = Math.cos(ribCross * Math.PI * 0.5);
+          const twillPat = yarnWarp * 0.5 + yarnWeft * 0.5;
+          const fiberNoise = (((x * 37 + y * 59) % 31) / 31 - 0.5) * 0.14;
+
+          const fR = Math.max(0, Math.min(255, baseR + twillPat * 22 + fiberNoise * 32));
+          const fG = Math.max(0, Math.min(255, baseG + twillPat * 20 + fiberNoise * 30));
+          const fB = Math.max(0, Math.min(255, baseB + twillPat * 18 + fiberNoise * 26));
+
+          fd[fIdx] = fR;
+          fd[fIdx + 1] = fG;
+          fd[fIdx + 2] = fB;
+          fd[fIdx + 3] = 255;
+        }
+      }
+      fCtx.putImageData(fImgData, 0, 0);
+
+      // Render realistic soft drop shadow from patch onto fabric
+      fCtx.save();
+      fCtx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      fCtx.shadowBlur = 14;
+      fCtx.shadowOffsetX = 4;
+      fCtx.shadowOffsetY = 6;
+
+      // Draw the embroidery badge over the fabric with drop shadow
+      const tempBadgeCanvas = document.createElement('canvas');
+      tempBadgeCanvas.width = w;
+      tempBadgeCanvas.height = h;
+      const bCtx = tempBadgeCanvas.getContext('2d');
+      if (bCtx) {
+        bCtx.putImageData(outImgData, 0, 0);
+        fCtx.drawImage(tempBadgeCanvas, 0, 0);
+      }
+      fCtx.restore();
+
+      return fabricCanvas.toDataURL('image/png');
+    }
+  }
+
+  ctx.putImageData(outImgData, 0, 0);
   return canvas.toDataURL('image/png');
 }
 

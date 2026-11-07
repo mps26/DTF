@@ -161,7 +161,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
                     if (isNaN(val) || val <= 0) return;
-                    onUpdateAsset(selectedAsset.id, { targetWidth: val, aspectLocked: false });
+                    onUpdateAsset(selectedAsset.id, { targetWidth: val });
                   }}
                   className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-indigo-500"
                 />
@@ -178,7 +178,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
                     if (isNaN(val) || val <= 0) return;
-                    onUpdateAsset(selectedAsset.id, { targetHeight: val, aspectLocked: false });
+                    onUpdateAsset(selectedAsset.id, { targetHeight: val });
                   }}
                   className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-indigo-500"
                 />
@@ -531,32 +531,13 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
             <div className="space-y-1.5 text-xs">
               <div
                 onClick={() => onUpdateSettings({ nestingAlgorithm: 'box' })}
-                className={`p-2 rounded border cursor-pointer flex items-center justify-between ${
-                  settings.nestingAlgorithm === 'box'
-                    ? 'bg-indigo-950/60 border-indigo-500 text-white'
-                    : 'bg-[#0b0e1a] border-slate-800 text-slate-400 hover:text-white'
-                }`}
+                className="p-2 rounded border cursor-pointer flex items-center justify-between bg-indigo-950/60 border-indigo-500 text-white"
               >
                 <div className="flex items-center space-x-2">
                   <Box className="w-3.5 h-3.5 text-indigo-400" />
                   <span className="font-bold">MaxRects BSSF</span>
                 </div>
                 <span className="text-[10px] font-mono text-emerald-400">Fast & Optimal</span>
-              </div>
-
-              <div
-                onClick={() => onUpdateSettings({ nestingAlgorithm: 'true-shape' })}
-                className={`p-2 rounded border cursor-pointer flex items-center justify-between ${
-                  settings.nestingAlgorithm === 'true-shape'
-                    ? 'bg-indigo-950/60 border-indigo-500 text-white'
-                    : 'bg-[#0b0e1a] border-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <Cpu className="w-3.5 h-3.5 text-purple-400" />
-                  <span className="font-bold">True Shape Nesting</span>
-                </div>
-                <span className="text-[10px] font-mono text-purple-400">Contour Fitting</span>
               </div>
             </div>
 

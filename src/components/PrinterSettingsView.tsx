@@ -101,7 +101,7 @@ export const PrinterSettingsView: React.FC<PrinterSettingsViewProps> = ({
   const [spacing, setSpacing] = useState<number>(currentSettings.spacing || 0.3);
   const [margin, setMargin] = useState<number>(currentSettings.margin || 0.25);
   const [nestingAlgorithm, setNestingAlgorithm] = useState<'box' | 'true-shape'>(
-    (currentSettings.nestingAlgorithm as any) || 'true-shape'
+    (currentSettings.nestingAlgorithm as any) || 'box'
   );
   const [allowRotation, setAllowRotation] = useState<boolean>(currentSettings.allowItemRotation ?? true);
 
@@ -178,7 +178,7 @@ export const PrinterSettingsView: React.FC<PrinterSettingsViewProps> = ({
 
   // Save Printer Hardware Preferences
   const handleSaveHardware = () => {
-    const clampedW = Math.min(22, Math.max(1, filmWidth));
+    const clampedW = Math.min(24, Math.max(1, filmWidth));
     const clampedH = Math.min(100, Math.max(1, fixedLength));
 
     onSaveSettings({
@@ -709,12 +709,12 @@ export const PrinterSettingsView: React.FC<PrinterSettingsViewProps> = ({
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center text-xs font-bold text-slate-700">
                   <span>Default Roll Width</span>
-                  <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-mono">
-                    Max: 22 inches
+                  <span className="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 font-mono">
+                    Max: 22.2 inches
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {[11.5, 13, 17, 22].map((presetW) => (
+                  {[11, 22, 22.2].map((presetW) => (
                     <button
                       key={presetW}
                       type="button"
@@ -725,7 +725,7 @@ export const PrinterSettingsView: React.FC<PrinterSettingsViewProps> = ({
                           : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
-                      {presetW}"{presetW === 22 ? ' (Max)' : ''}
+                      {presetW}"
                     </button>
                   ))}
                 </div>
@@ -801,45 +801,17 @@ export const PrinterSettingsView: React.FC<PrinterSettingsViewProps> = ({
 
             <div className="pt-2">
               <label className="block text-xs font-bold text-slate-700 mb-2">Default Auto-Nesting Engine</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setNestingAlgorithm('true-shape')}
-                  className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
-                    nestingAlgorithm === 'true-shape'
-                      ? 'bg-indigo-50/70 border-indigo-600 text-indigo-950 ring-2 ring-indigo-500/20'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-extrabold text-xs">True-Shape Contour Fitting</span>
-                    {nestingAlgorithm === 'true-shape' && (
-                      <span className="text-[10px] font-black text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">
-                        ✓ Active
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Nests tight to artwork alpha contours. Saves up to 25% film waste.
-                  </p>
-                </button>
-
+              <div className="grid grid-cols-1 gap-3">
                 <button
                   type="button"
                   onClick={() => setNestingAlgorithm('box')}
-                  className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
-                    nestingAlgorithm === 'box'
-                      ? 'bg-indigo-50/70 border-indigo-600 text-indigo-950 ring-2 ring-indigo-500/20'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
+                  className="p-3.5 rounded-2xl border text-left transition-all cursor-pointer bg-indigo-50/70 border-indigo-600 text-indigo-950 ring-2 ring-indigo-500/20"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-extrabold text-xs">Rectangular Box Packing</span>
-                    {nestingAlgorithm === 'box' && (
-                      <span className="text-[10px] font-black text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">
-                        ✓ Active
-                      </span>
-                    )}
+                    <span className="text-[10px] font-black text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">
+                      ✓ Active
+                    </span>
                   </div>
                   <p className="text-[11px] text-slate-500">
                     Fast linear guillotine-cut layout. Simple to slice with scissors.

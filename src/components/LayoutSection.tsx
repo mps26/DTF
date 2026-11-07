@@ -20,7 +20,8 @@ import {
   LayoutGrid,
   List,
   ExternalLink,
-  Copy
+  Copy,
+  Download
 } from 'lucide-react';
 import { ArtworkAsset, SheetSettings, Unit, LayoutResult } from '../types';
 import { formatUnit, mmToUnit, unitToMm } from '../utils/units';
@@ -42,6 +43,7 @@ interface LayoutSectionProps {
   onUpdateSettings: (updates: Partial<SheetSettings>) => void;
   onNestingModeChange: (mode: 'box' | 'true-shape') => void;
   onOpenPreviewModal: () => void;
+  onExportSingleSheet?: (sheetIndex: number) => void;
 }
 
 export const LayoutSection: React.FC<LayoutSectionProps> = ({
@@ -60,20 +62,23 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   onUnitChange,
   onUpdateSettings,
   onNestingModeChange,
-  onOpenPreviewModal
+  onOpenPreviewModal,
+  onExportSingleSheet
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRefs = useRef<Record<number, HTMLCanvasElement>>({});
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number>(620);
-  const [renderedCanvasHeight, setRenderedCanvasHeight] = useState<number>(180);
-  const [zoom, setZoom] = useState<number>(1);
+  const [containerHeight, setContainerHeight] = useState<number>(450);
+  const [renderedCanvasHeights, setRenderedCanvasHeights] = useState<Record<number, number>>({});
+  const [selectedSheetIndex, setSelectedSheetIndex] = useState<number>(0);
+  const [sheetZooms, setSheetZooms] = useState<Record<number, number>>({});
+  const [sheetFitModes, setSheetFitModes] = useState<Record<number, boolean>>({});
   const [keepCloseTogether, setKeepCloseTogether] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [isSimulatingTrueShape, setIsSimulatingTrueShape] = useState<boolean>(false);
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({});
 
-  // Measure container width to dynamically auto-fit sheet preview
+  // Measure container dimensions to dynamically auto-fit sheet preview
   useEffect(() => {
     if (!canvasContainerRef.current) return;
     const observer = new ResizeObserver((entries) => {
@@ -81,11 +86,22 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
         if (entry.contentRect.width > 0) {
           setContainerWidth(entry.contentRect.width);
         }
+        if (entry.contentRect.height > 0) {
+          setContainerHeight(entry.contentRect.height);
+        }
       }
     });
     observer.observe(canvasContainerRef.current);
     return () => observer.disconnect();
   }, []);
+
+  // Ensure Sheet 1 or active selected sheet is smoothly scrolled into view and never clipped
+  useEffect(() => {
+    const el = canvasRefs.current[selectedSheetIndex];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [selectedSheetIndex]);
 
   // Local text input states for smooth manual editing without cursor jumps
   const [widthInputs, setWidthInputs] = useState<Record<string, string>>({});
@@ -119,112 +135,138 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
     });
   }, [layout.placements]);
 
-  // Horizontal canvas rendering effect matching Image 3
+  // Canvas rendering effect for each gang sheet (Sheet 1, Sheet 2 beside it)
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const sheetsToDraw = layout.sheets && layout.sheets.length > 0
+      ? layout.sheets
+      : [{
+          sheetIndex: 0,
+          placements: layout.placements,
+          usedWidthMm: layout.usedWidthMm || settings.filmWidthMm,
+          usedLengthMm: layout.usedLengthMm || 60,
+          usedLengthInches: layout.usedLengthInches || 2.36,
+          usedLengthMeters: layout.usedLengthMeters || 0.06,
+          totalCopies: layout.totalCopies,
+          filmAreaMm2: layout.filmAreaMm2,
+          artworkAreaMm2: layout.artworkAreaMm2,
+          wastePercent: layout.wastePercent
+        }];
 
-    const filmWidthMm = Math.max(settings.filmWidthMm, layout.usedWidthMm || settings.filmWidthMm);
-    const usedLengthMm = Math.max(30, layout.usedLengthMm || 60);
+    const newHeights: Record<number, number> = {};
 
-    // Dynamic auto-fit calculation: keeps balanced margins & indentation whether 1 copy or 50+ copies
-    const maxAvailableWidth = Math.max(260, containerWidth - 170);
-    const maxAvailableHeight = 310;
+    sheetsToDraw.forEach((sheet) => {
+      const canvas = canvasRefs.current[sheet.sheetIndex];
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    const scaleX = maxAvailableWidth / usedLengthMm;
-    const scaleY = maxAvailableHeight / filmWidthMm;
-    const autoFitBaseScale = Math.min(scaleX, scaleY, 1.35);
+      const filmWidthMm = Math.max(settings.filmWidthMm, sheet.usedWidthMm || settings.filmWidthMm);
+      const usedLengthMm = Math.max(30, sheet.usedLengthMm || 60);
 
-    const scale = autoFitBaseScale * zoom;
+      // Per-sheet fit mode & zoom scale
+      const isFit = sheetFitModes[sheet.sheetIndex] !== false; // default true
+      const sheetZoom = sheetZooms[sheet.sheetIndex] || 1;
 
-    const canvasWidth = Math.max(100, Math.round(usedLengthMm * scale));
-    const canvasHeight = Math.max(100, Math.round(filmWidthMm * scale));
+      // Anchor roll display width & height within fixed container
+      const availableHeightPx = Math.max(220, containerHeight - 130);
+      const targetRollWidthPx = sheetsToDraw.length > 1
+        ? Math.min(230, Math.max(140, Math.floor((containerWidth - 100) / sheetsToDraw.length)))
+        : Math.min(260, Math.max(160, containerWidth - 200));
 
-    setRenderedCanvasHeight(canvasHeight);
-
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-    // 1. Transparent Checkerboard Background
-    const checkSize = 14;
-    const cols = Math.ceil(canvasWidth / checkSize);
-    const rows = Math.ceil(canvasHeight / checkSize);
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        ctx.fillStyle = (r + c) % 2 === 0 ? '#f8fafc' : '#e2e8f0';
-        ctx.fillRect(c * checkSize, r * checkSize, checkSize, checkSize);
-      }
-    }
-
-    // 2. Film Outer Boundary
-    ctx.strokeStyle = '#6366f1';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, canvasWidth, canvasHeight);
-
-    // 3. Margin Guide (dashed line)
-    const marginPx = settings.marginMm * scale;
-    if (marginPx > 0) {
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = '#cbd5e1';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(
-        marginPx,
-        marginPx,
-        Math.max(1, canvasWidth - marginPx * 2),
-        Math.max(1, canvasHeight - marginPx * 2)
-      );
-      ctx.setLineDash([]);
-    }
-
-    // 4. Draw placed copies on the horizontal roll
-    layout.placements.forEach((placement) => {
-      const isSelected = placement.assetId === selectedAssetId;
-
-      const pxX = placement.yMm * scale;
-      const pxY = placement.xMm * scale;
-      const pxW = placement.heightMm * scale;
-      const pxH = placement.widthMm * scale;
-
-      const img = images[placement.assetId];
-
-      ctx.save();
-      if (placement.rotated) {
-        ctx.translate(pxX + pxW, pxY);
-        ctx.rotate(Math.PI / 2);
-        if (img && img.complete) {
-          ctx.drawImage(img, 0, 0, pxH, pxW);
-        } else {
-          ctx.fillStyle = '#e0e7ff';
-          ctx.fillRect(0, 0, pxH, pxW);
-        }
+      const scaleX = targetRollWidthPx / filmWidthMm;
+      const scaleY = availableHeightPx / usedLengthMm;
+      
+      let scale: number;
+      if (isFit) {
+        // Fit mode: scales comfortably into view height
+        const baseScale = Math.min(scaleX, Math.max(scaleX * 0.45, scaleY));
+        scale = baseScale * sheetZoom;
       } else {
-        if (img && img.complete) {
-          ctx.drawImage(img, pxX, pxY, pxW, pxH);
-        } else {
-          ctx.fillStyle = '#e0e7ff';
-          ctx.fillRect(pxX, pxY, pxW, pxH);
+        // 100% mode: full scale print display
+        scale = scaleX * sheetZoom;
+      }
+
+      const canvasWidth = Math.max(60, Math.round(filmWidthMm * scale));
+      const canvasHeight = Math.max(60, Math.round(usedLengthMm * scale));
+
+      newHeights[sheet.sheetIndex] = canvasHeight;
+
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+      // 1. Transparent Checkerboard Background
+      const checkSize = 12;
+      const cols = Math.ceil(canvasWidth / checkSize);
+      const rows = Math.ceil(canvasHeight / checkSize);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          ctx.fillStyle = (r + c) % 2 === 0 ? '#f8fafc' : '#e2e8f0';
+          ctx.fillRect(c * checkSize, r * checkSize, checkSize, checkSize);
         }
       }
-      ctx.restore();
 
-      ctx.strokeStyle = isSelected ? '#4f46e5' : '#cbd5e1';
-      ctx.lineWidth = isSelected ? 2 : 1;
-      ctx.strokeRect(pxX, pxY, pxW, pxH);
+      // 2. Film Outer Boundary
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 0, canvasWidth, canvasHeight);
+
+      // 3. Margin Guide (dashed line)
+      const marginPx = settings.marginMm * scale;
+      if (marginPx > 0) {
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+          marginPx,
+          marginPx,
+          Math.max(1, canvasWidth - marginPx * 2),
+          Math.max(1, canvasHeight - marginPx * 2)
+        );
+        ctx.setLineDash([]);
+      }
+
+      // 4. Draw placed copies on this specific sheet
+      sheet.placements.forEach((placement) => {
+        const isSelected = placement.assetId === selectedAssetId;
+
+        const pxX = placement.xMm * scale;
+        const pxY = placement.yMm * scale;
+        const pxW = placement.widthMm * scale;
+        const pxH = placement.heightMm * scale;
+
+        const img = images[placement.assetId];
+
+        ctx.save();
+        if (placement.rotated) {
+          ctx.translate(pxX + pxW, pxY);
+          ctx.rotate(Math.PI / 2);
+          if (img && img.complete) {
+            ctx.drawImage(img, 0, 0, pxH, pxW);
+          } else {
+            ctx.fillStyle = '#e0e7ff';
+            ctx.fillRect(0, 0, pxH, pxW);
+          }
+        } else {
+          if (img && img.complete) {
+            ctx.drawImage(img, pxX, pxY, pxW, pxH);
+          } else {
+            ctx.fillStyle = '#e0e7ff';
+            ctx.fillRect(pxX, pxY, pxW, pxH);
+          }
+        }
+        ctx.restore();
+
+        ctx.strokeStyle = isSelected ? '#4f46e5' : '#cbd5e1';
+        ctx.lineWidth = isSelected ? 2 : 1;
+        ctx.strokeRect(pxX, pxY, pxW, pxH);
+      });
     });
-  }, [layout.placements, settings, zoom, selectedAssetId, images, containerWidth]);
 
-  const handleRunTrueShape = () => {
-    setIsSimulatingTrueShape(true);
-    setTimeout(() => {
-      setIsSimulatingTrueShape(false);
-      onNestingModeChange('true-shape');
-    }, 1200);
-  };
+    setRenderedCanvasHeights(newHeights);
+  }, [layout.sheets, layout.placements, settings, selectedAssetId, images, containerWidth, containerHeight, sheetZooms, sheetFitModes]);
 
   const handleWidthChange = (asset: ArtworkAsset, valStr: string) => {
     const val = parseFloat(valStr);
@@ -239,8 +281,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       });
     }
 
-    // User decides dimensions independently: entering width does not change height
-    onUpdateAsset(asset.id, { targetWidth: clampedVal, aspectLocked: false });
+    onUpdateAsset(asset.id, { targetWidth: clampedVal });
   };
 
   const handleHeightChange = (asset: ArtworkAsset, valStr: string) => {
@@ -255,19 +296,18 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       });
     }
 
-    // User decides dimensions independently: entering height does not change width
-    onUpdateAsset(asset.id, { targetHeight: clampedVal, aspectLocked: false });
+    onUpdateAsset(asset.id, { targetHeight: clampedVal });
   };
 
   const displayLength = mmToUnit(layout.usedLengthMm, settings.unit);
   const totalCopies = layout.totalCopies;
 
   return (
-    <div className="w-full">
-      {/* 2-Column Responsive Layout */}
-      <div className="flex flex-col lg:flex-row gap-5 items-start">
-        {/* ================= LEFT COLUMN: STACKED CONTROL PANELS ================= */}
-        <div className="w-full lg:w-[450px] flex flex-col space-y-4 flex-shrink-0">
+    <div className="w-full h-full min-h-0">
+      {/* 2-Column Responsive Layout: Fixed Viewport Height */}
+      <div className="flex flex-col lg:flex-row gap-5 items-start h-full min-h-0">
+        {/* ================= LEFT COLUMN: INDEPENDENT VERTICAL SCROLLING ================= */}
+        <div className="w-full lg:w-[460px] h-full min-h-0 flex-shrink-0 overflow-y-auto overflow-x-hidden lg:pr-2 space-y-4 pb-10 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent">
           {/* Card 1: Uploaded Designs */}
           <div className="bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 sm:p-5 flex flex-col space-y-3.5">
             {/* Header */}
@@ -462,8 +502,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                         filmWidthPreset: clampedVal === 22 ? '22' : clampedVal.toString()
                                       });
                                     }
-                                    // Independent width control: user decides width, height remains untouched
-                                    onUpdateAsset(asset.id, { targetWidth: clampedVal, aspectLocked: false });
+                                    onUpdateAsset(asset.id, { targetWidth: clampedVal });
                                   }
                                 }}
                                 onBlur={() => {
@@ -472,6 +511,9 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                     delete copy[asset.id];
                                     return copy;
                                   });
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                                 }}
                                 className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-14 font-mono shadow-2xs"
                               />
@@ -509,8 +551,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                         fixedLengthMm: clampedVal * 25.4
                                       });
                                     }
-                                    // Independent height control: user decides height, width remains untouched
-                                    onUpdateAsset(asset.id, { targetHeight: clampedVal, aspectLocked: false });
+                                    onUpdateAsset(asset.id, { targetHeight: clampedVal });
                                   }
                                 }}
                                 onBlur={() => {
@@ -519,6 +560,9 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                     delete copy[asset.id];
                                     return copy;
                                   });
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                                 }}
                                 className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-14 font-mono shadow-2xs"
                               />
@@ -766,47 +810,6 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                   </span>
                 </div>
               </div>
-
-              {/* Option 2: True Shape */}
-              <div
-                onClick={() => onNestingModeChange('true-shape')}
-                className={`p-3 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
-                  settings.nestingAlgorithm === 'true-shape'
-                    ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-1 ring-indigo-500/20'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
-                }`}
-              >
-                <div className="flex items-center space-x-2.5">
-                  <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      settings.nestingAlgorithm === 'true-shape'
-                        ? 'border-indigo-600 bg-white'
-                        : 'border-slate-300'
-                    }`}
-                  >
-                    {settings.nestingAlgorithm === 'true-shape' && (
-                      <div className="w-2 h-2 rounded-full bg-indigo-600" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900">True shape</div>
-                    <div className="text-[10px] text-slate-500">Fits closer • about 40 sec</div>
-                  </div>
-                </div>
-
-                <div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRunTrueShape();
-                    }}
-                    disabled={isSimulatingTrueShape}
-                    className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs shadow-xs transition-colors flex items-center space-x-1"
-                  >
-                    {isSimulatingTrueShape ? 'Running...' : 'Run'}
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -841,7 +844,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                     setSheetWidthInput(text);
                     const val = parseFloat(text);
                     if (!isNaN(val) && val > 0) {
-                      const clamped = Math.min(22, Math.max(1, val));
+                      const clamped = Math.min(24, Math.max(1, val));
                       onUpdateSettings({
                         filmWidth: clamped,
                         filmWidthMm: unitToMm(clamped, 'inch'),
@@ -1025,10 +1028,10 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           </div>
         </div>
 
-        {/* ================= RIGHT COLUMN: HORIZONTAL SHEET PREVIEW (IMAGE 3) ================= */}
-        <div className="flex-1 w-full bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-5 sm:p-6 flex flex-col space-y-4">
+        {/* ================= RIGHT COLUMN: FIXED SHEET PREVIEW ================= */}
+        <div className="flex-1 w-full h-full min-h-0 bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 sm:p-5 flex flex-col space-y-3 overflow-hidden">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-2.5 border-b border-slate-100 gap-3 flex-shrink-0">
             <div>
               <div className="flex items-center space-x-2">
                 <h3 className="font-black text-lg text-slate-900">Sheet Preview</h3>
@@ -1063,11 +1066,20 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             </div>
           </div>
 
-          {/* Subtitle: HOW IT WILL PRINT (Image 3) */}
-          <div className="flex items-center justify-between pt-1">
+          {/* Subtitle Row: HOW IT WILL PRINT (left) | Tap a file to see it big (center) | Maximize (right) */}
+          <div className="flex items-center justify-between pt-0.5 flex-shrink-0 relative">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               How it will print
             </span>
+
+            {/* Centered 'Tap a file to see it big' option matching Image 2 & 3 */}
+            <button
+              onClick={onOpenPreviewModal}
+              className="flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-semibold text-slate-700 bg-white border border-slate-200/90 shadow-2xs hover:bg-indigo-50/70 hover:text-indigo-600 hover:border-indigo-200 transition-all cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Tap a file to see it big</span>
+            </button>
 
             <button
               onClick={onOpenPreviewModal}
@@ -1078,78 +1090,218 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             </button>
           </div>
 
-          {/* Horizontal Canvas Container with Dynamic Framing & Indentation */}
+          {/* Vertical Canvas Container with Dynamic Framing & Blueprint Grid */}
           <div
             ref={canvasContainerRef}
-            className="bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center min-h-[380px] overflow-auto shadow-inner relative select-none"
+            className="flex-1 min-h-0 w-full bg-slate-50/80 border border-slate-200 rounded-3xl p-4 sm:p-6 flex flex-col items-start justify-start overflow-y-auto overflow-x-auto shadow-inner relative select-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent"
+            style={{
+              backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
+              backgroundSize: '16px 16px'
+            }}
           >
-            {/* Centered Roll Preview and Proportional Bracket */}
-            <div className="flex items-center justify-center space-x-4 max-w-full p-2 my-auto transition-all">
-              {/* Canvas with checkerboard border */}
-              <div className="shadow-xl rounded-xl overflow-hidden border border-slate-300 flex-shrink-0 transition-all">
-                <canvas ref={canvasRef} className="block cursor-pointer transition-all" onClick={onOpenPreviewModal} />
-              </div>
+            {/* Centered / Side-by-side Roll Previews (Beside each other, scrollable without clipping) */}
+            <div className="min-w-full w-max flex items-start justify-center space-x-6 sm:space-x-8 p-2 pb-4 transition-all">
+              {(layout.sheets && layout.sheets.length > 0
+                ? layout.sheets
+                : [{
+                    sheetIndex: 0,
+                    placements: layout.placements,
+                    usedWidthMm: layout.usedWidthMm,
+                    usedLengthMm: layout.usedLengthMm,
+                    usedLengthInches: layout.usedLengthInches,
+                    usedLengthMeters: layout.usedLengthMeters,
+                    totalCopies: layout.totalCopies,
+                    filmAreaMm2: layout.filmAreaMm2,
+                    artworkAreaMm2: layout.artworkAreaMm2,
+                    wastePercent: layout.wastePercent
+                  }]
+              ).map((sheet) => {
+                const sheetDisplayLength = mmToUnit(sheet.usedLengthMm, settings.unit);
+                const sheetHeight = renderedCanvasHeights[sheet.sheetIndex] || 180;
 
-              {/* Right Bracket & Callout with dynamic proportional height */}
-              <div className="flex items-center space-x-2.5 flex-shrink-0 font-mono text-xs">
-                {/* Visual blue bracket line matching canvas height */}
-                <div
-                  className="w-2.5 border-r-2 border-t-2 border-b-2 border-indigo-400 rounded-r-md transition-all duration-150"
-                  style={{ height: Math.min(260, Math.max(48, renderedCanvasHeight * 0.75)) }}
-                />
-                <div>
-                  <div className="font-extrabold text-sm text-slate-900 font-mono">
-                    {formatUnit(displayLength, settings.unit, 2)} {settings.unit === 'meter' ? 'meters' : settings.unit === 'inch' ? 'in' : settings.unit}
-                  </div>
-                  <div className="text-[11px] text-slate-500 font-medium">
-                    File 1 • {Math.round((layout.usedWidthMm ? layout.usedWidthMm / 25.4 : settings.filmWidth) * 10) / 10}" wide
-                  </div>
-                </div>
-              </div>
-            </div>
+                const isSelectedSheet = selectedSheetIndex === sheet.sheetIndex;
 
-            {/* Tap a file to see it big button on bottom-right matching Image 3 */}
-            <div className="w-full flex justify-end mt-4">
-              <button
-                onClick={onOpenPreviewModal}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600 bg-white border border-slate-200 shadow-2xs hover:bg-slate-50 transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Tap a file to see it big</span>
-              </button>
+                return (
+                  <div
+                    key={sheet.sheetIndex}
+                    onClick={() => setSelectedSheetIndex(sheet.sheetIndex)}
+                    className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
+                  >
+                    {/* Top width / sheet label pill */}
+                    <div
+                      className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold shadow-2xs mb-3 flex-shrink-0 transition-all ${
+                        isSelectedSheet
+                          ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-md'
+                          : 'bg-white/95 border border-slate-200 text-slate-700 hover:border-indigo-300'
+                      }`}
+                    >
+                      {layout.sheets && layout.sheets.length > 1 ? (
+                        <>
+                          <span className={isSelectedSheet ? 'text-white font-black' : 'text-indigo-600 font-black'}>
+                            Sheet {sheet.sheetIndex + 1}
+                          </span>
+                          <span className={isSelectedSheet ? 'text-indigo-200' : 'text-slate-400'}>•</span>
+                          <span>{sheet.totalCopies} {sheet.totalCopies === 1 ? 'copy' : 'copies'}</span>
+                          <span className={isSelectedSheet ? 'text-indigo-200' : 'text-slate-400'}>•</span>
+                          <span>{Math.round((sheet.usedWidthMm ? sheet.usedWidthMm / 25.4 : settings.filmWidth) * 10) / 10}" wide</span>
+                          {isSelectedSheet && (
+                            <span className="ml-1 px-1.5 py-0.2 bg-white/20 text-white rounded text-[9px] uppercase tracking-wider font-extrabold">
+                              Active
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-indigo-600 font-bold">↔</span>
+                          <span>{Math.round((layout.usedWidthMm ? layout.usedWidthMm / 25.4 : settings.filmWidth) * 10) / 10}" wide</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Canvas and Proportional Bracket */}
+                    <div className="flex items-start justify-center space-x-3 transition-all">
+                      {/* Canvas with checkerboard border */}
+                      <div className={`rounded-xl overflow-hidden flex-shrink-0 transition-all bg-white ${
+                        isSelectedSheet
+                          ? 'ring-3 ring-indigo-500 shadow-xl'
+                          : 'border border-slate-300 shadow-md group-hover:border-slate-400'
+                      }`}>
+                        <canvas
+                          ref={(el) => {
+                            if (el) canvasRefs.current[sheet.sheetIndex] = el;
+                          }}
+                          className="block cursor-pointer transition-all"
+                        />
+                      </div>
+
+                      {/* Right Bracket & Callout with dynamic proportional height */}
+                      <div className="flex items-center space-x-2 flex-shrink-0 font-mono text-xs ml-1">
+                        <div
+                          className={`w-2.5 border-r-2 border-t-2 border-b-2 rounded-r-md transition-all duration-150 ${
+                            isSelectedSheet ? 'border-indigo-600' : 'border-indigo-400'
+                          }`}
+                          style={{ height: Math.max(48, sheetHeight * 0.95) }}
+                        />
+                        <div>
+                          <div className="font-extrabold text-xs text-slate-900 font-mono">
+                            {formatUnit(sheetDisplayLength, settings.unit, 2)} {settings.unit === 'meter' ? 'meters' : settings.unit === 'inch' ? 'in' : settings.unit}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-medium">
+                            {Math.round((sheet.usedWidthMm ? sheet.usedWidthMm / 25.4 : settings.filmWidth) * 10) / 10}" wide
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Canvas Zoom Toolbar */}
-          <div className="flex items-center justify-center space-x-4 pt-2 text-slate-600 text-xs">
-            <button
-              onClick={() => setZoom((z) => Math.max(0.4, z - 0.15))}
-              className="p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
-              title="Zoom out"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
+          {/* Canvas Zoom Toolbar & Active Sheet Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 px-1 text-slate-600 text-xs flex-shrink-0 border-t border-slate-100">
+            {/* Sheet Selector Tabs when multiple sheets exist */}
+            {layout.sheets && layout.sheets.length > 1 ? (
+              <div className="flex items-center space-x-1 p-1 bg-slate-100 rounded-xl">
+                <span className="text-[10px] font-bold uppercase text-slate-400 px-1.5">Select Sheet:</span>
+                {layout.sheets.map((s) => (
+                  <button
+                    key={s.sheetIndex}
+                    onClick={() => setSelectedSheetIndex(s.sheetIndex)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                      selectedSheetIndex === s.sheetIndex
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    Sheet {s.sheetIndex + 1}
+                  </button>
+                ))}
+              </div>
+            ) : <div />}
 
-            <span className="font-mono text-xs font-bold text-slate-800 flex items-center space-x-1">
-              <span>{Math.round(zoom * 100)}%</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </span>
+            {/* Selected Sheet Zoom, Fit, 100%, and Download */}
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl font-medium">
+                <button
+                  onClick={() => {
+                    setSheetFitModes((prev) => ({ ...prev, [selectedSheetIndex]: false }));
+                    setSheetZooms((prev) => ({
+                      ...prev,
+                      [selectedSheetIndex]: Math.max(0.3, (prev[selectedSheetIndex] || 1) - 0.15)
+                    }));
+                  }}
+                  className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white text-slate-700 hover:text-indigo-600 transition-colors font-bold"
+                  title="Zoom Out selected sheet"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
 
-            <button
-              onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}
-              className="p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
-              title="Zoom in"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
+                <span className="font-mono text-xs font-bold text-slate-800 min-w-10 text-center">
+                  {Math.round((sheetZooms[selectedSheetIndex] || 1) * 100)}%
+                </span>
 
-            <button
-              onClick={() => setZoom(1)}
-              className="p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
-              title="Reset Zoom"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
+                <button
+                  onClick={() => {
+                    setSheetFitModes((prev) => ({ ...prev, [selectedSheetIndex]: false }));
+                    setSheetZooms((prev) => ({
+                      ...prev,
+                      [selectedSheetIndex]: Math.min(3.0, (prev[selectedSheetIndex] || 1) + 0.15)
+                    }));
+                  }}
+                  className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white text-slate-700 hover:text-indigo-600 transition-colors font-bold"
+                  title="Zoom In selected sheet"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+
+                <div className="h-4 w-px bg-slate-300 mx-1" />
+
+                {/* Fit Button for Selected Sheet */}
+                <button
+                  onClick={() => {
+                    setSheetFitModes((prev) => ({ ...prev, [selectedSheetIndex]: true }));
+                    setSheetZooms((prev) => ({ ...prev, [selectedSheetIndex]: 1 }));
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    sheetFitModes[selectedSheetIndex] !== false
+                      ? 'bg-white text-indigo-600 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Fit selected sheet into preview"
+                >
+                  Fit
+                </button>
+
+                {/* 100% Button for Selected Sheet */}
+                <button
+                  onClick={() => {
+                    setSheetFitModes((prev) => ({ ...prev, [selectedSheetIndex]: false }));
+                    setSheetZooms((prev) => ({ ...prev, [selectedSheetIndex]: 1.0 }));
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    sheetFitModes[selectedSheetIndex] === false && (sheetZooms[selectedSheetIndex] || 1) === 1.0
+                      ? 'bg-white text-indigo-600 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="View selected sheet at 100% actual print size"
+                >
+                  100%
+                </button>
+              </div>
+
+              {/* Direct Download for Selected Sheet */}
+              {onExportSingleSheet && (
+                <button
+                  onClick={() => onExportSingleSheet(selectedSheetIndex)}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition-colors"
+                  title={`Download Sheet ${selectedSheetIndex + 1} PNG`}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Sheet {selectedSheetIndex + 1}</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

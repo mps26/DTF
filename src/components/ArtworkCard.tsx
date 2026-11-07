@@ -38,13 +38,13 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
   const handleWidthChange = (valStr: string) => {
     const val = parseFloat(valStr);
     if (isNaN(val) || val <= 0) return;
-    onUpdate(asset.id, { targetWidth: val, aspectLocked: false });
+    onUpdate(asset.id, { targetWidth: val });
   };
 
   const handleHeightChange = (valStr: string) => {
     const val = parseFloat(valStr);
     if (isNaN(val) || val <= 0) return;
-    onUpdate(asset.id, { targetHeight: val, aspectLocked: false });
+    onUpdate(asset.id, { targetHeight: val });
   };
 
   const handleCopiesChange = (delta: number) => {

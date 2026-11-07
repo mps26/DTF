@@ -70,6 +70,7 @@ export interface PackedPlacement {
   id: string;
   assetId: string;
   copyIndex: number;
+  sheetIndex?: number; // 0 for Sheet 1, 1 for Sheet 2, etc.
   xMm: number;
   yMm: number;
   widthMm: number;
@@ -80,8 +81,22 @@ export interface PackedPlacement {
   customY?: number;
 }
 
+export interface SheetInfo {
+  sheetIndex: number;
+  placements: PackedPlacement[];
+  usedWidthMm: number;
+  usedLengthMm: number;
+  usedLengthInches: number;
+  usedLengthMeters: number;
+  totalCopies: number;
+  filmAreaMm2: number;
+  artworkAreaMm2: number;
+  wastePercent: number;
+}
+
 export interface LayoutResult {
   placements: PackedPlacement[];
+  sheets: SheetInfo[];
   totalCopies: number;
   usedWidthMm: number;
   usedLengthMm: number;

@@ -32,34 +32,31 @@ interface TemplatePreset {
   algorithm: NestingAlgorithm;
   color: string;
   badge: string;
+  topLabel: string;
+  sideLabel: string;
+  isFixed: boolean;
+  boxWidthPx: number;
+  boxHeightPx: number;
 }
 
 const PRESET_TEMPLATES: TemplatePreset[] = [
   {
-    id: 'tpl-22x60',
-    name: '22" × 60" Production Roll',
-    category: 'roll',
-    widthIn: 22,
-    lengthIn: 60,
-    spacingIn: 0.3,
-    marginIn: 0.25,
-    recommendedFor: 'Standard Apparel Gang Sheet (T-Shirts, Hoodies, Bulk Front/Back)',
-    algorithm: 'true-shape',
-    color: 'from-blue-600 to-indigo-600',
-    badge: '22" × 60"'
-  },
-  {
-    id: 'tpl-22x100',
-    name: '22" × 100" Master Roll',
-    category: 'roll',
-    widthIn: 22,
-    lengthIn: 100,
-    spacingIn: 0.25,
-    marginIn: 0.2,
-    recommendedFor: 'Maximum Volume Output, Full 100" Max Roll Capacity',
-    algorithm: 'true-shape',
-    color: 'from-indigo-600 to-purple-600',
-    badge: '22" × 100"'
+    id: 'tpl-11x8',
+    name: '11" × 8" Cut Sheet',
+    category: 'sheet',
+    widthIn: 11,
+    lengthIn: 8,
+    spacingIn: 0.2,
+    marginIn: 0.15,
+    recommendedFor: 'Cut Sheet for pocket logos, chest badges, sleeve patches & proofing',
+    algorithm: 'box',
+    color: 'from-amber-500 to-orange-500',
+    badge: '11" × 8"',
+    topLabel: '11',
+    sideLabel: '8',
+    isFixed: true,
+    boxWidthPx: 108,
+    boxHeightPx: 78
   },
   {
     id: 'tpl-11x17',
@@ -69,36 +66,51 @@ const PRESET_TEMPLATES: TemplatePreset[] = [
     lengthIn: 17,
     spacingIn: 0.25,
     marginIn: 0.2,
-    recommendedFor: 'Medium Gang Sheets, Front Chest Graphics & Tote Bags',
+    recommendedFor: 'Tabloid Sheet for standard front/back apparel graphics & tote bags',
     algorithm: 'box',
-    color: 'from-teal-600 to-emerald-600',
-    badge: '11" × 17"'
+    color: 'from-teal-500 to-emerald-600',
+    badge: '11" × 17"',
+    topLabel: '11',
+    sideLabel: '17',
+    isFixed: true,
+    boxWidthPx: 84,
+    boxHeightPx: 130
   },
   {
-    id: 'tpl-8x11',
-    name: '8" × 11" Letter Sheet',
-    category: 'sheet',
-    widthIn: 8,
-    lengthIn: 11,
-    spacingIn: 0.2,
-    marginIn: 0.15,
-    recommendedFor: 'Sample Prints, Pocket Logos, Sleeve Badges & Hat Patches',
-    algorithm: 'box',
-    color: 'from-amber-600 to-orange-600',
-    badge: '8" × 11"'
-  },
-  {
-    id: 'tpl-22x39',
-    name: '22" × 39" 1-Meter Roll',
+    id: 'tpl-22x99.5',
+    name: '22" × Variable Height Roll',
     category: 'roll',
     widthIn: 22,
-    lengthIn: 39,
+    lengthIn: 99.5,
+    spacingIn: 0.3,
+    marginIn: 0.25,
+    recommendedFor: 'Standard 22" Commercial Roll with dynamic continuous height (till 99.5")',
+    algorithm: 'true-shape',
+    color: 'from-blue-600 to-indigo-600',
+    badge: '22" × 99.5" (MAX)',
+    topLabel: '22',
+    sideLabel: 'height (till 99.5)',
+    isFixed: false,
+    boxWidthPx: 96,
+    boxHeightPx: 148
+  },
+  {
+    id: 'tpl-22.2x99.5',
+    name: '22.2" × Variable Height Roll',
+    category: 'roll',
+    widthIn: 22.2,
+    lengthIn: 99.5,
     spacingIn: 0.25,
     marginIn: 0.2,
-    recommendedFor: 'Standard 1-Meter (100 cm) Roll Output & UV-DTF Decals',
+    recommendedFor: '22.2" Master Wide Roll with full printable edge and continuous feed (till 99.5")',
     algorithm: 'true-shape',
-    color: 'from-purple-600 to-fuchsia-600',
-    badge: '22" × 39"'
+    color: 'from-indigo-600 to-purple-600',
+    badge: '22.2" × 99.5" (MAX)',
+    topLabel: '22.2',
+    sideLabel: 'height (till 99.5)',
+    isFixed: false,
+    boxWidthPx: 100,
+    boxHeightPx: 148
   }
 ];
 
@@ -122,16 +134,17 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
     onApplyTemplate({
       filmWidth: tpl.widthIn,
       filmWidthMm: tpl.widthIn * 25.4,
+      filmWidthPreset: tpl.widthIn.toString(),
       spacing: tpl.spacingIn,
       spacingMm: tpl.spacingIn * 25.4,
       margin: tpl.marginIn,
       marginMm: tpl.marginIn * 25.4,
       fixedLength: tpl.lengthIn,
       fixedLengthMm: tpl.lengthIn * 25.4,
-      lengthMode: 'fixed',
+      lengthMode: tpl.isFixed ? 'fixed' : 'auto',
       nestingAlgorithm: tpl.algorithm
     });
-    onNotification(`Applied template: "${tpl.name}" (${tpl.widthIn}" × ${tpl.lengthIn}")`);
+    onNotification(`Applied template: "${tpl.name}" (${tpl.widthIn}" × ${tpl.isFixed ? `${tpl.lengthIn}"` : 'Dynamic'})`);
     onBackToStudio();
   };
 
@@ -139,18 +152,27 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
     const name = prompt('Enter a name for this custom template:', `Custom_${currentSettings.filmWidth}x${currentSettings.fixedLength || 36}`);
     if (!name) return;
 
+    const w = currentSettings.filmWidth;
+    const l = currentSettings.fixedLength || 36;
+    const isFix = currentSettings.lengthMode === 'fixed';
+
     const newTpl: TemplatePreset = {
       id: `custom_${Date.now()}`,
       name,
       category: 'custom',
-      widthIn: currentSettings.filmWidth,
-      lengthIn: currentSettings.fixedLength || 36,
+      widthIn: w,
+      lengthIn: l,
       spacingIn: currentSettings.spacing || 0.3,
       marginIn: currentSettings.margin || 0.25,
-      recommendedFor: 'Custom User Configuration',
+      recommendedFor: 'Custom User Gang Sheet Configuration',
       algorithm: currentSettings.nestingAlgorithm || 'true-shape',
       color: 'from-indigo-600 to-blue-600',
-      badge: 'CUSTOM'
+      badge: 'CUSTOM',
+      topLabel: `${w}`,
+      sideLabel: isFix ? `${l}` : `till ${l}`,
+      isFixed: isFix,
+      boxWidthPx: Math.max(70, Math.min(115, Math.round((w / 22.2) * 95))),
+      boxHeightPx: Math.max(70, Math.min(150, Math.round((l / 100) * 140)))
     };
 
     const updated = [newTpl, ...customTemplates];
@@ -199,14 +221,14 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-black text-sm text-slate-900 tracking-tight uppercase">
-                  Gang Sheet Production Templates
+                  Standard Gang Sheet Templates
                 </span>
                 <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
-                  Standard Roll Sizes
+                  Width × Height Presets
                 </span>
               </div>
               <div className="text-[11px] text-slate-500 font-medium">
-                One-click optimized roll configurations conforming strictly to max 22" × 100" print bounds
+                Standard cut sheets (11" × 8", 11" × 17") &amp; production rolls (22", 22.2" × up to 99.5")
               </div>
             </div>
           </div>
@@ -232,9 +254,10 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center space-x-2">
             {[
-              { id: 'all', label: 'All Templates (5)' },
-              { id: 'roll', label: 'Roll Formats (22")' },
-              { id: 'sheet', label: 'Cut Sheets (11×17, 8×11)' }
+              { id: 'all', label: `All Templates (${allTemplates.length})` },
+              { id: 'roll', label: 'Roll Formats (22", 22.2")' },
+              { id: 'sheet', label: 'Cut Sheets (11×8, 11×17)' },
+              ...(customTemplates.length > 0 ? [{ id: 'custom', label: `Custom (${customTemplates.length})` }] : [])
             ].map((cat) => (
               <button
                 key={cat.id}
@@ -257,7 +280,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
         </div>
 
         {/* Templates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
           {filteredTemplates.map((tpl) => (
             <div
               key={tpl.id}
@@ -273,39 +296,98 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
                     <h3 className="font-black text-sm text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors">
                       {tpl.name}
                     </h3>
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
                       {tpl.recommendedFor}
                     </p>
                   </div>
-                  <span className="text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex-shrink-0">
+                  <span className="text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex-shrink-0 ml-2">
                     {tpl.badge}
                   </span>
                 </div>
 
-                {/* Aspect Ratio Illustration Box */}
-                <div className="h-28 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-center justify-center p-3 relative overflow-hidden">
-                  {/* Miniature Sheet Illustration */}
-                  <div
-                    className="border-2 border-indigo-500 bg-white shadow-md rounded flex items-center justify-center font-mono font-bold text-[10px] text-indigo-900 transition-transform group-hover:scale-105"
-                    style={{
-                      width: `${Math.max(48, Math.min(180, (tpl.widthIn / 22) * 120))}px`,
-                      height: `${Math.max(38, Math.min(90, (tpl.lengthIn / 100) * 85))}px`
-                    }}
-                  >
-                    <span>{tpl.widthIn}" × {tpl.lengthIn}"</span>
+                {/* Aspect Ratio Illustration Box — Architectural drafting representation matching Images 1 & 2 */}
+                <div className="h-56 rounded-2xl bg-[#f8fafc] border border-slate-200/90 flex flex-col items-center justify-center p-3 relative overflow-hidden group-hover:border-indigo-300 transition-colors">
+                  {/* Subtle Blueprint Dot Grid */}
+                  <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:10px_10px] pointer-events-none" />
+
+                  {/* Top Dimension Indicator (Width on Top) */}
+                  <div className="relative z-10 flex flex-col items-center mb-1.5" style={{ width: `${tpl.boxWidthPx}px` }}>
+                    <span className="font-mono font-black text-xs text-indigo-900 bg-white/95 px-2.5 py-0.5 rounded-md border border-indigo-200 shadow-2xs">
+                      {tpl.topLabel}
+                    </span>
+                    {/* Measurement horizontal line with ticks */}
+                    <div className="w-full flex items-center justify-between text-indigo-400 text-[10px] px-0.5 mt-0.5">
+                      <span className="leading-none select-none">◀</span>
+                      <div className="flex-1 border-t-2 border-indigo-400/80 mx-1"></div>
+                      <span className="leading-none select-none">▶</span>
+                    </div>
                   </div>
 
-                  <div className="absolute bottom-2 right-3 font-mono text-[10px] text-slate-400">
-                    Max: 22" × 100"
+                  {/* Main Diagram Area: Box + Side Dimension */}
+                  <div className="relative z-10 flex items-center justify-center">
+                    {/* Box Layer Stack */}
+                    <div className="relative">
+                      {/* Layer 1: Offset secondary background rectangle (matches handwritten sketches in Images 1 & 2) */}
+                      <div
+                        className="absolute -top-2 -right-2 border-2 border-slate-300/90 bg-slate-200/40 rounded-lg pointer-events-none transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        style={{ width: `${tpl.boxWidthPx}px`, height: `${tpl.boxHeightPx}px` }}
+                      />
+
+                      {/* Layer 2: Primary foreground rectangle (Solid blue/indigo border as drawn in pen) */}
+                      <div
+                        className="relative border-2 border-indigo-600 bg-white shadow-md rounded-lg flex flex-col items-center justify-center p-2 transition-transform group-hover:scale-102 overflow-hidden"
+                        style={{ width: `${tpl.boxWidthPx}px`, height: `${tpl.boxHeightPx}px` }}
+                      >
+                        {/* Subtle internal film texture */}
+                        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(#312e81_1px,transparent_1px)] [background-size:6px_6px] pointer-events-none" />
+
+                        {/* Film Header Perforation / Feed indicator */}
+                        <div className="w-8 h-1 rounded-full bg-indigo-200/80 mb-2 pointer-events-none" />
+
+                        <div className="relative z-10 text-center">
+                          <div className="font-black font-mono text-xs text-slate-900 leading-tight">
+                            {tpl.widthIn}" × {tpl.lengthIn === 99.5 ? '99.5"' : `${tpl.lengthIn}"`}
+                          </div>
+                          <div className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-600 mt-0.5">
+                            {tpl.isFixed ? 'Cut Sheet' : 'Continuous Roll'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Side Dimension Indicator (Height on Right Side) */}
+                    <div className="flex items-center ml-3" style={{ height: `${tpl.boxHeightPx}px` }}>
+                      {/* Vertical measurement line with ticks */}
+                      <div className="h-full flex flex-col items-center justify-between text-indigo-400 text-[10px] py-0.5 mr-1.5">
+                        <span className="leading-none select-none">▲</span>
+                        <div className="flex-1 border-l-2 border-indigo-400/80 my-1"></div>
+                        <span className="leading-none select-none">▼</span>
+                      </div>
+                      <span className="font-mono font-black text-xs text-indigo-900 bg-white/95 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs whitespace-nowrap">
+                        {tpl.sideLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Bottom Info Ribbon */}
+                  <div className="absolute bottom-1.5 left-3 text-[10px] font-mono text-slate-400">
+                    {tpl.isFixed ? 'Cut Sheet' : 'Variable Feed (≤ 99.5")'}
                   </div>
                 </div>
 
                 {/* Technical Specs Grid */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] text-slate-400 font-semibold block uppercase">Dimensions</span>
+                    <span className="text-[10px] text-slate-400 font-semibold block uppercase">Width (Top)</span>
                     <span className="font-extrabold text-slate-800 font-mono">
-                      {tpl.widthIn}" × {tpl.lengthIn}"
+                      {tpl.widthIn}"
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] text-slate-400 font-semibold block uppercase">Height (Side)</span>
+                    <span className="font-extrabold text-slate-800 font-mono">
+                      {tpl.isFixed ? `${tpl.lengthIn}"` : 'till 99.5"'}
                     </span>
                   </div>
 
@@ -313,6 +395,13 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
                     <span className="text-[10px] text-slate-400 font-semibold block uppercase">Spacing / Margin</span>
                     <span className="font-extrabold text-slate-800 font-mono">
                       {tpl.spacingIn}" / {tpl.marginIn}"
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] text-slate-400 font-semibold block uppercase">Nesting Mode</span>
+                    <span className="font-extrabold text-indigo-700 font-mono text-[11px]">
+                      {tpl.algorithm === 'true-shape' ? 'True-Shape' : 'Box Packing'}
                     </span>
                   </div>
                 </div>
@@ -324,7 +413,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
                   <button
                     type="button"
                     onClick={(e) => handleDeleteCustom(tpl.id, e)}
-                    className="text-xs text-rose-500 hover:text-rose-700 font-bold p-1 transition-colors"
+                    className="text-xs text-rose-500 hover:text-rose-700 font-bold p-1 transition-colors cursor-pointer"
                     title="Delete custom template"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -332,7 +421,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
                 ) : (
                   <div className="flex items-center space-x-1.5 text-emerald-600 text-xs font-bold">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Tested on RIP</span>
+                    <span>Tested Standard</span>
                   </div>
                 )}
 

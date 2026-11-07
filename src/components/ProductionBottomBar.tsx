@@ -40,12 +40,10 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
 
   const presets = [
-    { label: '11.5"', value: '11.5', widthIn: 11.5 },
-    { label: '13.0"', value: '13', widthIn: 13 },
+    { label: '11.0"', value: '11', widthIn: 11 },
+    { label: '17.0"', value: '17', widthIn: 17 },
     { label: '22.0"', value: '22', widthIn: 22 },
-    { label: '24.0"', value: '24', widthIn: 24 },
-    { label: '48.0"', value: '48', widthIn: 48 },
-    { label: '60.0"', value: '60', widthIn: 60 }
+    { label: '22.2"', value: '22.2', widthIn: 22.2 }
   ];
 
   return (

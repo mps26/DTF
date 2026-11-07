@@ -32,7 +32,7 @@ import {
   cropImageToBoundingBox,
   removeImageBackground
 } from './utils/imageProcessing';
-import { exportHighResolutionPng, exportJobTicketJson } from './utils/exportRenderer';
+import { exportHighResolutionPng, exportSingleSheetPng, exportJobTicketJson } from './utils/exportRenderer';
 import { Layers, Copy } from 'lucide-react';
 import { UserProfile } from './types/auth';
 import { getCurrentUser, logoutUser } from './utils/auth';
@@ -58,17 +58,17 @@ export const App: React.FC = () => {
 
   // Sheet Settings state
   const [settings, setSettings] = useState<SheetSettings>({
-    filmWidthPreset: '11.5',
-    filmWidth: 11.5,
-    filmWidthMm: 11.5 * 25.4,
+    filmWidthPreset: '22',
+    filmWidth: 22,
+    filmWidthMm: 22 * 25.4,
     unit: 'meter', // Image 1 displays meters
     spacing: 0.3,
     spacingMm: 0.3 * 25.4,
     margin: 0.2,
     marginMm: 0.2 * 25.4,
     lengthMode: 'auto',
-    fixedLength: 30,
-    fixedLengthMm: 30 * 25.4,
+    fixedLength: 39,
+    fixedLengthMm: 39 * 25.4,
     exportDpi: 300,
     allowItemRotation: false,
     nestingAlgorithm: 'box',
@@ -133,20 +133,45 @@ export const App: React.FC = () => {
   }, [settings.unit, settings.filmWidthMm, settings.spacingMm, settings.marginMm, settings.fixedLengthMm]);
 
   const handleUpdateSettings = (updates: Partial<SheetSettings>) => {
-    // Strictly clamp maximum printing width to 22" (558.8 mm) and length to 100" (2540 mm)
+    // Clamp maximum printing width to 24" (allows standard 11", 22", and 22.2" master rolls)
     if (updates.filmWidth !== undefined) {
-      updates.filmWidth = Math.min(22, Math.max(1, updates.filmWidth));
+      updates.filmWidth = Math.min(24, Math.max(1, updates.filmWidth));
       updates.filmWidthMm = updates.filmWidth * 25.4;
     }
     if (updates.filmWidthMm !== undefined) {
-      updates.filmWidthMm = Math.min(22 * 25.4, Math.max(25.4, updates.filmWidthMm));
+      updates.filmWidthMm = Math.min(24 * 25.4, Math.max(25.4, updates.filmWidthMm));
     }
+
+    // Evaluate height constraints: for 11" min 8 max 17; for 22" & 22.2" min 39 max 100
+    const effWidth = updates.filmWidth ?? settings.filmWidth;
+    let minLen = 1;
+    let maxLen = 100;
+    if (effWidth <= 11.1) {
+      minLen = 8;
+      maxLen = 17;
+    } else if (effWidth >= 21.9) {
+      minLen = 39;
+      maxLen = 100;
+    }
+
+    // When filmWidth changes and fixedLength was not explicitly provided, clamp existing fixedLength
+    if (updates.filmWidth !== undefined && updates.fixedLength === undefined) {
+      const curLen = settings.fixedLength || minLen;
+      if (curLen < minLen) {
+        updates.fixedLength = minLen;
+        updates.fixedLengthMm = minLen * 25.4;
+      } else if (curLen > maxLen) {
+        updates.fixedLength = maxLen;
+        updates.fixedLengthMm = maxLen * 25.4;
+      }
+    }
+
     if (updates.fixedLength !== undefined) {
-      updates.fixedLength = Math.min(100, Math.max(1, updates.fixedLength));
+      updates.fixedLength = Math.min(maxLen, Math.max(minLen, updates.fixedLength));
       updates.fixedLengthMm = updates.fixedLength * 25.4;
     }
     if (updates.fixedLengthMm !== undefined) {
-      updates.fixedLengthMm = Math.min(100 * 25.4, Math.max(25.4, updates.fixedLengthMm));
+      updates.fixedLengthMm = Math.min(maxLen * 25.4, Math.max(minLen * 25.4, updates.fixedLengthMm));
     }
     setSettings((prev) => ({ ...prev, ...updates }));
   };
@@ -160,32 +185,78 @@ export const App: React.FC = () => {
         if (asset.id !== id) return asset;
         const updated = { ...asset, ...updates };
 
-        if (updates.targetWidth !== undefined) {
-          // Strictly clamp design width to max 22 inches
+        const isAspectLocked = updates.aspectLocked !== undefined ? updates.aspectLocked : asset.aspectLocked;
+        const origW = asset.trimmedWidth || asset.originalWidth || 1;
+        const origH = asset.trimmedHeight || asset.originalHeight || 1;
+        const ratio = origH / origW;
+
+        if (updates.targetWidth !== undefined && updates.targetHeight === undefined) {
+          // User changed width only
           const maxW = settings.unit === 'inch' ? 22 : mmToUnit(22 * 25.4, settings.unit);
-          updates.targetWidth = Math.min(maxW, Math.max(0.1, updates.targetWidth));
-          updated.targetWidth = updates.targetWidth;
-          updated.targetWidthMm = unitToMm(updates.targetWidth, settings.unit);
+          const clampedW = Math.min(maxW, Math.max(0.01, updates.targetWidth));
+          updated.targetWidth = clampedW;
+          updated.targetWidthMm = unitToMm(clampedW, settings.unit);
+
+          if (isAspectLocked) {
+            const proportionalH = Math.round((clampedW * ratio) * 100) / 100;
+            const maxH = settings.unit === 'inch' ? 100 : mmToUnit(100 * 25.4, settings.unit);
+            updated.targetHeight = Math.min(maxH, Math.max(0.01, proportionalH));
+            updated.targetHeightMm = unitToMm(updated.targetHeight, settings.unit);
+          }
 
           const targetWidthInches = settings.unit === 'inch'
-            ? updates.targetWidth
+            ? clampedW
             : updated.targetWidthMm / 25.4;
           if (targetWidthInches > settings.filmWidth) {
             autoExpandWidth = Math.min(22, targetWidthInches);
           }
-        }
-        if (updates.targetHeight !== undefined) {
-          // Strictly clamp design height to max 100 inches
+          if (isAspectLocked && settings.lengthMode === 'fixed') {
+            const targetHeightInches = settings.unit === 'inch'
+              ? updated.targetHeight
+              : updated.targetHeightMm / 25.4;
+            if (targetHeightInches > settings.fixedLength) {
+              autoExpandHeight = Math.min(100, targetHeightInches);
+            }
+          }
+        } else if (updates.targetHeight !== undefined && updates.targetWidth === undefined) {
+          // User changed height only
           const maxH = settings.unit === 'inch' ? 100 : mmToUnit(100 * 25.4, settings.unit);
-          updates.targetHeight = Math.min(maxH, Math.max(0.1, updates.targetHeight));
-          updated.targetHeight = updates.targetHeight;
-          updated.targetHeightMm = unitToMm(updates.targetHeight, settings.unit);
+          const clampedH = Math.min(maxH, Math.max(0.01, updates.targetHeight));
+          updated.targetHeight = clampedH;
+          updated.targetHeightMm = unitToMm(clampedH, settings.unit);
+
+          if (isAspectLocked) {
+            const proportionalW = Math.round((clampedH / ratio) * 100) / 100;
+            const maxW = settings.unit === 'inch' ? 22 : mmToUnit(22 * 25.4, settings.unit);
+            updated.targetWidth = Math.min(maxW, Math.max(0.01, proportionalW));
+            updated.targetWidthMm = unitToMm(updated.targetWidth, settings.unit);
+          }
 
           const targetHeightInches = settings.unit === 'inch'
-            ? updates.targetHeight
+            ? clampedH
             : updated.targetHeightMm / 25.4;
           if (settings.lengthMode === 'fixed' && targetHeightInches > settings.fixedLength) {
             autoExpandHeight = Math.min(100, targetHeightInches);
+          }
+          if (isAspectLocked) {
+            const targetWidthInches = settings.unit === 'inch'
+              ? updated.targetWidth
+              : updated.targetWidthMm / 25.4;
+            if (targetWidthInches > settings.filmWidth) {
+              autoExpandWidth = Math.min(22, targetWidthInches);
+            }
+          }
+        } else {
+          // Both or neither specified
+          if (updates.targetWidth !== undefined) {
+            const maxW = settings.unit === 'inch' ? 22 : mmToUnit(22 * 25.4, settings.unit);
+            updated.targetWidth = Math.min(maxW, Math.max(0.01, updates.targetWidth));
+            updated.targetWidthMm = unitToMm(updated.targetWidth, settings.unit);
+          }
+          if (updates.targetHeight !== undefined) {
+            const maxH = settings.unit === 'inch' ? 100 : mmToUnit(100 * 25.4, settings.unit);
+            updated.targetHeight = Math.min(maxH, Math.max(0.01, updates.targetHeight));
+            updated.targetHeightMm = unitToMm(updated.targetHeight, settings.unit);
           }
         }
 
@@ -466,6 +537,31 @@ export const App: React.FC = () => {
     handleExportPng();
   };
 
+  const handleExportSingleSheet = async (sheetIndex: number) => {
+    if (layout.placements.length === 0) {
+      showNotification('No placements to export');
+      return;
+    }
+    setIsExporting(true);
+    setExportProgress(15);
+    try {
+      await exportSingleSheetPng(layout, settings, sheetIndex, (prog) => {
+        setExportProgress(prog);
+      });
+      confetti({
+        particleCount: 65,
+        spread: 55,
+        origin: { y: 0.85 }
+      });
+      showNotification(`Sheet ${sheetIndex + 1} PNG downloaded (300 DPI)!`);
+    } catch (err) {
+      console.error(err);
+      alert('Export failed for this sheet.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleExportJobTicket = () => {
     exportJobTicketJson(layout, settings);
     showNotification('Job Ticket JSON downloaded');
@@ -583,6 +679,11 @@ export const App: React.FC = () => {
             onDeleteAsset={handleDeleteAsset}
             onBackToStudio={() => setNavTab('studio')}
             onNotification={showNotification}
+            onSetFileSheet={(assetId) => {
+              setSelectedAssetId(assetId);
+              setNavTab('studio');
+              showNotification('Switched to Sheet Preview — set dimensions in the left panel.');
+            }}
           />
         ) : navTab === 'templates' ? (
           <TemplatesView
@@ -614,23 +715,42 @@ export const App: React.FC = () => {
           />
         ) : (
           <>
-            {/* Scrollable Center Content */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pb-28">
-              <div className="max-w-[1680px] mx-auto space-y-4">
-                {/* Header: "Create Your Gang Sheet" (Centered) */}
-                <div className="flex flex-col items-center justify-center text-center pt-2 pb-3">
-                  <h1 className="text-2xl sm:text-3xl font-black text-indigo-950 tracking-tight">
+            {/* Center Content Container: Viewport-constrained with fixed preview & independent left scrolling */}
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 sm:px-6 pt-2 pb-3">
+              <div className="max-w-[1720px] w-full mx-auto flex-1 flex flex-col min-h-0 space-y-2">
+                {/* Control Toolbar: Represented at TOP above "Create Your Gang Sheet" */}
+                <div className="w-full flex-shrink-0">
+                  <BottomToolbar
+                    settings={settings}
+                    layout={layout}
+                    onUpdateSettings={handleUpdateSettings}
+                    onGenerateLayout={() => {
+                      confetti({ particleCount: 60, spread: 60, origin: { y: 0.85 } });
+                      showNotification('Layout optimized and generated!');
+                    }}
+                    onExportPng={handleExportPng}
+                    onExportPdf={handleExportPdf}
+                    onExportJobTicket={handleExportJobTicket}
+                    onExportSingleSheet={handleExportSingleSheet}
+                    onOpenPreviewModal={() => setIsPreviewModalOpen(true)}
+                    isGenerating={isExporting}
+                  />
+                </div>
+
+                {/* Header: "Create Your Gang Sheet" (Compact, flex-shrink-0) */}
+                <div className="flex flex-col items-center justify-center text-center flex-shrink-0 pt-0 pb-0.5">
+                  <h1 className="text-xl sm:text-2xl font-black text-indigo-950 tracking-tight">
                     Create Your <span className="text-indigo-600">Gang Sheet</span>
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1 max-w-lg">
+                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium max-w-lg">
                     Upload your designs and generate optimized layouts for DTF printing
                   </p>
 
                   {/* Multiple Designs / Repeat One Design Pill Switch */}
-                  <div className="inline-flex p-1 bg-white/90 backdrop-blur-md rounded-full shadow-xs border border-indigo-100 mt-3">
+                  <div className="inline-flex p-1 bg-white/90 backdrop-blur-md rounded-full shadow-xs border border-indigo-100 mt-1.5">
                     <button
                       onClick={() => handleUpdateSettings({ mode: 'multiple' })}
-                      className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                      className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-bold transition-all ${
                         settings.mode === 'multiple'
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                           : 'text-slate-600 hover:text-slate-900'
@@ -642,7 +762,7 @@ export const App: React.FC = () => {
 
                     <button
                       onClick={() => handleUpdateSettings({ mode: 'repeat' })}
-                      className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                      className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-bold transition-all ${
                         settings.mode === 'repeat'
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                           : 'text-slate-600 hover:text-slate-900'
@@ -654,46 +774,33 @@ export const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Main Layout Section */}
-                <LayoutSection
-                  assets={assets}
-                  settings={settings}
-                  layout={layout}
-                  selectedAssetId={selectedAssetId}
-                  onSelectAsset={setSelectedAssetId}
-                  onUpdateAsset={handleUpdateAsset}
-                  onDeleteAsset={handleDeleteAsset}
-                  onEditAsset={(a) => {
-                    setActiveToolForEdit('crop-clean');
-                    setSelectedAssetForEdit(a);
-                  }}
-                  onTrimAsset={handleTrimAsset}
-                  onRemoveBgAsset={handleRemoveBgAsset}
-                  onFilesSelected={handleFilesSelected}
-                  onOpenGallery={handleLoadMultiDemo}
-                  onUnitChange={handleUnitChange}
-                  onUpdateSettings={handleUpdateSettings}
-                  onNestingModeChange={(mode) => handleUpdateSettings({ nestingAlgorithm: mode })}
-                  onOpenPreviewModal={() => setIsPreviewModalOpen(true)}
-                />
+                {/* Main Layout Section: Fixed height within viewport */}
+                <div className="flex-1 min-h-0 w-full">
+                  <LayoutSection
+                    assets={assets}
+                    settings={settings}
+                    layout={layout}
+                    selectedAssetId={selectedAssetId}
+                    onSelectAsset={setSelectedAssetId}
+                    onUpdateAsset={handleUpdateAsset}
+                    onDeleteAsset={handleDeleteAsset}
+                    onEditAsset={(a) => {
+                      setActiveToolForEdit('crop-clean');
+                      setSelectedAssetForEdit(a);
+                    }}
+                    onTrimAsset={handleTrimAsset}
+                    onRemoveBgAsset={handleRemoveBgAsset}
+                    onFilesSelected={handleFilesSelected}
+                    onOpenGallery={handleLoadMultiDemo}
+                    onUnitChange={handleUnitChange}
+                    onUpdateSettings={handleUpdateSettings}
+                    onNestingModeChange={(mode) => handleUpdateSettings({ nestingAlgorithm: mode })}
+                    onOpenPreviewModal={() => setIsPreviewModalOpen(true)}
+                    onExportSingleSheet={handleExportSingleSheet}
+                  />
+                </div>
               </div>
             </div>
-
-            {/* Bottom Control Dock */}
-            <BottomToolbar
-              settings={settings}
-              layout={layout}
-              onUpdateSettings={handleUpdateSettings}
-              onGenerateLayout={() => {
-                confetti({ particleCount: 60, spread: 60, origin: { y: 0.85 } });
-                showNotification('Layout optimized and generated!');
-              }}
-              onExportPng={handleExportPng}
-              onExportPdf={handleExportPdf}
-              onExportJobTicket={handleExportJobTicket}
-              onOpenPreviewModal={() => setIsPreviewModalOpen(true)}
-              isGenerating={isExporting}
-            />
           </>
         )}
       </div>
@@ -725,6 +832,7 @@ export const App: React.FC = () => {
           settings={settings}
           onClose={() => setIsPreviewModalOpen(false)}
           onExportPng={handleExportPng}
+          onExportSingleSheet={handleExportSingleSheet}
           onOptimize={() => {
             handleUpdateSettings({
               nestingAlgorithm: 'true-shape',

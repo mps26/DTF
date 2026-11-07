@@ -27,6 +27,7 @@ interface AssetGalleryViewProps {
   onDeleteAsset: (id: string) => void;
   onBackToStudio: () => void;
   onNotification: (msg: string) => void;
+  onSetFileSheet?: (assetId: string) => void;
 }
 
 export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
@@ -36,27 +37,15 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
   onEditAsset,
   onDeleteAsset,
   onBackToStudio,
-  onNotification
+  onNotification,
+  onSetFileSheet
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'high_dpi' | 'transparent' | 'on_sheet'>('all');
   const [previewAsset, setPreviewAsset] = useState<ArtworkAsset | null>(null);
 
   const filteredAssets = assets.filter((asset) => {
-    const matchesSearch = asset.filename.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
-
-    if (filterType === 'high_dpi') {
-      return (asset.effectiveDpi || 300) >= 250;
-    }
-    if (filterType === 'transparent') {
-      return asset.hasAlpha;
-    }
-    if (filterType === 'on_sheet') {
-      return asset.copies > 0;
-    }
-    return true;
+    return asset.filename.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const totalCopiesOnSheet = assets.reduce((sum, a) => sum + (a.copies || 0), 0);
@@ -107,37 +96,26 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
           </div>
         </div>
 
-        {/* Upload Action */}
-        <div className="flex items-center space-x-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/png,image/jpeg,image/webp,image/svg+xml"
-            onChange={(e) => {
-              if (e.target.files && e.target.files.length > 0) {
-                onAddFiles(e.target.files);
-                onNotification(`Uploaded ${e.target.files.length} design(s) to gallery`);
-              }
-            }}
-            className="hidden"
-          />
-
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="h-9 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-indigo-600/20 flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
-          >
-            <UploadCloud className="w-4 h-4 text-white" />
-            <span>Upload New Artwork</span>
-          </button>
-        </div>
+        {/* Hidden File Input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0) {
+              onAddFiles(e.target.files);
+              onNotification(`Uploaded ${e.target.files.length} design(s) to gallery`);
+            }
+          }}
+          className="hidden"
+        />
       </div>
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         
-        {/* Search & Quick Filter Controls */}
+        {/* Search & Upload Controls Bar */}
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
           
           {/* Search Box */}
@@ -152,27 +130,16 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
             />
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center space-x-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-            {[
-              { id: 'all', label: `All Designs (${assets.length})` },
-              { id: 'high_dpi', label: `Print Ready 300 DPI (${highDpiCount})` },
-              { id: 'transparent', label: 'Transparent Alpha' },
-              { id: 'on_sheet', label: `Placed on Sheet (${totalCopiesOnSheet})` }
-            ].map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilterType(f.id as any)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  filterType === f.id
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          {/* Center: Upload New Artwork Button (Image 3) */}
+          <div className="flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-xs rounded-full shadow-md shadow-indigo-600/30 flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
+            >
+              <UploadCloud className="w-4 h-4 text-white" />
+              <span>Upload New Artwork</span>
+            </button>
           </div>
 
           {/* Quick Stats Pill */}
@@ -353,6 +320,25 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
                         </button>
                       </div>
                     </div>
+
+                    {/* Set File Sheet Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if ((asset.copies || 0) < 1) {
+                          onUpdateAssetCopies(asset.id, 1);
+                        }
+                        if (onSetFileSheet) {
+                          onSetFileSheet(asset.id);
+                        } else {
+                          onBackToStudio();
+                        }
+                      }}
+                      className="w-full mt-2.5 py-2 px-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200/90 hover:border-indigo-600 font-extrabold text-xs rounded-xl shadow-2xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer group/btn"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-indigo-600 group-hover/btn:text-white" />
+                      <span>Set File Sheet</span>
+                    </button>
                   </div>
                 </div>
               );

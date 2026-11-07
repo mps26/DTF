@@ -210,8 +210,11 @@ export const EditModal: React.FC<EditModalProps> = ({
   const [strokeColor, setStrokeColor] = useState<string>('#ffffff');
 
   // 3. Style & Effects -> Embroidery
-  const [embroideryPitch, setEmbroideryPitch] = useState<number>(16);
+  const [embroideryPitch, setEmbroideryPitch] = useState<number>(10);
   const [embroiderySheen, setEmbroiderySheen] = useState<number>(85);
+  const [embroideryAngle, setEmbroideryAngle] = useState<number>(45);
+  const [embroideryHasBorder, setEmbroideryHasBorder] = useState<boolean>(true);
+  const [embroideryFabric, setEmbroideryFabric] = useState<'transparent' | 'twill-canvas' | 'dark-denim' | 'heather-gray'>('transparent');
 
   // 4. Create & Convert -> Text & Number
   const [customText, setCustomText] = useState<string>('DTF PRO 24');
@@ -702,7 +705,13 @@ export const EditModal: React.FC<EditModalProps> = ({
       const img = await loadImage(currentUrl);
 
       if (preset === 'embroidery') {
-        const resultUrl = await applyEmbroideryEffect(img, embroideryPitch, embroiderySheen);
+        const resultUrl = await applyEmbroideryEffect(img, {
+          stitchPitch: embroideryPitch,
+          sheenIntensity: embroiderySheen,
+          stitchAngle: embroideryAngle,
+          hasBorder: embroideryHasBorder,
+          fabricBacking: embroideryFabric
+        });
         pushHistory(resultUrl);
         return;
       }
@@ -1991,20 +2000,95 @@ export const EditModal: React.FC<EditModalProps> = ({
                   </div>
 
                   {/* Embroidery Fine-Tuning Controls */}
-                  <div className="pt-3 border-t border-slate-100 space-y-2.5">
+                  <div className="pt-3 border-t border-slate-100 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                        <span>🧵 Embroidery Stitch Controls</span>
+                        <span>🧵 3D Realistic Embroidery Controls</span>
                       </span>
                       <button
                         onClick={() => handleApplyPresetEffect('embroidery')}
                         disabled={isProcessing}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         {isProcessing ? 'Stitching...' : 'Apply Embroidery'}
                       </button>
                     </div>
 
+                    {/* Stitch Direction */}
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-500 mb-1.5 block">
+                        Stitch Angle (Direction)
+                      </span>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { label: '45°', val: 45 },
+                          { label: '-45°', val: -45 },
+                          { label: '0° Flat', val: 0 },
+                          { label: '90° Vert', val: 90 }
+                        ].map((item) => (
+                          <button
+                            key={item.val}
+                            type="button"
+                            onClick={() => setEmbroideryAngle(item.val)}
+                            className={`py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              embroideryAngle === item.val
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Outer Satin Border Toggle */}
+                    <div className="flex items-center justify-between py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-700 block">
+                          Satin Edge Border (Badge Contour)
+                        </span>
+                        <span className="text-[9px] text-slate-400">
+                          3D raised border with turnaround thread loops
+                        </span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={embroideryHasBorder}
+                        onChange={(e) => setEmbroideryHasBorder(e.target.checked)}
+                        className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Fabric Backing Selection */}
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-500 mb-1.5 block">
+                        Fabric Backing (Background)
+                      </span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {[
+                          { id: 'transparent', label: 'Transparent (DTF Film)' },
+                          { id: 'twill-canvas', label: 'Twill Canvas (Khaki)' },
+                          { id: 'dark-denim', label: 'Dark Denim' },
+                          { id: 'heather-gray', label: 'Heather Gray' }
+                        ].map((fab) => (
+                          <button
+                            key={fab.id}
+                            type="button"
+                            onClick={() => setEmbroideryFabric(fab.id as any)}
+                            className={`py-1.5 px-2 text-[10px] font-bold rounded-lg border text-left transition-all cursor-pointer ${
+                              embroideryFabric === fab.id
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-400 ring-1 ring-emerald-400 shadow-xs'
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {fab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sliders */}
                     <div>
                       <div className="flex justify-between text-[11px] font-bold text-slate-500 mb-1">
                         <span>Thread Thickness (Stitch Density)</span>
@@ -2013,8 +2097,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                       <input
                         type="range"
                         min="8"
-                        max="32"
-                        step="2"
+                        max="24"
+                        step="1"
                         value={embroideryPitch}
                         onChange={(e) => setEmbroideryPitch(Number(e.target.value))}
                         className="w-full accent-emerald-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
@@ -2023,12 +2107,12 @@ export const EditModal: React.FC<EditModalProps> = ({
 
                     <div>
                       <div className="flex justify-between text-[11px] font-bold text-slate-500 mb-1">
-                        <span>Thread Sheen & 3D Relief</span>
+                        <span>Thread Luster & 3D Specular Sheen</span>
                         <span className="text-slate-800 font-mono">{embroiderySheen}%</span>
                       </div>
                       <input
                         type="range"
-                        min="30"
+                        min="40"
                         max="100"
                         step="5"
                         value={embroiderySheen}

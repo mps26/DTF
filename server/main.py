@@ -2,6 +2,7 @@ import os
 import io
 import math
 import time
+import struct
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -323,16 +324,99 @@ async def export_tiff_endpoint(
     if underbase_mode == "solid":
         choked_alpha[choked_alpha > 0] = 255
 
-    rgb_img = image.convert("RGB")
-    cmyk_img = rgb_img.convert("CMYK")
+    width, height = image.size
+    samples = 5 # CMYK + W1
+    pixel_buf = bytearray(width * height * samples)
 
-    out_buf = io.BytesIO()
-    cmyk_img.save(out_buf, format="TIFF", dpi=(dpi, dpi), compression="tiff_lzw")
-    out_buf.seek(0)
+    # Convert RGBA to CMYK + W1
+    p_idx = 0
+    for y in range(height):
+        for x in range(width):
+            r, g, b, a = int(np_arr[y, x, 0]), int(np_arr[y, x, 1]), int(np_arr[y, x, 2]), int(np_arr[y, x, 3])
+            if a < min_opacity_threshold:
+                pixel_buf[p_idx:p_idx+5] = b'\x00\x00\x00\x00\x00'
+            else:
+                norm_r, norm_g, norm_b = r / 255.0, g / 255.0, b / 255.0
+                k = 1.0 - max(norm_r, norm_g, norm_b)
+                if k >= 0.999:
+                    c, m, y_val, k_val = 0, 0, 0, 255
+                else:
+                    c = int(round(((1.0 - norm_r - k) / (1.0 - k)) * 255))
+                    m = int(round(((1.0 - norm_g - k) / (1.0 - k)) * 255))
+                    y_val = int(round(((1.0 - norm_b - k) / (1.0 - k)) * 255))
+                    k_val = int(round(k * 255))
+                w_val = int(choked_alpha[y, x])
+                if w_val == 0 and a >= min_opacity_threshold:
+                    w_val = 1
+                pixel_buf[p_idx] = c
+                pixel_buf[p_idx+1] = m
+                pixel_buf[p_idx+2] = y_val
+                pixel_buf[p_idx+3] = k_val
+                pixel_buf[p_idx+4] = w_val
+            p_idx += 5
+
+    # Build 8BIM Photoshop Resource Block for "W1" Spot Channel (Resource 0x03EE: Alpha Channel Names)
+    white_name = "W1"
+    p_names = bytes([len(white_name)]) + white_name.encode('ascii')
+    if len(p_names) % 2 != 0:
+        p_names += b'\x00'
+    ps_block = b'8BIM' + struct.pack('>H', 0x03EE) + b'\x00\x00' + struct.pack('>I', len(p_names)) + p_names
+
+    # Build Little-Endian TIFF
+    ifd_offset = 8
+    num_entries = 16
+    ifd_byte_length = 2 + num_entries * 12 + 4
+    bits_offset = ifd_offset + ifd_byte_length
+    xres_offset = bits_offset + samples * 2
+    yres_offset = xres_offset + 8
+    software = b"DTF Layout Pro - Precision RIP Multi-Channel TIFF Encoder\x00"
+    software_offset = yres_offset + 8
+    ps_offset = software_offset + len(software)
+    data_offset = ps_offset + len(ps_block)
+    if data_offset % 2 != 0:
+        data_offset += 1
+    total_file_size = data_offset + len(pixel_buf)
+
+    buf = bytearray(total_file_size)
+    struct.pack_into('<HHI', buf, 0, 0x4949, 42, ifd_offset)
+    struct.pack_into('<H', buf, ifd_offset, num_entries)
+    curr = ifd_offset + 2
+
+    entries = [
+        (256, 4, 1, width),
+        (257, 4, 1, height),
+        (258, 3, samples, bits_offset),
+        (259, 3, 1, 1),
+        (262, 3, 1, 5), # CMYK
+        (273, 4, 1, data_offset),
+        (277, 3, 1, samples),
+        (278, 4, 1, height),
+        (279, 4, 1, len(pixel_buf)),
+        (282, 5, 1, xres_offset),
+        (283, 5, 1, yres_offset),
+        (284, 3, 1, 1),
+        (296, 3, 1, 2),
+        (305, 2, len(software), software_offset),
+        (338, 3, 1, 2), # Inlined ExtraSamples = 2 (Unassociated Alpha / True Transparent Background)
+        (34377, 1, len(ps_block), ps_offset)
+    ]
+    entries.sort(key=lambda e: e[0])
+    for tag, t, count, val in entries:
+        struct.pack_into('<HHII', buf, curr, tag, t, count, val)
+        curr += 12
+    struct.pack_into('<I', buf, curr, 0)
+
+    for s in range(samples):
+        struct.pack_into('<H', buf, bits_offset + s * 2, 8)
+    struct.pack_into('<II', buf, xres_offset, dpi, 1)
+    struct.pack_into('<II', buf, yres_offset, dpi, 1)
+    buf[software_offset:software_offset+len(software)] = software
+    buf[ps_offset:ps_offset+len(ps_block)] = ps_block
+    buf[data_offset:data_offset+len(pixel_buf)] = pixel_buf
 
     filename = os.path.splitext(file.filename or "artwork")[0] + "_RIP_W1.tif"
     return Response(
-        content=out_buf.getvalue(),
+        content=bytes(buf),
         media_type="image/tiff",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )

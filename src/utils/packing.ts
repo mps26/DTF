@@ -1,4 +1,4 @@
-import { ArtworkAsset, SheetSettings, PackedPlacement, LayoutResult } from '../types';
+import { ArtworkAsset, SheetSettings, PackedPlacement, SheetInfo, LayoutResult } from '../types';
 import { MM_PER_INCH } from './units';
 
 export const MAX_PRINT_WIDTH_INCHES = 22;
@@ -69,6 +69,18 @@ export function packGangSheet(
   if (items.length === 0) {
     return {
       placements: [],
+      sheets: [{
+        sheetIndex: 0,
+        placements: [],
+        usedWidthMm: filmWidthMm,
+        usedLengthMm: 0,
+        usedLengthInches: 0,
+        usedLengthMeters: 0,
+        totalCopies: 0,
+        filmAreaMm2: 0,
+        artworkAreaMm2: 0,
+        wastePercent: 0
+      }],
       totalCopies: 0,
       usedWidthMm: filmWidthMm,
       usedLengthMm: 0,
@@ -83,16 +95,21 @@ export function packGangSheet(
     };
   }
 
-  // Calculate candidate maximum height
-  const candidateMaxHeightMm = settings.lengthMode === 'fixed'
-    ? Math.min(MAX_PRINT_HEIGHT_MM, settings.fixedLengthMm)
+  // Calculate candidate maximum height per gang sheet
+  // Hardware bounds: 11" roll max length is 17" (431.8 mm); 22" roll max length is 100" (2540 mm)
+  const maxAllowableLengthMm = settings.filmWidth <= 11.1
+    ? 17 * MM_PER_INCH
     : MAX_PRINT_HEIGHT_MM;
 
+  const candidateMaxHeightMm = settings.lengthMode === 'fixed'
+    ? Math.min(maxAllowableLengthMm, settings.fixedLengthMm)
+    : maxAllowableLengthMm;
+
   const placements: PackedPlacement[] = [];
-  let overflowCount = 0;
   let totalArtworkAreaMm2 = 0;
 
-  // ================= ROW-BY-ROW SHELF PACKING (Guaranteed Zero Overlap & Aligned One After Another) =================
+  // Track sheet and shelf state
+  let currentSheetIndex = 0;
   let currentRowX = marginMm;
   let currentRowY = marginMm;
   let currentRowHeight = 0;
@@ -105,30 +122,43 @@ export function packGangSheet(
     totalArtworkAreaMm2 += itemW * itemH;
 
     // Check if item fits in the current row:
-    // Requires: current X + item width <= filmWidth - margin
     const requiredX = currentRowX + itemW;
     const fitsInCurrentRow = itemsInCurrentRow === 0 || requiredX <= filmWidthMm - marginMm + 0.1;
 
+    let targetX = currentRowX;
+    let targetY = currentRowY;
+
     if (!fitsInCurrentRow) {
-      // Advance to next row
-      currentRowY += currentRowHeight + spacingMm;
+      targetX = marginMm;
+      targetY = currentRowY + currentRowHeight + spacingMm;
+    }
+
+    // CHECK IF THIS ITEM FITS VERTICALLY ON THE CURRENT SHEET:
+    // If targetY + itemH exceeds candidateMaxHeightMm - marginMm, the item would appear cut in half!
+    // In such cases, we start another gang sheet beside it of the exact same size.
+    if (targetY + itemH > candidateMaxHeightMm - marginMm + 0.1 && (itemsInCurrentRow > 0 || currentRowY > marginMm)) {
+      currentSheetIndex++;
+      currentRowX = marginMm;
+      currentRowY = marginMm;
+      currentRowHeight = 0;
+      itemsInCurrentRow = 0;
+      targetX = marginMm;
+      targetY = marginMm;
+    } else if (!fitsInCurrentRow) {
+      currentRowY = targetY;
       currentRowX = marginMm;
       currentRowHeight = 0;
       itemsInCurrentRow = 0;
     }
 
-    // Check height overflow beyond 100" roll limit
-    if (currentRowY + itemH > candidateMaxHeightMm + 1) {
-      overflowCount++;
-    }
-
-    // Create guaranteed non-overlapping placement
+    // Create guaranteed non-overlapping placement on current sheet
     const placement: PackedPlacement = {
       id: item.id,
       assetId: item.assetId,
       copyIndex: item.copyIndex,
-      xMm: currentRowX,
-      yMm: currentRowY,
+      sheetIndex: currentSheetIndex,
+      xMm: targetX,
+      yMm: targetY,
       widthMm: itemW,
       heightMm: itemH,
       rotated: false, // Strictly upright: no auto-rotation!
@@ -139,49 +169,59 @@ export function packGangSheet(
 
     // Update row state
     currentRowHeight = Math.max(currentRowHeight, itemH);
-    currentRowX += itemW + spacingMm;
+    currentRowX = targetX + itemW + spacingMm;
     itemsInCurrentRow++;
   }
 
-  // ================= COLLISION VERIFICATION PASS =================
-  // Extra mathematical safety guard: verifies no two placements can ever overlap
-  for (let i = 0; i < placements.length; i++) {
-    for (let j = i + 1; j < placements.length; j++) {
-      const a = placements[i];
-      const b = placements[j];
+  // Calculate individual sheet metrics
+  const sheets: SheetInfo[] = [];
+  for (let s = 0; s <= currentSheetIndex; s++) {
+    const sheetPlacements = placements.filter((p) => (p.sheetIndex ?? 0) === s);
+    const sheetMaxBottomMm = sheetPlacements.reduce(
+      (max, p) => Math.max(max, p.yMm + p.heightMm + marginMm),
+      0
+    );
 
-      const overlapX = a.xMm < b.xMm + b.widthMm && a.xMm + a.widthMm > b.xMm;
-      const overlapY = a.yMm < b.yMm + b.heightMm && a.yMm + a.heightMm > b.yMm;
+    const sheetLengthMm = settings.lengthMode === 'fixed'
+      ? Math.min(candidateMaxHeightMm, settings.fixedLengthMm)
+      : (sheetMaxBottomMm > 0 ? Math.min(candidateMaxHeightMm, sheetMaxBottomMm) : 0);
 
-      if (overlapX && overlapY) {
-        // Resolve collision: push item b below item a
-        b.yMm = a.yMm + a.heightMm + spacingMm;
-      }
-    }
+    const sheetLengthInches = sheetLengthMm / MM_PER_INCH;
+    const sheetLengthMeters = sheetLengthMm / 1000;
+    const sheetFilmAreaMm2 = filmWidthMm * sheetLengthMm;
+    const sheetArtworkAreaMm2 = sheetPlacements.reduce((sum, p) => sum + p.widthMm * p.heightMm, 0);
+    const sheetWaste = sheetFilmAreaMm2 > 0
+      ? Math.max(0, Math.min(100, Math.round(((sheetFilmAreaMm2 - sheetArtworkAreaMm2) / sheetFilmAreaMm2) * 100)))
+      : 0;
+
+    sheets.push({
+      sheetIndex: s,
+      placements: sheetPlacements,
+      usedWidthMm: filmWidthMm,
+      usedLengthMm: Math.round(sheetLengthMm * 10) / 10,
+      usedLengthInches: Math.round(sheetLengthInches * 100) / 100,
+      usedLengthMeters: Math.round(sheetLengthMeters * 100) / 100,
+      totalCopies: sheetPlacements.length,
+      filmAreaMm2: sheetFilmAreaMm2,
+      artworkAreaMm2: sheetArtworkAreaMm2,
+      wastePercent: sheetWaste
+    });
   }
 
-  // Calculate final sheet metrics
-  const maxBottomMm = placements.reduce(
-    (max, p) => Math.max(max, p.yMm + p.heightMm + marginMm),
-    0
-  );
-
-  const totalLengthMm = settings.lengthMode === 'fixed'
-    ? Math.min(MAX_PRINT_HEIGHT_MM, settings.fixedLengthMm)
-    : (maxBottomMm > 0 ? Math.min(MAX_PRINT_HEIGHT_MM, maxBottomMm) : 0);
-
+  // Combined totals
+  const totalLengthMm = sheets.reduce((sum, s) => sum + s.usedLengthMm, 0);
   const usedLengthInches = totalLengthMm / MM_PER_INCH;
   const usedLengthMeters = totalLengthMm / 1000;
-  const filmAreaMm2 = filmWidthMm * totalLengthMm;
+  const filmAreaMm2 = sheets.reduce((sum, s) => sum + s.filmAreaMm2, 0);
   const wastePercent = filmAreaMm2 > 0
     ? Math.max(0, Math.min(100, Math.round(((filmAreaMm2 - totalArtworkAreaMm2) / filmAreaMm2) * 100)))
     : 0;
 
-  const overflow = overflowCount > 0 || (maxBottomMm > MAX_PRINT_HEIGHT_MM + 1);
   const calculationTimeMs = Math.round(performance.now() - startTime);
 
   return {
     placements,
+    sheets,
     totalCopies: placements.length,
     usedWidthMm: filmWidthMm,
     usedLengthMm: Math.round(totalLengthMm * 10) / 10,
@@ -190,8 +230,8 @@ export function packGangSheet(
     filmAreaMm2,
     artworkAreaMm2: totalArtworkAreaMm2,
     wastePercent,
-    overflow,
-    overflowCount,
+    overflow: false,
+    overflowCount: 0,
     calculationTimeMs
   };
 }

@@ -171,6 +171,49 @@ export function applyAlphaDilation(
 }
 
 /**
+ * Builds standard Adobe Photoshop 3.0 Image Resource Block (Tag 34377 / 8BIM).
+ * Encodes exact spot channel names and metadata recognized by:
+ * CorelDRAW, Corel PHOTO-PAINT, Adobe Photoshop, Maintop, Flexi, RIIN, and Cadlink.
+ */
+export function buildPhotoshopImageResourceBlock(
+  whiteChannelName: string = 'W1',
+  varnishChannelName?: string
+): Uint8Array {
+  const channels: Array<{ name: string; isSpot: boolean }> = [
+    { name: whiteChannelName || 'W1', isSpot: true }
+  ];
+  if (varnishChannelName) {
+    channels.push({ name: varnishChannelName, isSpot: true });
+  }
+
+  // Resource 0x03EE (1006): Alpha Channel Names (Series of Pascal strings)
+  // Universally recognized by Adobe Photoshop & CorelDRAW without causing parsing crashes
+  const pNames: number[] = [];
+  for (const ch of channels) {
+    pNames.push(ch.name.length);
+    for (let i = 0; i < ch.name.length; i++) {
+      pNames.push(ch.name.charCodeAt(i));
+    }
+  }
+  const pSize = pNames.length;
+  if (pNames.length % 2 !== 0) pNames.push(0); // 2-byte word alignment
+
+  // Helper to construct a standard 8BIM block
+  function makeBlock(id: number, dataSize: number, dataBytes: number[]): number[] {
+    return [
+      0x38, 0x42, 0x49, 0x4d, // '8BIM' signature
+      (id >> 8) & 0xff, id & 0xff, // 2-byte Resource ID
+      0, 0, // 2-byte empty Pascal string name
+      (dataSize >> 24) & 0xff, (dataSize >> 16) & 0xff, (dataSize >> 8) & 0xff, dataSize & 0xff, // 4-byte size
+      ...dataBytes
+    ];
+  }
+
+  const block1 = makeBlock(0x03ee, pSize, pNames);
+  return new Uint8Array(block1);
+}
+
+/**
  * Encodes RGBA ImageData into a genuine RIP-ready multi-channel TIFF.
  */
 export function createDtfTiffBlob(
@@ -226,8 +269,10 @@ export function createDtfTiffBlob(
   const baseColorChannels = isCmyk ? 4 : 3;
 
   // Samples per pixel:
-  // Base Color (4 CMYK or 3 RGB) + W1 (1) + optional V1 (1)
-  const samplesPerPixel = baseColorChannels + 1 + (isUvDtf ? 1 : 0);
+  // For RGB mode: strictly 4 channels (RGBA: R, G, B, W1 as Alpha).
+  // Standard RGB TIFF only allows 3 or 4 channels in Adobe Photoshop; 5-channel RGB causes Photoshop to crash with "problem parsing TIFF".
+  // For CMYK mode: 5 channels (CMYK + W1) or 6 channels (CMYK + W1 + W2 for UV DTF).
+  const samplesPerPixel = isCmyk ? (4 + 1 + (isUvDtf ? 1 : 0)) : 4;
   const pixelByteLength = numPixels * samplesPerPixel;
   const pixelBuffer = new Uint8Array(pixelByteLength);
 
@@ -250,10 +295,10 @@ export function createDtfTiffBlob(
       const a = data[dataIdx + 3];
 
       if (a < activeThreshold) {
-        // Fully transparent pixel
+        // Fully transparent pixel: 0 for all channels = 100% transparent background (checkerboard in PS & Corel)
         for (let c = 0; c < baseColorChannels; c++) pixelBuffer[pIdx++] = 0;
-        pixelBuffer[pIdx++] = 0; // W1
-        if (isUvDtf) pixelBuffer[pIdx++] = 0; // V1
+        pixelBuffer[pIdx++] = 0; // W1 = 0 (100% transparent)
+        if (isCmyk && isUvDtf) pixelBuffer[pIdx++] = 0; // V1 = 0
       } else {
         if (isCmyk) {
           const [c, m, yVal, k] = rgbToCmyk(r, g, b);
@@ -273,10 +318,14 @@ export function createDtfTiffBlob(
           if (wVal > 0) wVal = 255;
         }
         wVal = Math.round(wVal * whiteStrengthMult);
+        // Ensure visible artwork pixels preserve their color without edge clipping
+        if (wVal === 0 && a >= activeThreshold) {
+          wVal = 1; // 1/255 preserves pixel visibility
+        }
         pixelBuffer[pIdx++] = Math.min(255, Math.max(0, wVal));
 
-        // Varnish channel (V1 / W2)
-        if (isUvDtf && varnishBuffer) {
+        // Varnish channel (V1 / W2) for CMYK UV DTF
+        if (isCmyk && isUvDtf && varnishBuffer) {
           let vVal = varnishBuffer[srcIdx];
           vVal = Math.round(vVal * varnishStrengthMult);
           pixelBuffer[pIdx++] = Math.min(255, Math.max(0, vVal));
@@ -286,26 +335,34 @@ export function createDtfTiffBlob(
   }
 
   // 4. Construct Little-Endian TIFF Structure (II\x2A\x00)
+  const whiteName = options.whiteChannelName || 'W1';
+  const varnishName = isUvDtf ? (options.varnishChannelName || 'W2') : undefined;
+  const psBlock = buildPhotoshopImageResourceBlock(whiteName, varnishName);
+
   const dpi = options.dpi || 300;
   const ifdOffset = 8;
-  const numEntries = 14;
+  const numEntries = 16; // 16 Sorted IFD Directory Entries
 
   const ifdByteLength = 2 + numEntries * 12 + 4;
   const bitsPerSampleOffset = ifdOffset + ifdByteLength;
   const bitsPerSampleByteLength = samplesPerPixel * 2;
 
-  const extraSamplesOffset = bitsPerSampleOffset + bitsPerSampleByteLength;
-  // Extra samples count: W1 is 1 spot channel, V1 is another spot channel
-  const extraSamplesCount = isUvDtf ? 2 : 1;
-  const extraSamplesByteLength = extraSamplesCount * 2;
+  // ExtraSamples is SHORT (type 3), count 1 or 2 -> occupies <= 4 bytes, so it is inlined directly in the 12-byte IFD entry!
+  const extraSamplesCount = (isCmyk && isUvDtf) ? 2 : 1;
+  const extraSamplesValue = (isCmyk && isUvDtf) ? ((0 << 16) | 2) : 2; // 2 = EXTRASAMPLE_UNASSALPHA (Unassociated alpha / true transparency mask -> NO background)
 
-  const xResOffset = extraSamplesOffset + extraSamplesByteLength;
+  const xResOffset = bitsPerSampleOffset + bitsPerSampleByteLength;
   const yResOffset = xResOffset + 8;
   const softwareOffset = yResOffset + 8;
   const softwareString = "DTF Layout Pro - Precision RIP Multi-Channel TIFF Encoder\x00";
   const softwareByteLength = softwareString.length;
 
-  const dataOffset = softwareOffset + softwareByteLength;
+  const psOffset = softwareOffset + softwareByteLength;
+  const psByteLength = psBlock.length;
+
+  let dataOffset = psOffset + psByteLength;
+  if (dataOffset % 2 !== 0) dataOffset += 1; // 2-byte word alignment for strip data
+
   const totalFileSize = dataOffset + pixelByteLength;
 
   const buffer = new ArrayBuffer(totalFileSize);
@@ -332,6 +389,7 @@ export function createDtfTiffBlob(
   // Photometric interpretation: 5 = CMYK, 2 = RGB
   const photometric = isCmyk ? 5 : 2;
 
+  // 16 Sorted IFD Entries in strictly ascending numerical order (required by TIFF specification & CorelDRAW):
   writeIfdEntry(256, 4, 1, width);                                // ImageWidth
   writeIfdEntry(257, 4, 1, height);                               // ImageLength
   writeIfdEntry(258, 3, samplesPerPixel, bitsPerSampleOffset);    // BitsPerSample
@@ -343,9 +401,11 @@ export function createDtfTiffBlob(
   writeIfdEntry(279, 4, 1, pixelByteLength);                      // StripByteCounts
   writeIfdEntry(282, 5, 1, xResOffset);                           // XResolution
   writeIfdEntry(283, 5, 1, yResOffset);                           // YResolution
+  writeIfdEntry(284, 3, 1, 1);                                    // PlanarConfiguration (1 = Chunky)
   writeIfdEntry(296, 3, 1, 2);                                    // ResolutionUnit (2 = inch)
-  writeIfdEntry(338, 3, extraSamplesCount, extraSamplesOffset);   // ExtraSamples (1 = associated spot channel)
   writeIfdEntry(305, 2, softwareByteLength, softwareOffset);       // Software
+  writeIfdEntry(338, 3, extraSamplesCount, extraSamplesValue);    // ExtraSamples INLINED: 2 = Unassociated Alpha (True Transparency Mask / No Background)
+  writeIfdEntry(34377, 1, psByteLength, psOffset);                 // PhotoshopInfo (8BIM channel name "W1" / spot color)
 
   // Next IFD Offset (0 = none)
   view.setUint32(entryOffset, 0, true);
@@ -353,11 +413,6 @@ export function createDtfTiffBlob(
   // Write BitsPerSample: 8 bits for each channel
   for (let s = 0; s < samplesPerPixel; s++) {
     view.setUint16(bitsPerSampleOffset + s * 2, 8, true);
-  }
-
-  // Write ExtraSamples: 1 = associated spot color channel (White / Varnish)
-  for (let e = 0; e < extraSamplesCount; e++) {
-    view.setUint16(extraSamplesOffset + e * 2, 1, true);
   }
 
   // Write XResolution & YResolution (300/1 DPI)
@@ -370,6 +425,10 @@ export function createDtfTiffBlob(
   for (let c = 0; c < softwareByteLength; c++) {
     view.setUint8(softwareOffset + c, softwareString.charCodeAt(c));
   }
+
+  // Write Photoshop 8BIM Resource Block (Tag 34377)
+  const psTargetView = new Uint8Array(buffer, psOffset, psByteLength);
+  psTargetView.set(psBlock);
 
   // Copy Pixel Buffer into ArrayBuffer
   const targetPixelView = new Uint8Array(buffer, dataOffset, pixelByteLength);

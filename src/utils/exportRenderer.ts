@@ -136,42 +136,39 @@ export async function injectPngDpi(pngBlob: Blob, dpi: number): Promise<Blob> {
  * Generates and downloads a full-resolution 300 DPI transparent PNG gang sheet.
  * Guarantees exact physical roll dimensions (e.g. 22" x 100" at 300 DPI) by embedding
  * native PNG pHYs metadata so it opens at exact scale in Photoshop / Illustrator / RIP software.
+ * If singleSheetIndex is specified, only that particular sheet is exported and downloaded.
  */
 export async function exportHighResolutionPng(
   layout: LayoutResult,
   settings: SheetSettings,
-  onProgress?: (progressPercent: number) => void
+  onProgress?: (progressPercent: number) => void,
+  singleSheetIndex?: number
 ): Promise<string> {
   const exportDpi = settings.exportDpi || 300;
-
-  // Film roll width strictly clamped to max 22 inches (558.8 mm)
-  const filmWidthInches = Math.min(22, settings.filmWidthMm / MM_PER_INCH);
-
-  // If lengthMode is fixed, use the configured fixed sheet length (e.g. 100 inches)
-  // If auto, use the calculated used length (or fixed fallback if empty)
-  const targetLengthMm = settings.lengthMode === 'fixed'
-    ? Math.min(2540, settings.fixedLengthMm)
-    : (layout.usedLengthMm > 0 ? layout.usedLengthMm : settings.fixedLengthMm);
-
-  const sheetLengthInches = Math.min(100, Math.max(1, targetLengthMm / MM_PER_INCH));
-
-  const outputWidthPx = Math.round(filmWidthInches * exportDpi);
-  const outputHeightPx = Math.round(sheetLengthInches * exportDpi);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = outputWidthPx;
-  canvas.height = outputHeightPx;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas 2D context unavailable');
-
-  // Clear to ensure 100% transparent background
-  ctx.clearRect(0, 0, outputWidthPx, outputHeightPx);
-
-  // Conversion factor from physical mm to output pixels:
-  // mm / 25.4 * exportDpi
   const mmToPx = exportDpi / MM_PER_INCH;
+  const filmWidthInches = Math.min(22, settings.filmWidthMm / MM_PER_INCH);
+  const outputWidthPx = Math.round(filmWidthInches * exportDpi);
 
-  // Preload images into cache
+  const allSheets = layout.sheets && layout.sheets.length > 0
+    ? layout.sheets
+    : [{
+        sheetIndex: 0,
+        placements: layout.placements,
+        usedWidthMm: layout.usedWidthMm || settings.filmWidthMm,
+        usedLengthMm: layout.usedLengthMm || settings.fixedLengthMm,
+        usedLengthInches: layout.usedLengthInches || 24,
+        usedLengthMeters: layout.usedLengthMeters || 0.6,
+        totalCopies: layout.totalCopies,
+        filmAreaMm2: layout.filmAreaMm2,
+        artworkAreaMm2: layout.artworkAreaMm2,
+        wastePercent: layout.wastePercent
+      }];
+
+  const sheetsToExport = typeof singleSheetIndex === 'number' && singleSheetIndex >= 0 && singleSheetIndex < allSheets.length
+    ? [allSheets[singleSheetIndex]]
+    : allSheets;
+
+  // Preload images into cache once for all sheets
   const imageCache: Record<string, HTMLImageElement> = {};
   const totalPlacements = layout.placements.length;
 
@@ -182,68 +179,102 @@ export async function exportHighResolutionPng(
       imageCache[p.assetId] = await loadImage(src);
     }
     if (onProgress) {
-      onProgress(Math.round(((i + 1) / (totalPlacements * 2)) * 100));
+      onProgress(Math.round(((i + 1) / (totalPlacements * 2)) * 50));
     }
   }
 
-  // Composite placements in high quality
-  for (let i = 0; i < totalPlacements; i++) {
-    const p = layout.placements[i];
-    const img = imageCache[p.assetId];
-    if (!img) continue;
+  let lastUrl = '';
 
-    const xPx = p.xMm * mmToPx;
-    const yPx = p.yMm * mmToPx;
-    const wPx = p.widthMm * mmToPx;
-    const hPx = p.heightMm * mmToPx;
+  for (let sIdx = 0; sIdx < sheetsToExport.length; sIdx++) {
+    const sheet = sheetsToExport[sIdx];
+    const targetLengthMm = settings.lengthMode === 'fixed'
+      ? Math.min(2540, settings.fixedLengthMm)
+      : (sheet.usedLengthMm > 0 ? sheet.usedLengthMm : settings.fixedLengthMm);
+    const sheetLengthInches = Math.min(100, Math.max(1, targetLengthMm / MM_PER_INCH));
+    const outputHeightPx = Math.round(sheetLengthInches * exportDpi);
 
-    ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    const canvas = document.createElement('canvas');
+    canvas.width = outputWidthPx;
+    canvas.height = outputHeightPx;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context unavailable');
 
-    if (p.rotated) {
-      ctx.translate(xPx + wPx, yPx);
-      ctx.rotate(Math.PI / 2);
-      ctx.drawImage(img, 0, 0, hPx, wPx);
-    } else {
-      ctx.drawImage(img, xPx, yPx, wPx, hPx);
+    ctx.clearRect(0, 0, outputWidthPx, outputHeightPx);
+
+    for (const p of sheet.placements) {
+      const img = imageCache[p.assetId];
+      if (!img) continue;
+
+      const xPx = p.xMm * mmToPx;
+      const yPx = p.yMm * mmToPx;
+      const wPx = p.widthMm * mmToPx;
+      const hPx = p.heightMm * mmToPx;
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      if (p.rotated) {
+        ctx.translate(xPx + wPx, yPx);
+        ctx.rotate(Math.PI / 2);
+        ctx.drawImage(img, 0, 0, hPx, wPx);
+      } else {
+        ctx.drawImage(img, xPx, yPx, wPx, hPx);
+      }
+      ctx.restore();
     }
 
-    ctx.restore();
+    const url = await new Promise<string>((resolve, reject) => {
+      canvas.toBlob(
+        async (rawBlob) => {
+          if (!rawBlob) {
+            reject(new Error('Failed to create PNG blob'));
+            return;
+          }
 
-    if (onProgress) {
-      onProgress(50 + Math.round(((i + 1) / (totalPlacements * 2)) * 50));
+          try {
+            const dpiBlob = await injectPngDpi(rawBlob, exportDpi);
+            const blobUrl = URL.createObjectURL(dpiBlob);
+            const a = document.createElement('a');
+            const sheetNumber = sheet.sheetIndex !== undefined ? sheet.sheetIndex + 1 : sIdx + 1;
+            const suffix = allSheets.length > 1 ? `_Sheet${sheetNumber}` : '';
+            const filename = `DTF_GangSheet${suffix}_${filmWidthInches.toFixed(1)}x${sheetLengthInches.toFixed(1)}in_${exportDpi}DPI.png`;
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            resolve(blobUrl);
+          } catch (err) {
+            reject(err);
+          }
+        },
+        'image/png'
+      );
+    });
+
+    lastUrl = url;
+
+    // When exporting multiple sheets in sequence, add a small delay so browser triggers separate downloads reliably
+    if (sIdx < sheetsToExport.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 450));
     }
   }
 
-  // Convert to Blob, inject 300 DPI metadata, and trigger download
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      async (rawBlob) => {
-        if (!rawBlob) {
-          reject(new Error('Failed to create PNG blob'));
-          return;
-        }
+  if (onProgress) onProgress(100);
+  return lastUrl;
+}
 
-        try {
-          // Inject 300 DPI metadata so Photoshop/Windows sees exact 22" x 100", NOT 91" x 416"
-          const dpiBlob = await injectPngDpi(rawBlob, exportDpi);
-          const url = URL.createObjectURL(dpiBlob);
-          const a = document.createElement('a');
-          const filename = `DTF_GangSheet_${filmWidthInches.toFixed(1)}x${sheetLengthInches.toFixed(1)}in_${exportDpi}DPI.png`;
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          resolve(url);
-        } catch (err) {
-          reject(err);
-        }
-      },
-      'image/png'
-    );
-  });
+/**
+ * Downloads a single gang sheet by its 0-based index
+ */
+export async function exportSingleSheetPng(
+  layout: LayoutResult,
+  settings: SheetSettings,
+  sheetIndex: number,
+  onProgress?: (progressPercent: number) => void
+): Promise<string> {
+  return exportHighResolutionPng(layout, settings, onProgress, sheetIndex);
 }
 
 /**
