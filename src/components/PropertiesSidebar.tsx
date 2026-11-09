@@ -188,11 +188,22 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
             {/* Lock Aspect Ratio & 90 Rotation */}
             <div className="flex items-center justify-between pt-1">
               <button
-                onClick={() =>
-                  onUpdateAsset(selectedAsset.id, {
-                    aspectLocked: !selectedAsset.aspectLocked
-                  })
-                }
+                onClick={() => {
+                  const nextLocked = !selectedAsset.aspectLocked;
+                  if (nextLocked) {
+                    const currentRatio = (selectedAsset.targetWidth > 0 && selectedAsset.targetHeight > 0)
+                      ? (selectedAsset.targetWidth / selectedAsset.targetHeight)
+                      : ((selectedAsset.trimmedWidth || selectedAsset.originalWidth || 1) / (selectedAsset.trimmedHeight || selectedAsset.originalHeight || 1));
+                    onUpdateAsset(selectedAsset.id, {
+                      aspectLocked: true,
+                      lockedRatio: currentRatio
+                    });
+                  } else {
+                    onUpdateAsset(selectedAsset.id, {
+                      aspectLocked: false
+                    });
+                  }
+                }}
                 className="flex items-center space-x-1.5 text-xs text-slate-300 hover:text-white"
               >
                 {selectedAsset.aspectLocked ? (

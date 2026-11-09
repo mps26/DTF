@@ -188,20 +188,43 @@ export const App: React.FC = () => {
         const isAspectLocked = updates.aspectLocked !== undefined ? updates.aspectLocked : asset.aspectLocked;
         const origW = asset.trimmedWidth || asset.originalWidth || 1;
         const origH = asset.trimmedHeight || asset.originalHeight || 1;
-        const ratio = origH / origW;
+        const defaultRatio = (origW > 0 && origH > 0) ? (origW / origH) : 1;
+
+        // When aspect lock is enabled, capture and preserve ratio
+        if (updates.aspectLocked === true) {
+          if (updates.lockedRatio !== undefined && updates.lockedRatio > 0) {
+            updated.lockedRatio = updates.lockedRatio;
+          } else if (!asset.lockedRatio) {
+            const currentRatio = (asset.targetWidth > 0 && asset.targetHeight > 0)
+              ? (asset.targetWidth / asset.targetHeight)
+              : defaultRatio;
+            updated.lockedRatio = currentRatio;
+          }
+        } else if (updates.aspectLocked === false) {
+          updated.lockedRatio = undefined;
+        }
+
+        const activeRatio = updated.lockedRatio && updated.lockedRatio > 0
+          ? updated.lockedRatio
+          : (asset.lockedRatio && asset.lockedRatio > 0 ? asset.lockedRatio : defaultRatio);
+        const safeRatio = (!activeRatio || isNaN(activeRatio) || activeRatio <= 0) ? 1 : activeRatio;
+
+        const precision = settings.unit === 'meter' ? 4 : 2;
+        const factor = Math.pow(10, precision);
 
         if (updates.targetWidth !== undefined && updates.targetHeight === undefined) {
           // User changed width only
-          const maxW = settings.unit === 'inch' ? 22 : mmToUnit(22 * 25.4, settings.unit);
-          const clampedW = Math.min(maxW, Math.max(0.01, updates.targetWidth));
+          const rawW = Math.max(0.01, updates.targetWidth);
+          const clampedW = Math.round(rawW * factor) / factor;
           updated.targetWidth = clampedW;
           updated.targetWidthMm = unitToMm(clampedW, settings.unit);
 
           if (isAspectLocked) {
-            const proportionalH = Math.round((clampedW * ratio) * 100) / 100;
-            const maxH = settings.unit === 'inch' ? 100 : mmToUnit(100 * 25.4, settings.unit);
-            updated.targetHeight = Math.min(maxH, Math.max(0.01, proportionalH));
-            updated.targetHeightMm = unitToMm(updated.targetHeight, settings.unit);
+            // newHeight = newWidth / aspectRatio
+            const calcH = clampedW / safeRatio;
+            const clampedH = Math.max(0.01, Math.round(calcH * factor) / factor);
+            updated.targetHeight = clampedH;
+            updated.targetHeightMm = unitToMm(clampedH, settings.unit);
           }
 
           const targetWidthInches = settings.unit === 'inch'
@@ -220,16 +243,17 @@ export const App: React.FC = () => {
           }
         } else if (updates.targetHeight !== undefined && updates.targetWidth === undefined) {
           // User changed height only
-          const maxH = settings.unit === 'inch' ? 100 : mmToUnit(100 * 25.4, settings.unit);
-          const clampedH = Math.min(maxH, Math.max(0.01, updates.targetHeight));
+          const rawH = Math.max(0.01, updates.targetHeight);
+          const clampedH = Math.round(rawH * factor) / factor;
           updated.targetHeight = clampedH;
           updated.targetHeightMm = unitToMm(clampedH, settings.unit);
 
           if (isAspectLocked) {
-            const proportionalW = Math.round((clampedH / ratio) * 100) / 100;
-            const maxW = settings.unit === 'inch' ? 22 : mmToUnit(22 * 25.4, settings.unit);
-            updated.targetWidth = Math.min(maxW, Math.max(0.01, proportionalW));
-            updated.targetWidthMm = unitToMm(updated.targetWidth, settings.unit);
+            // newWidth = newHeight * aspectRatio
+            const calcW = clampedH * safeRatio;
+            const clampedW = Math.max(0.01, Math.round(calcW * factor) / factor);
+            updated.targetWidth = clampedW;
+            updated.targetWidthMm = unitToMm(clampedW, settings.unit);
           }
 
           const targetHeightInches = settings.unit === 'inch'
@@ -249,14 +273,19 @@ export const App: React.FC = () => {
         } else {
           // Both or neither specified
           if (updates.targetWidth !== undefined) {
-            const maxW = settings.unit === 'inch' ? 22 : mmToUnit(22 * 25.4, settings.unit);
-            updated.targetWidth = Math.min(maxW, Math.max(0.01, updates.targetWidth));
+            const rawW = Math.max(0.01, updates.targetWidth);
+            updated.targetWidth = Math.round(rawW * factor) / factor;
             updated.targetWidthMm = unitToMm(updated.targetWidth, settings.unit);
           }
           if (updates.targetHeight !== undefined) {
-            const maxH = settings.unit === 'inch' ? 100 : mmToUnit(100 * 25.4, settings.unit);
-            updated.targetHeight = Math.min(maxH, Math.max(0.01, updates.targetHeight));
+            const rawH = Math.max(0.01, updates.targetHeight);
+            updated.targetHeight = Math.round(rawH * factor) / factor;
             updated.targetHeightMm = unitToMm(updated.targetHeight, settings.unit);
+          }
+          if (isAspectLocked && updates.targetWidth !== undefined && updates.targetHeight !== undefined) {
+            if (updated.targetWidth > 0 && updated.targetHeight > 0) {
+              updated.lockedRatio = updated.targetWidth / updated.targetHeight;
+            }
           }
         }
 
@@ -403,6 +432,7 @@ export const App: React.FC = () => {
           targetWidthMm: targetWMm,
           targetHeightMm: targetHMm,
           aspectLocked: false,
+          lockedRatio: (img.naturalWidth > 0 && img.naturalHeight > 0) ? (img.naturalWidth / img.naturalHeight) : 1,
           copies: 1,
           allowRotation: false,
           effectiveDpi,
@@ -579,6 +609,7 @@ export const App: React.FC = () => {
           onLogout={handleLogout}
           onLaunchStudio={() => setNavTab('studio')}
           onOpenTiffStudio={() => setNavTab('tiff-export')}
+          onOpenTemplates={() => setNavTab('templates')}
         />
 
         {/* Global Toast Notification */}

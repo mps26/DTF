@@ -45,6 +45,7 @@ interface LandingPageProps {
   onLogout: () => void;
   onLaunchStudio: () => void;
   onOpenTiffStudio: () => void;
+  onOpenTemplates?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -52,7 +53,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenAuth,
   onLogout,
   onLaunchStudio,
-  onOpenTiffStudio
+  onOpenTiffStudio,
+  onOpenTemplates
 }) => {
   // Guard studio access: redirect unauthenticated users to Sign In / Register
   const handleProtectedAction = (action: () => void) => {
@@ -157,8 +159,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <nav className="hidden lg:flex items-center space-x-8 text-sm font-semibold text-slate-600">
             <a href="#features" className="hover:text-indigo-600 transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-indigo-600 transition-colors">How It Works</a>
-            <a href="#rip-tech" className="hover:text-indigo-600 transition-colors">RIP TIFF Tech</a>
-            <a href="#templates" className="hover:text-indigo-600 transition-colors">Roll Sizes</a>
+            <button
+              type="button"
+              onClick={() => handleProtectedAction(onOpenTiffStudio)}
+              className="hover:text-indigo-600 transition-colors cursor-pointer"
+            >
+              RIP TIFF Tech
+            </button>
+            <button
+              type="button"
+              onClick={() => handleProtectedAction(() => onOpenTemplates ? onOpenTemplates() : onLaunchStudio())}
+              className="hover:text-indigo-600 transition-colors cursor-pointer"
+            >
+              Roll Sizes
+            </button>
             <a href="#faq" className="hover:text-indigo-600 transition-colors">FAQ</a>
           </nav>
 
@@ -994,7 +1008,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <li><button onClick={() => handleProtectedAction(onLaunchStudio)} className="hover:text-indigo-600 cursor-pointer">Gang Sheet Studio</button></li>
               <li><button onClick={() => handleProtectedAction(onOpenTiffStudio)} className="hover:text-indigo-600 cursor-pointer">RIP TIFF Compositor</button></li>
               <li><a href="#calculator" className="hover:text-indigo-600">Film Calculator</a></li>
-              <li><a href="#templates" className="hover:text-indigo-600">Standard Roll Sizes</a></li>
+              <li><button onClick={() => handleProtectedAction(() => onOpenTemplates ? onOpenTemplates() : onLaunchStudio())} className="hover:text-indigo-600 cursor-pointer">Standard Roll Sizes</button></li>
             </ul>
           </div>
 

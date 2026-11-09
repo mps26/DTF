@@ -717,13 +717,79 @@ export const EditModal: React.FC<EditModalProps> = ({
       }
 
       const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      canvas.width = w;
+      canvas.height = h;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
+      if (preset === 'neon') {
+        // High-impact Electric Neon Glow for DTF apparel
+        // Pass 1: Multi-layer luminous bloom aura on transparent background
+        const glowCanvas = document.createElement('canvas');
+        glowCanvas.width = w;
+        glowCanvas.height = h;
+        const gCtx = glowCanvas.getContext('2d');
+        if (gCtx) {
+          // Electric Cyan wide outer bloom
+          gCtx.shadowColor = '#00f5ff';
+          gCtx.shadowBlur = Math.max(14, Math.round(Math.min(w, h) / 45));
+          gCtx.drawImage(img, 0, 0);
+          // Vivid Magenta intense inner aura
+          gCtx.shadowColor = '#ff00aa';
+          gCtx.shadowBlur = Math.max(7, Math.round(Math.min(w, h) / 90));
+          gCtx.drawImage(img, 0, 0);
+        }
+
+        // Pass 2: Electric color enhancement with edge luminescence
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const d = imgData.data;
+
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3] === 0) continue;
+          let r = d[i];
+          let g = d[i + 1];
+          let b = d[i + 2];
+
+          // High-contrast S-curve
+          r = Math.min(255, Math.max(0, (r - 128) * 1.35 + 128));
+          g = Math.min(255, Math.max(0, (g - 128) * 1.35 + 128));
+          b = Math.min(255, Math.max(0, (b - 128) * 1.35 + 128));
+
+          // Boost electric neon saturation & vibrance
+          if (r >= g && r >= b) {
+            d[i] = Math.min(255, r * 1.45 + 25);
+            d[i + 1] = Math.max(0, g * 0.75);
+            d[i + 2] = Math.min(255, b * 1.35 + 40);
+          } else if (g >= r && g >= b) {
+            d[i] = Math.max(0, r * 0.7);
+            d[i + 1] = Math.min(255, g * 1.45 + 30);
+            d[i + 2] = Math.min(255, b * 1.4 + 40);
+          } else {
+            d[i] = Math.min(255, r * 1.25 + 30);
+            d[i + 1] = Math.max(0, g * 0.7);
+            d[i + 2] = Math.min(255, b * 1.55 + 35);
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        // Blend bloom aura with vibrant core
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = w;
+        finalCanvas.height = h;
+        const fCtx = finalCanvas.getContext('2d');
+        if (fCtx) {
+          fCtx.drawImage(glowCanvas, 0, 0);
+          fCtx.drawImage(canvas, 0, 0);
+          pushHistory(finalCanvas.toDataURL('image/png'));
+          return;
+        }
+      }
+
       ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const imgData = ctx.getImageData(0, 0, w, h);
       const d = imgData.data;
 
       for (let i = 0; i < d.length; i += 4) {
@@ -737,22 +803,32 @@ export const EditModal: React.FC<EditModalProps> = ({
           d[i + 1] = 255 - g;
           d[i + 2] = 255 - b;
         } else if (preset === 'bw') {
-          const avg = 0.299 * r + 0.587 * g + 0.114 * b;
-          d[i] = avg;
-          d[i + 1] = avg;
-          d[i + 2] = avg;
+          // Perceptual luminance + S-curve high contrast
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          let v = lum / 255;
+          v = v < 0.5 ? 2 * v * v : 1 - 2 * (1 - v) * (1 - v);
+          const bwVal = Math.max(0, Math.min(255, Math.round(v * 255)));
+          d[i] = bwVal;
+          d[i + 1] = bwVal;
+          d[i + 2] = bwVal;
         } else if (preset === 'sepia') {
-          d[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
-          d[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
-          d[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);
-        } else if (preset === 'neon') {
-          d[i] = Math.min(255, r * 1.3);
-          d[i + 1] = Math.min(255, g * 1.4);
-          d[i + 2] = Math.min(255, b * 1.8);
+          // Authentic rich vintage sepia with warm contrast
+          const tr = r * 0.393 + g * 0.769 + b * 0.189;
+          const tg = r * 0.349 + g * 0.686 + b * 0.168;
+          const tb = r * 0.272 + g * 0.534 + b * 0.131;
+          d[i] = Math.min(255, Math.max(0, tr * 1.08 - 8));
+          d[i + 1] = Math.min(255, Math.max(0, tg * 1.02 - 6));
+          d[i + 2] = Math.min(255, Math.max(0, tb * 0.88));
         } else if (preset === 'posterize') {
-          d[i] = Math.floor(r / 64) * 64;
-          d[i + 1] = Math.floor(g / 64) * 64;
-          d[i + 2] = Math.floor(b / 64) * 64;
+          // Vibrant screenprint / pop-art posterization (5 clean tonal levels + 35% saturation boost)
+          const step = 255 / 4; // 63.75 -> 5 discrete bands: 0, 64, 128, 191, 255
+          let qr = Math.round(r / step) * step;
+          let qg = Math.round(g / step) * step;
+          let qb = Math.round(b / step) * step;
+          const avg = (qr + qg + qb) / 3;
+          d[i] = Math.max(0, Math.min(255, Math.round(avg + (qr - avg) * 1.35)));
+          d[i + 1] = Math.max(0, Math.min(255, Math.round(avg + (qg - avg) * 1.35)));
+          d[i + 2] = Math.max(0, Math.min(255, Math.round(avg + (qb - avg) * 1.35)));
         }
       }
 
@@ -1027,23 +1103,27 @@ export const EditModal: React.FC<EditModalProps> = ({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           
           {/* Left Canvas Preview Pane with Garment Simulator & Checkerboard */}
-          <div className="flex-1 bg-slate-100 p-5 flex flex-col items-center justify-center relative overflow-hidden min-w-0">
+          <div className="flex-1 bg-slate-100 p-4 sm:p-6 pt-16 flex flex-col items-center justify-center relative overflow-auto min-w-0 min-h-0">
             
             {/* Viewport Zoom & Garment Background Strip */}
             <div className="absolute top-4 left-4 z-20 flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-700">
               <span className="text-[10px] uppercase text-slate-400 font-extrabold mr-1">Zoom:</span>
               <button
-                onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}
+                onClick={() => setZoom((z) => Math.max(0.3, Number((z - 0.15).toFixed(2))))}
                 className="p-1 hover:text-indigo-600 transition-colors"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
-              <span className="text-[11px] font-mono text-indigo-700 w-10 text-center font-bold">
-                {Math.round(zoom * 100)}%
-              </span>
               <button
-                onClick={() => setZoom((z) => Math.min(3, z + 0.15))}
+                onClick={() => setZoom(1)}
+                className="text-[11px] font-mono text-indigo-700 w-10 text-center font-bold hover:underline cursor-pointer"
+                title="Reset zoom to 100%"
+              >
+                {Math.round(zoom * 100)}%
+              </button>
+              <button
+                onClick={() => setZoom((z) => Math.min(3, Number((z + 0.15).toFixed(2))))}
                 className="p-1 hover:text-indigo-600 transition-colors"
                 title="Zoom In"
               >
@@ -1051,7 +1131,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               </button>
               <button
                 onClick={() => setZoom(1)}
-                className="text-[10px] text-slate-500 hover:text-slate-900 ml-1 pl-1.5 border-l border-slate-200"
+                className="text-[10px] text-slate-500 hover:text-slate-900 ml-1 pl-1.5 border-l border-slate-200 cursor-pointer font-bold"
               >
                 Fit
               </button>
@@ -1097,9 +1177,12 @@ export const EditModal: React.FC<EditModalProps> = ({
 
             {/* Canvas / Image Display */}
             <div
-              className="max-w-[95%] max-h-[82%] rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150"
+              className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-4 sm:p-6"
               style={{
+                maxHeight: 'calc(100% - 0.5rem)',
+                maxWidth: 'calc(100% - 0.5rem)',
                 transform: `scale(${zoom})`,
+                transformOrigin: 'center center',
                 backgroundColor: garmentBg === 'black' ? '#09090b' : garmentBg === 'charcoal' ? '#1e293b' : garmentBg === 'white' ? '#ffffff' : '#f8fafc',
                 backgroundImage: garmentBg === 'checker' ? `
                   linear-gradient(45deg, #cbd5e1 25%, transparent 25%),
@@ -1117,10 +1200,10 @@ export const EditModal: React.FC<EditModalProps> = ({
                   onMouseDown={handleEraserCanvasMouseDown}
                   onMouseMove={handleEraserCanvasMouseMove}
                   onMouseUp={handleEraserCanvasMouseUp}
-                  className="max-h-[460px] max-w-full object-contain cursor-crosshair block"
+                  className="max-h-[min(500px,calc(100vh-320px))] max-w-full w-auto h-auto object-contain cursor-crosshair block"
                 />
               ) : (
-                <div ref={cropWrapperRef} className="relative inline-block select-none max-h-[460px] max-w-full">
+                <div ref={cropWrapperRef} className="relative inline-block select-none max-h-full max-w-full">
                   <img
                     ref={imgRef}
                     src={currentUrl}
@@ -1129,7 +1212,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       const target = e.currentTarget;
                       setImageNaturalSize({ width: target.naturalWidth, height: target.naturalHeight });
                     }}
-                    className="max-h-[460px] max-w-full object-contain p-2 block pointer-events-none select-none"
+                    className="max-h-[min(500px,calc(100vh-320px))] max-w-full w-auto h-auto object-contain block pointer-events-none select-none drop-shadow-sm"
                   />
 
                   {/* Interactive 8-Handle Crop Box Overlay (Exact match to media_1793876290534_2a9a2550.jpg) */}

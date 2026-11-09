@@ -271,12 +271,13 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const handleWidthChange = (asset: ArtworkAsset, valStr: string) => {
     const val = parseFloat(valStr);
     if (isNaN(val) || val <= 0) return;
-    const clampedVal = Math.min(22, val);
+    const maxW = mmToUnit(22 * 25.4, settings.unit);
+    const clampedVal = Math.min(maxW, val);
 
     if (clampedVal > settings.filmWidth) {
       onUpdateSettings({
         filmWidth: clampedVal,
-        filmWidthMm: clampedVal * 25.4,
+        filmWidthMm: unitToMm(clampedVal, settings.unit),
         filmWidthPreset: clampedVal === 22 ? '22' : clampedVal.toString()
       });
     }
@@ -287,12 +288,13 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const handleHeightChange = (asset: ArtworkAsset, valStr: string) => {
     const val = parseFloat(valStr);
     if (isNaN(val) || val <= 0) return;
-    const clampedVal = Math.min(100, val);
+    const maxH = mmToUnit(100 * 25.4, settings.unit);
+    const clampedVal = Math.min(maxH, val);
 
     if (settings.lengthMode === 'fixed' && clampedVal > settings.fixedLength) {
       onUpdateSettings({
         fixedLength: clampedVal,
-        fixedLengthMm: clampedVal * 25.4
+        fixedLengthMm: unitToMm(clampedVal, settings.unit)
       });
     }
 
@@ -492,13 +494,21 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   e.stopPropagation();
                                   const text = e.target.value;
                                   setWidthInputs((prev) => ({ ...prev, [asset.id]: text }));
+                                  // Clear stale height input so proportional calculation reflects immediately
+                                  setHeightInputs((prev) => {
+                                    if (prev[asset.id] === undefined) return prev;
+                                    const copy = { ...prev };
+                                    delete copy[asset.id];
+                                    return copy;
+                                  });
                                   const val = parseFloat(text);
                                   if (!isNaN(val) && val > 0) {
-                                    const clampedVal = Math.min(22, val);
+                                    const maxW = mmToUnit(22 * 25.4, settings.unit);
+                                    const clampedVal = Math.min(maxW, val);
                                     if (clampedVal > settings.filmWidth) {
                                       onUpdateSettings({
                                         filmWidth: clampedVal,
-                                        filmWidthMm: clampedVal * 25.4,
+                                        filmWidthMm: unitToMm(clampedVal, settings.unit),
                                         filmWidthPreset: clampedVal === 22 ? '22' : clampedVal.toString()
                                       });
                                     }
@@ -518,7 +528,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-14 font-mono shadow-2xs"
                               />
                               <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">
-                                inches
+                                {settings.unit === 'inch' ? 'inches' : settings.unit === 'meter' ? 'meters' : settings.unit}
                               </span>
                             </div>
                           </div>
@@ -542,13 +552,21 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   e.stopPropagation();
                                   const text = e.target.value;
                                   setHeightInputs((prev) => ({ ...prev, [asset.id]: text }));
+                                  // Clear stale width input so proportional calculation reflects immediately
+                                  setWidthInputs((prev) => {
+                                    if (prev[asset.id] === undefined) return prev;
+                                    const copy = { ...prev };
+                                    delete copy[asset.id];
+                                    return copy;
+                                  });
                                   const val = parseFloat(text);
                                   if (!isNaN(val) && val > 0) {
-                                    const clampedVal = Math.min(100, val);
+                                    const maxH = mmToUnit(100 * 25.4, settings.unit);
+                                    const clampedVal = Math.min(maxH, val);
                                     if (settings.lengthMode === 'fixed' && clampedVal > settings.fixedLength) {
                                       onUpdateSettings({
                                         fixedLength: clampedVal,
-                                        fixedLengthMm: clampedVal * 25.4
+                                        fixedLengthMm: unitToMm(clampedVal, settings.unit)
                                       });
                                     }
                                     onUpdateAsset(asset.id, { targetHeight: clampedVal });
@@ -567,7 +585,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-14 font-mono shadow-2xs"
                               />
                               <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">
-                                inches
+                                {settings.unit === 'inch' ? 'inches' : settings.unit === 'meter' ? 'meters' : settings.unit}
                               </span>
                             </div>
                           </div>
@@ -582,7 +600,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                         <div className="bg-[#FFFBEB] border border-[#FEF3C7] rounded-xl p-3 text-xs text-[#78350F] mb-3 leading-relaxed flex items-center justify-between">
                           <div>
                             <div className="font-bold text-[#78350F]">
-                              Your design prints {actualPrintW} × {actualPrintH} inches
+                              Your design prints {actualPrintW} × {actualPrintH} {settings.unit === 'inch' ? 'inches' : settings.unit === 'meter' ? 'meters' : settings.unit}
                             </div>
                             <div className="text-[11px] text-[#92400E] mt-0.5">
                               The rest is empty space in the file.
@@ -609,7 +627,34 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                           className="flex items-center space-x-2 py-1 mb-2.5 cursor-pointer select-none"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onUpdateAsset(asset.id, { aspectLocked: !asset.aspectLocked });
+                            // Clear local temporary inputs so inputs stay strictly synced
+                            setWidthInputs((prev) => {
+                              if (prev[asset.id] === undefined) return prev;
+                              const copy = { ...prev };
+                              delete copy[asset.id];
+                              return copy;
+                            });
+                            setHeightInputs((prev) => {
+                              if (prev[asset.id] === undefined) return prev;
+                              const copy = { ...prev };
+                              delete copy[asset.id];
+                              return copy;
+                            });
+
+                            const nextLocked = !asset.aspectLocked;
+                            if (nextLocked) {
+                              const currentRatio = (asset.targetWidth > 0 && asset.targetHeight > 0)
+                                ? (asset.targetWidth / asset.targetHeight)
+                                : ((asset.trimmedWidth || asset.originalWidth || 1) / (asset.trimmedHeight || asset.originalHeight || 1));
+                              onUpdateAsset(asset.id, {
+                                aspectLocked: true,
+                                lockedRatio: currentRatio
+                              });
+                            } else {
+                              onUpdateAsset(asset.id, {
+                                aspectLocked: false
+                              });
+                            }
                           }}
                         >
                           <button

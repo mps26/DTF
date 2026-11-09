@@ -36,6 +36,7 @@ export interface ArtworkAsset {
   targetWidthMm: number; // canonical mm
   targetHeightMm: number; // canonical mm
   aspectLocked: boolean;
+  lockedRatio?: number; // width / height preserved ratio
   copies: number;
   allowRotation: boolean;
   effectiveDpi: number;
