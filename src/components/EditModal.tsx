@@ -41,9 +41,12 @@ import {
   despeckleImage,
   addStrokeOutline,
   upscaleImageAi,
+  recreateImageAi,
+  RecreateAiStyle,
   adjustColorAndTone,
   applyTextureEffect,
   applyHalftoneFilter,
+  HalftoneStyle,
   replaceColorInImage,
   applyEmbroideryEffect,
   generateTextArtwork
@@ -204,12 +207,14 @@ export const EditModal: React.FC<EditModalProps> = ({
   // 3. Style & Effects -> Halftone
   const [halftoneSpacing, setHalftoneSpacing] = useState<number>(8);
   const [halftoneRadius, setHalftoneRadius] = useState<number>(4);
+  const [halftoneStyle, setHalftoneStyle] = useState<HalftoneStyle>('color');
 
   // 3. Style & Effects -> Stroke
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
   const [strokeColor, setStrokeColor] = useState<string>('#ffffff');
 
   // 3. Style & Effects -> Embroidery
+  const [recreateStyle, setRecreateStyle] = useState<RecreateAiStyle>('hd-redraw');
   const [embroideryPitch, setEmbroideryPitch] = useState<number>(10);
   const [embroiderySheen, setEmbroiderySheen] = useState<number>(85);
   const [embroideryAngle, setEmbroideryAngle] = useState<number>(45);
@@ -287,6 +292,14 @@ export const EditModal: React.FC<EditModalProps> = ({
     }
   };
 
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextIndex = historyIndex + 1;
+      setHistoryIndex(nextIndex);
+      setCurrentUrl(history[nextIndex]);
+    }
+  };
+
   const handleRevertOriginal = () => {
     pushHistory(asset.originalUrl);
   };
@@ -309,6 +322,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 
   // 2. Color & Tone
   const handleApplyColorTone = async () => {
+    if (brightness === 0 && contrast === 0 && saturation === 0 && hue === 0) return;
     setIsProcessing(true);
     try {
       const img = await loadImage(currentUrl);
@@ -319,6 +333,10 @@ export const EditModal: React.FC<EditModalProps> = ({
         hue
       });
       pushHistory(resultUrl);
+      setBrightness(0);
+      setContrast(0);
+      setSaturation(0);
+      setHue(0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -645,7 +663,7 @@ export const EditModal: React.FC<EditModalProps> = ({
     setIsProcessing(true);
     try {
       const img = await loadImage(currentUrl);
-      const res = await upscaleImageAi(img, 2, 85);
+      const res = await recreateImageAi(img, recreateStyle);
       pushHistory(res);
     } catch (err) {
       console.error(err);
@@ -673,7 +691,7 @@ export const EditModal: React.FC<EditModalProps> = ({
     setIsProcessing(true);
     try {
       const img = await loadImage(currentUrl);
-      const res = await applyHalftoneFilter(img, halftoneSpacing, halftoneRadius);
+      const res = await applyHalftoneFilter(img, halftoneSpacing, halftoneRadius, halftoneStyle);
       pushHistory(res);
     } catch (err) {
       console.error(err);
@@ -931,15 +949,28 @@ export const EditModal: React.FC<EditModalProps> = ({
   const handleSaveModal = async () => {
     setIsProcessing(true);
     try {
-      const img = await loadImage(currentUrl);
+      let finalUrl = currentUrl;
+      if (
+        activeTool === 'color-tone' &&
+        (brightness !== 0 || contrast !== 0 || saturation !== 0 || hue !== 0)
+      ) {
+        const baseImg = await loadImage(currentUrl);
+        finalUrl = await adjustColorAndTone(baseImg, {
+          brightness,
+          contrast,
+          saturation,
+          hue
+        });
+      }
+      const img = await loadImage(finalUrl);
       const box = await calculateAlphaBoundingBox(img, 8, paddingPx);
       onSave({
         ...asset,
-        processedUrl: currentUrl,
+        processedUrl: finalUrl,
         trimmedWidth: img.naturalWidth,
         trimmedHeight: img.naturalHeight,
         cropBox: box,
-        isTrimmed: currentUrl !== asset.originalUrl && box.emptyPercent < 5,
+        isTrimmed: finalUrl !== asset.originalUrl && box.emptyPercent < 5,
         isBgRemoved: true
       });
       onClose();
@@ -998,10 +1029,19 @@ export const EditModal: React.FC<EditModalProps> = ({
             <button
               onClick={handleUndo}
               disabled={historyIndex <= 0}
-              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 transition-all border border-slate-200"
+              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 transition-all border border-slate-200 cursor-pointer"
               title="Undo last change"
             >
               <RotateCcw className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={handleRedo}
+              disabled={historyIndex >= history.length - 1}
+              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 transition-all border border-slate-200 cursor-pointer"
+              title="Redo last undone change"
+            >
+              <RotateCw className="w-4 h-4" />
             </button>
 
             <button
@@ -1137,44 +1177,6 @@ export const EditModal: React.FC<EditModalProps> = ({
               </button>
             </div>
 
-            {/* Garment Backdrop Preview Selector */}
-            <div className="absolute top-4 right-4 z-20 flex items-center space-x-1.5 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-sm text-xs">
-              <span className="text-[10px] text-slate-400 font-extrabold px-1.5">Garment:</span>
-              <button
-                onClick={() => setGarmentBg('checker')}
-                className={`w-6 h-6 rounded-lg border transition-all ${
-                  garmentBg === 'checker' ? 'border-indigo-600 ring-2 ring-indigo-200' : 'border-slate-300'
-                }`}
-                style={{
-                  backgroundImage: `linear-gradient(45deg, #cbd5e1 25%, transparent 25%), linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #cbd5e1 75%), linear-gradient(-45deg, transparent 75%, #cbd5e1 75%)`,
-                  backgroundSize: '8px 8px',
-                  backgroundColor: '#ffffff'
-                }}
-                title="Checkerboard (Transparent)"
-              />
-              <button
-                onClick={() => setGarmentBg('black')}
-                className={`w-6 h-6 rounded-lg bg-black border transition-all ${
-                  garmentBg === 'black' ? 'border-indigo-600 ring-2 ring-indigo-200' : 'border-slate-300'
-                }`}
-                title="Black Garment"
-              />
-              <button
-                onClick={() => setGarmentBg('charcoal')}
-                className={`w-6 h-6 rounded-lg bg-slate-800 border transition-all ${
-                  garmentBg === 'charcoal' ? 'border-indigo-600 ring-2 ring-indigo-200' : 'border-slate-300'
-                }`}
-                title="Charcoal T-Shirt"
-              />
-              <button
-                onClick={() => setGarmentBg('white')}
-                className={`w-6 h-6 rounded-lg bg-white border transition-all ${
-                  garmentBg === 'white' ? 'border-indigo-600 ring-2 ring-indigo-200' : 'border-slate-300'
-                }`}
-                title="White Garment"
-              />
-            </div>
-
             {/* Canvas / Image Display */}
             <div
               className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-4 sm:p-6"
@@ -1212,6 +1214,14 @@ export const EditModal: React.FC<EditModalProps> = ({
                       const target = e.currentTarget;
                       setImageNaturalSize({ width: target.naturalWidth, height: target.naturalHeight });
                     }}
+                    style={
+                      activeTool === 'color-tone' &&
+                      (brightness !== 0 || contrast !== 0 || saturation !== 0 || hue !== 0)
+                        ? {
+                            filter: `brightness(${Math.max(0.1, 1 + brightness / 100)}) contrast(${Math.max(0.1, 1 + contrast / 100)}) saturate(${Math.max(0, 1 + saturation / 100)}) hue-rotate(${hue}deg)`
+                          }
+                        : undefined
+                    }
                     className="max-h-[min(500px,calc(100vh-320px))] max-w-full w-auto h-auto object-contain block pointer-events-none select-none drop-shadow-sm"
                   />
 
@@ -1413,8 +1423,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                     </div>
                     <input
                       type="range"
-                      min="-50"
-                      max="50"
+                      min="-80"
+                      max="100"
                       value={brightness}
                       onChange={(e) => setBrightness(Number(e.target.value))}
                       className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
@@ -1428,8 +1438,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                     </div>
                     <input
                       type="range"
-                      min="-50"
-                      max="50"
+                      min="-80"
+                      max="100"
                       value={contrast}
                       onChange={(e) => setContrast(Number(e.target.value))}
                       className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
@@ -1443,8 +1453,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                     </div>
                     <input
                       type="range"
-                      min="-50"
-                      max="80"
+                      min="-100"
+                      max="100"
                       value={saturation}
                       onChange={(e) => setSaturation(Number(e.target.value))}
                       className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
@@ -1466,14 +1476,30 @@ export const EditModal: React.FC<EditModalProps> = ({
                     />
                   </div>
 
-                  <button
-                    onClick={handleApplyColorTone}
-                    disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2"
-                  >
-                    <Sliders className="w-4 h-4" />
-                    <span>Apply Color & Tone</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleApplyColorTone}
+                      disabled={isProcessing || (brightness === 0 && contrast === 0 && saturation === 0 && hue === 0)}
+                      className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    >
+                      <Sliders className="w-4 h-4" />
+                      <span>{isProcessing ? 'Applying...' : 'Apply Color & Tone'}</span>
+                    </button>
+                    {(brightness !== 0 || contrast !== 0 || saturation !== 0 || hue !== 0) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBrightness(0);
+                          setContrast(0);
+                          setSaturation(0);
+                          setHue(0);
+                        }}
+                        className="px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1921,10 +1947,10 @@ export const EditModal: React.FC<EditModalProps> = ({
                   <button
                     onClick={handleApplyTexture}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-700 hover:to-indigo-700 text-white text-xs font-black shadow-md shadow-pink-600/25 transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-700 hover:to-indigo-700 text-white text-xs font-black shadow-md shadow-pink-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
                     <Layers className="w-4 h-4" />
-                    <span>Apply Distressed Texture</span>
+                    <span>{isProcessing ? 'Applying Texture...' : 'Apply Distressed Texture'}</span>
                   </button>
                 </div>
               )}
@@ -1933,42 +1959,38 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'halftone' && (
                 <div className="space-y-4">
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                      <span>Screen Dot Pitch</span>
-                      <span className="text-indigo-600 font-extrabold">{halftoneSpacing} px</span>
+                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                      Halftone Screen Mode
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: 'bw', label: 'Classic B&W' },
+                        { id: 'color', label: 'Color Dots' },
+                        { id: 'duotone', label: 'Dot Grid' }
+                      ].map((mode) => (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setHalftoneStyle(mode.id as HalftoneStyle)}
+                          className={`py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                            halftoneStyle === mode.id
+                              ? 'bg-teal-600 text-white shadow-md'
+                              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                          }`}
+                        >
+                          {mode.label}
+                        </button>
+                      ))}
                     </div>
-                    <input
-                      type="range"
-                      min="4"
-                      max="16"
-                      value={halftoneSpacing}
-                      onChange={(e) => setHalftoneSpacing(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                      <span>Dot Radius</span>
-                      <span className="text-indigo-600 font-extrabold">{halftoneRadius} px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="2"
-                      max="8"
-                      value={halftoneRadius}
-                      onChange={(e) => setHalftoneRadius(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
-                    />
                   </div>
 
                   <button
                     onClick={handleApplyHalftone}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 text-white text-xs font-black shadow-md shadow-teal-600/25 transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-teal-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
                     <CircleDot className="w-4 h-4" />
-                    <span>Apply Halftone Screen</span>
+                    <span>{isProcessing ? 'Applying Halftone...' : 'Apply Halftone Screen'}</span>
                   </button>
                 </div>
               )}
@@ -2280,13 +2302,38 @@ export const EditModal: React.FC<EditModalProps> = ({
                   <div className="p-3 rounded-xl bg-fuchsia-50 border border-fuchsia-200 text-xs text-fuchsia-900 font-medium">
                     Regenerates high-frequency details, removes compression artifacts, and rebuilds high-fidelity edge contours using neural edge reconstruction.
                   </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-500 mb-1.5 block">
+                      Recreation Style
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: 'hd-redraw', label: 'HD Redraw' },
+                        { id: 'clean-illustration', label: 'Clean Vector' },
+                        { id: 'vivid-print', label: 'Vivid Pop' }
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setRecreateStyle(item.id as RecreateAiStyle)}
+                          className={`py-1.5 px-2 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                            recreateStyle === item.id
+                              ? 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-xs'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <button
                     onClick={handleRecreateAi}
                     disabled={isProcessing}
                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white text-xs font-black shadow-md shadow-fuchsia-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>Recreate with AI (2x High-Fidelity)</span>
+                    <span>{isProcessing ? 'Recreating Artwork...' : 'Recreate with AI (2x High-Fidelity)'}</span>
                   </button>
                 </div>
               )}

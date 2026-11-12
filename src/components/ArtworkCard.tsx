@@ -53,14 +53,11 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
   };
 
   const handleToggleAspect = () => {
-    const nextLocked = !asset.aspectLocked;
-    if (nextLocked) {
+    if (!asset.aspectLocked) {
       const currentRatio = (asset.targetWidth > 0 && asset.targetHeight > 0)
         ? (asset.targetWidth / asset.targetHeight)
         : ((asset.trimmedWidth || asset.originalWidth || 1) / (asset.trimmedHeight || asset.originalHeight || 1));
       onUpdate(asset.id, { aspectLocked: true, lockedRatio: currentRatio });
-    } else {
-      onUpdate(asset.id, { aspectLocked: false });
     }
   };
 

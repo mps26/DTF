@@ -301,7 +301,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   return (
     <header
       ref={navRef}
-      className="h-16 bg-[#090d19] border-b border-[#1b2238] text-slate-200 px-4 sm:px-6 flex items-center justify-between select-none z-40 flex-shrink-0 relative shadow-sm"
+      className="h-16 bg-[#090d19] border-b border-[#1b2238] text-slate-200 px-4 sm:px-6 flex items-center justify-between select-none z-50 flex-shrink-0 relative shadow-sm"
     >
       {/* ================= LEFT SECTION: BRAND & CREATE BUTTON ================= */}
       <div className="flex items-center space-x-3.5 flex-shrink-0">
@@ -318,7 +318,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 PRO
               </span>
             </div>
-            <div className="text-[10px] text-slate-400 font-medium whitespace-nowrap mt-1 leading-none">
+            <div className="text-[11px] text-slate-300 font-medium whitespace-nowrap mt-1 leading-none">
               DTF Gang Sheet Builder
             </div>
           </div>

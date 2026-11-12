@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { drawImageProportional } from '../utils/imageProcessing';
 import {
   Layers,
   UploadCloud,
@@ -143,9 +144,9 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           sheetIndex: 0,
           placements: layout.placements,
           usedWidthMm: layout.usedWidthMm || settings.filmWidthMm,
-          usedLengthMm: layout.usedLengthMm || 60,
-          usedLengthInches: layout.usedLengthInches || 2.36,
-          usedLengthMeters: layout.usedLengthMeters || 0.06,
+          usedLengthMm: layout.usedLengthMm || settings.fixedLengthMm || 60,
+          usedLengthInches: layout.usedLengthInches || (settings.fixedLengthMm ? settings.fixedLengthMm / 25.4 : 2.36),
+          usedLengthMeters: layout.usedLengthMeters || (settings.fixedLengthMm ? settings.fixedLengthMm / 1000 : 0.06),
           totalCopies: layout.totalCopies,
           filmAreaMm2: layout.filmAreaMm2,
           artworkAreaMm2: layout.artworkAreaMm2,
@@ -161,7 +162,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       if (!ctx) return;
 
       const filmWidthMm = Math.max(settings.filmWidthMm, sheet.usedWidthMm || settings.filmWidthMm);
-      const usedLengthMm = Math.max(30, sheet.usedLengthMm || 60);
+      const fallbackLengthMm = settings.fixedLengthMm || 60;
+      const usedLengthMm = Math.max(30, sheet.usedLengthMm || fallbackLengthMm);
 
       // Per-sheet fit mode & zoom scale
       const isFit = sheetFitModes[sheet.sheetIndex] !== false; // default true
@@ -244,14 +246,14 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           ctx.translate(pxX + pxW, pxY);
           ctx.rotate(Math.PI / 2);
           if (img && img.complete) {
-            ctx.drawImage(img, 0, 0, pxH, pxW);
+            drawImageProportional(ctx, img, 0, 0, pxH, pxW, placement.asset?.aspectLocked !== false);
           } else {
             ctx.fillStyle = '#e0e7ff';
             ctx.fillRect(0, 0, pxH, pxW);
           }
         } else {
           if (img && img.complete) {
-            ctx.drawImage(img, pxX, pxY, pxW, pxH);
+            drawImageProportional(ctx, img, pxX, pxY, pxW, pxH, placement.asset?.aspectLocked !== false);
           } else {
             ctx.fillStyle = '#e0e7ff';
             ctx.fillRect(pxX, pxY, pxW, pxH);
@@ -494,24 +496,10 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   e.stopPropagation();
                                   const text = e.target.value;
                                   setWidthInputs((prev) => ({ ...prev, [asset.id]: text }));
-                                  // Clear stale height input so proportional calculation reflects immediately
-                                  setHeightInputs((prev) => {
-                                    if (prev[asset.id] === undefined) return prev;
-                                    const copy = { ...prev };
-                                    delete copy[asset.id];
-                                    return copy;
-                                  });
                                   const val = parseFloat(text);
                                   if (!isNaN(val) && val > 0) {
                                     const maxW = mmToUnit(22 * 25.4, settings.unit);
                                     const clampedVal = Math.min(maxW, val);
-                                    if (clampedVal > settings.filmWidth) {
-                                      onUpdateSettings({
-                                        filmWidth: clampedVal,
-                                        filmWidthMm: unitToMm(clampedVal, settings.unit),
-                                        filmWidthPreset: clampedVal === 22 ? '22' : clampedVal.toString()
-                                      });
-                                    }
                                     onUpdateAsset(asset.id, { targetWidth: clampedVal });
                                   }
                                 }}
@@ -552,23 +540,10 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   e.stopPropagation();
                                   const text = e.target.value;
                                   setHeightInputs((prev) => ({ ...prev, [asset.id]: text }));
-                                  // Clear stale width input so proportional calculation reflects immediately
-                                  setWidthInputs((prev) => {
-                                    if (prev[asset.id] === undefined) return prev;
-                                    const copy = { ...prev };
-                                    delete copy[asset.id];
-                                    return copy;
-                                  });
                                   const val = parseFloat(text);
                                   if (!isNaN(val) && val > 0) {
                                     const maxH = mmToUnit(100 * 25.4, settings.unit);
                                     const clampedVal = Math.min(maxH, val);
-                                    if (settings.lengthMode === 'fixed' && clampedVal > settings.fixedLength) {
-                                      onUpdateSettings({
-                                        fixedLength: clampedVal,
-                                        fixedLengthMm: unitToMm(clampedVal, settings.unit)
-                                      });
-                                    }
                                     onUpdateAsset(asset.id, { targetHeight: clampedVal });
                                   }
                                 }}
@@ -622,57 +597,39 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                         {/* Divider */}
                         <div className="border-t border-slate-100 my-2" />
 
-                        {/* Lock Aspect Ratio Toggle (Image 2) */}
-                        <div
-                          className="flex items-center space-x-2 py-1 mb-2.5 cursor-pointer select-none"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Clear local temporary inputs so inputs stay strictly synced
-                            setWidthInputs((prev) => {
-                              if (prev[asset.id] === undefined) return prev;
-                              const copy = { ...prev };
-                              delete copy[asset.id];
-                              return copy;
-                            });
-                            setHeightInputs((prev) => {
-                              if (prev[asset.id] === undefined) return prev;
-                              const copy = { ...prev };
-                              delete copy[asset.id];
-                              return copy;
-                            });
-
-                            const nextLocked = !asset.aspectLocked;
-                            if (nextLocked) {
-                              const currentRatio = (asset.targetWidth > 0 && asset.targetHeight > 0)
-                                ? (asset.targetWidth / asset.targetHeight)
-                                : ((asset.trimmedWidth || asset.originalWidth || 1) / (asset.trimmedHeight || asset.originalHeight || 1));
-                              onUpdateAsset(asset.id, {
-                                aspectLocked: true,
-                                lockedRatio: currentRatio
-                              });
-                            } else {
-                              onUpdateAsset(asset.id, {
-                                aspectLocked: false
-                              });
-                            }
-                          }}
-                        >
-                          <button
-                            type="button"
-                            className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                              asset.aspectLocked ? 'bg-indigo-600' : 'bg-slate-300'
-                            }`}
-                          >
+                        {/* Lock Aspect Ratio Toggle */}
+                        {(() => {
+                          const isLocked = asset.aspectLocked !== false;
+                          return (
                             <div
-                              className={`w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${
-                                asset.aspectLocked ? 'translate-x-4' : 'translate-x-0'
-                              }`}
-                            />
-                          </button>
-                          <span className="text-xs font-semibold text-slate-700">
-                            Lock Aspect Ratio
-                          </span>
-                        </div>
+                              className="flex items-center space-x-2 py-1 mb-2.5 select-none cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateAsset(asset.id, {
+                                  aspectLocked: !isLocked
+                                });
+                              }}
+                              title={isLocked ? 'Aspect ratio locked (width & height scale proportionally). Click to unlock.' : 'Aspect ratio unlocked (edit width & height independently). Click to lock.'}
+                            >
+                              <button
+                                type="button"
+                                aria-pressed={isLocked}
+                                className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer ${
+                                  isLocked ? 'bg-indigo-600' : 'bg-slate-300'
+                                }`}
+                              >
+                                <div
+                                  className={`w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${
+                                    isLocked ? 'translate-x-4' : 'translate-x-0'
+                                  }`}
+                                />
+                              </button>
+                              <span className="text-xs font-semibold text-slate-700">
+                                Lock Aspect Ratio
+                              </span>
+                            </div>
+                          );
+                        })()}
 
                         {/* Copies on sheet row with direct manual editing (Image 2) */}
                         <div className="flex items-center justify-between bg-[#F8FAFC] border border-slate-200/80 rounded-2xl p-2.5 mb-3.5">
@@ -908,33 +865,40 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               </div>
             </div>
 
-            {/* Row 2: Spacing with 'inches' inside (No increment buttons, direct manual input) */}
+            {/* Row 2: Spacing in 'mm' (Always mm as required for gap spacing) */}
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-slate-700">Spacing</span>
               <div className="relative flex items-center">
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={spacingInput !== null ? spacingInput : settings.spacing.toString()}
-                  onFocus={() => setSpacingInput(settings.spacing.toString())}
+                  value={spacingInput !== null ? spacingInput : (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()}
+                  onFocus={() => setSpacingInput((Math.round((settings.spacingMm ?? 5) * 100) / 100).toString())}
                   onChange={(e) => {
                     const text = e.target.value;
                     setSpacingInput(text);
                     const val = parseFloat(text);
-                    if (!isNaN(val) && val >= 0) {
+                    if (!isNaN(val) && val >= 5) {
                       onUpdateSettings({
-                        spacing: val,
-                        spacingMm: unitToMm(val, 'inch')
+                        spacingMm: val,
+                        spacing: Math.round(mmToUnit(val, settings.unit) * 1000) / 1000
                       });
                     }
                   }}
                   onBlur={() => {
+                    const val = spacingInput !== null ? parseFloat(spacingInput) : settings.spacingMm;
+                    const clamped = isNaN(val) ? Math.max(5, settings.spacingMm ?? 5) : Math.max(5, val);
+                    const rounded = Math.round(clamped * 100) / 100;
+                    onUpdateSettings({
+                      spacingMm: rounded,
+                      spacing: Math.round(mmToUnit(rounded, settings.unit) * 1000) / 1000
+                    });
                     setSpacingInput(null);
                   }}
-                  className="w-32 bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-14 font-mono shadow-2xs"
+                  className="w-32 bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-12 font-mono shadow-2xs"
                 />
                 <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">
-                  inches
+                  mm
                 </span>
               </div>
             </div>
@@ -1081,7 +1045,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               <div className="flex items-center space-x-2">
                 <h3 className="font-black text-lg text-slate-900">Sheet Preview</h3>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                  Sheet Length: Auto
+                  Sheet Length: {settings.lengthMode === 'fixed' ? 'Fixed' : 'Auto'}
                 </span>
               </div>
 

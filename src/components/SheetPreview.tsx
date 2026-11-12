@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { LayoutResult, SheetSettings, Unit, PackedPlacement } from '../types';
 import { mmToUnit, formatUnit } from '../utils/units';
+import { drawImageProportional } from '../utils/imageProcessing';
 
 interface SheetPreviewProps {
   layout: LayoutResult;
@@ -136,14 +137,14 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
         ctx.translate(xPx + wPx, yPx);
         ctx.rotate(Math.PI / 2);
         if (img && img.complete) {
-          ctx.drawImage(img, 0, 0, hPx, wPx);
+          drawImageProportional(ctx, img, 0, 0, hPx, wPx, placement.asset?.aspectLocked !== false);
         } else {
           ctx.fillStyle = '#e0e7ff';
           ctx.fillRect(0, 0, hPx, wPx);
         }
       } else {
         if (img && img.complete) {
-          ctx.drawImage(img, xPx, yPx, wPx, hPx);
+          drawImageProportional(ctx, img, xPx, yPx, wPx, hPx, placement.asset?.aspectLocked !== false);
         } else {
           ctx.fillStyle = '#e0e7ff';
           ctx.fillRect(xPx, yPx, wPx, hPx);

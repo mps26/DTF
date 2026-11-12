@@ -75,12 +75,34 @@ export function getInitials(name: string): string {
 }
 
 export async function loginUser(credentials: LoginFormData): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
-  // Simulate network latency for authentic feel
-  await new Promise((res) => setTimeout(res, 450));
-
   const emailNorm = credentials.email.trim().toLowerCase();
-  const users = initUsers();
 
+  // 1. Authenticate against SQLite3 backend API
+  try {
+    const resp = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: emailNorm,
+        password: credentials.password
+      })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.success && data.user) {
+        setCurrentUser(data.user);
+        return { success: true, user: data.user };
+      }
+      return {
+        success: false,
+        error: data.error || 'Authentication failed. Please check your credentials.'
+      };
+    }
+  } catch {
+    // Backend server offline — fall back to local storage
+  }
+
+  const users = initUsers();
   const found = users.find((u) => u.email.toLowerCase() === emailNorm);
   if (!found) {
     return {
@@ -102,17 +124,7 @@ export async function loginUser(credentials: LoginFormData): Promise<{ success: 
 }
 
 export async function registerUser(formData: RegisterFormData): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
-  await new Promise((res) => setTimeout(res, 550));
-
   const emailNorm = formData.email.trim().toLowerCase();
-  const users = initUsers();
-
-  if (users.some((u) => u.email.toLowerCase() === emailNorm)) {
-    return {
-      success: false,
-      error: 'An account with this email address already exists. Please log in.'
-    };
-  }
 
   if (formData.password.length < 6) {
     return {
@@ -125,6 +137,43 @@ export async function registerUser(formData: RegisterFormData): Promise<{ succes
     return {
       success: false,
       error: 'Passwords do not match. Please verify.'
+    };
+  }
+
+  // 1. Register in SQLite3 backend database
+  try {
+    const resp = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: formData.name.trim(),
+        email: emailNorm,
+        password: formData.password,
+        companyName: formData.companyName.trim(),
+        printerModel: formData.printerModel || '22" Direct-to-Film Production Roll'
+      })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.success && data.user) {
+        setCurrentUser(data.user);
+        return { success: true, user: data.user };
+      }
+      return {
+        success: false,
+        error: data.error || 'Registration failed. Please try again.'
+      };
+    }
+  } catch {
+    // Backend server offline — fall back to local storage
+  }
+
+  const users = initUsers();
+
+  if (users.some((u) => u.email.toLowerCase() === emailNorm)) {
+    return {
+      success: false,
+      error: 'An account with this email address already exists. Please log in.'
     };
   }
 
@@ -181,6 +230,19 @@ export function updateUserProfile(updates: Partial<UserProfile>): { success: boo
 
   setCurrentUser(updated);
 
+  // Sync profile update to SQLite3 backend
+  fetch('/api/auth/profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: updated.id,
+      email: updated.email,
+      name: updated.name,
+      companyName: updated.companyName,
+      printerModel: updated.printerModel
+    })
+  }).catch(() => {});
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY_USERS);
     if (raw) {
@@ -207,6 +269,17 @@ export function changeUserPassword(currentPassword: string, newPassword: string)
   if (newPassword.length < 6) {
     return { success: false, error: 'New password must be at least 6 characters long' };
   }
+
+  // Sync password change to SQLite3 backend
+  fetch('/api/auth/password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: current.email,
+      currentPassword,
+      newPassword
+    })
+  }).catch(() => {});
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY_USERS);

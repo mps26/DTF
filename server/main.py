@@ -3,6 +3,10 @@ import io
 import math
 import time
 import struct
+import sqlite3
+import hashlib
+import secrets
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +27,286 @@ app.add_middleware(
 )
 
 MM_PER_INCH = 25.4
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dtf_users.db")
+
+
+def hash_password(password: str, salt: Optional[str] = None) -> str:
+    if salt is None:
+        salt = secrets.token_hex(16)
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100_000)
+    return f"{salt}${dk.hex()}"
+
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    try:
+        salt, expected_hex = stored_hash.split("$", 1)
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100_000)
+        return secrets.compare_digest(dk.hex(), expected_hex)
+    except Exception:
+        return False
+
+
+def get_initials(name: str) -> str:
+    parts = name.strip().split()
+    if not parts:
+        return "US"
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    return (parts[0][0] + parts[-1][0]).upper()
+
+
+def get_db_connection() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_auth_db() -> None:
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                company_name TEXT NOT NULL,
+                printer_model TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'shop_owner',
+                plan TEXT NOT NULL DEFAULT 'Pro Print House',
+                initials TEXT NOT NULL,
+                avatar_color TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                password_hash TEXT NOT NULL
+            )
+            """
+        )
+        default_users = [
+            (
+                "user_ninad_pawar",
+                "Ninad Pawar",
+                "ninad@dtflayout.com",
+                "Apex DTF Printworks",
+                '24" Dual Epson i3200 (Hoson)',
+                "shop_owner",
+                "Industrial Enterprise",
+                "NP",
+                "from-purple-600 to-indigo-600",
+                "2026-01-15T08:00:00Z",
+                hash_password("password123"),
+            ),
+            (
+                "user_demo_operator",
+                "Alex Turner",
+                "demo@dtflayout.com",
+                "Metro Gang Sheets Co.",
+                '22" 4-Head DTF Line (Maintop)',
+                "operator",
+                "Pro Print House",
+                "AT",
+                "from-blue-600 to-cyan-600",
+                "2026-03-01T10:30:00Z",
+                hash_password("demo123"),
+            ),
+        ]
+        conn.executemany(
+            """
+            INSERT OR IGNORE INTO users (
+                id, name, email, company_name, printer_model,
+                role, plan, initials, avatar_color, created_at, password_hash
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            default_users,
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+init_auth_db()
+
+
+def row_to_user_dict(row: sqlite3.Row) -> dict:
+    return {
+        "id": row["id"],
+        "name": row["name"],
+        "email": row["email"],
+        "companyName": row["company_name"],
+        "printerModel": row["printer_model"],
+        "role": row["role"],
+        "plan": row["plan"],
+        "initials": row["initials"],
+        "avatarColor": row["avatar_color"],
+        "createdAt": row["created_at"],
+    }
+
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    companyName: str = ""
+    printerModel: str = '22" Direct-to-Film Production Roll'
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class UpdateProfileRequest(BaseModel):
+    id: Optional[str] = None
+    email: str
+    name: Optional[str] = None
+    companyName: Optional[str] = None
+    printerModel: Optional[str] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    email: str
+    currentPassword: str
+    newPassword: str
+
+
+@app.post("/api/auth/register")
+def auth_register(payload: RegisterRequest):
+    email_norm = payload.email.strip().lower()
+    name_clean = payload.name.strip()
+    if not name_clean:
+        return {"success": False, "error": "Full name is required."}
+    if not email_norm:
+        return {"success": False, "error": "Email address is required."}
+    if len(payload.password) < 6:
+        return {"success": False, "error": "Password must be at least 6 characters long."}
+
+    colors = [
+        "from-indigo-600 to-purple-600",
+        "from-blue-600 to-indigo-600",
+        "from-emerald-600 to-teal-600",
+        "from-amber-600 to-orange-600",
+        "from-rose-600 to-pink-600",
+    ]
+    chosen_color = secrets.choice(colors)
+    user_id = f"user_{int(time.time() * 1000)}_{secrets.token_hex(3)}"
+    created_at = datetime.now(timezone.utc).isoformat()
+    company_name = payload.companyName.strip() or "Independent Print Shop"
+    printer_model = payload.printerModel.strip() or '22" Direct-to-Film Production Roll'
+    initials = get_initials(name_clean)
+    pw_hash = hash_password(payload.password)
+
+    conn = get_db_connection()
+    try:
+        existing = conn.execute(
+            "SELECT id FROM users WHERE LOWER(email) = ?", (email_norm,)
+        ).fetchone()
+        if existing:
+            return {
+                "success": False,
+                "error": "An account with this email address already exists. Please log in.",
+            }
+
+        conn.execute(
+            """
+            INSERT INTO users (
+                id, name, email, company_name, printer_model,
+                role, plan, initials, avatar_color, created_at, password_hash
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                name_clean,
+                email_norm,
+                company_name,
+                printer_model,
+                "shop_owner",
+                "Pro Print House",
+                initials,
+                chosen_color,
+                created_at,
+                pw_hash,
+            ),
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        return {"success": True, "user": row_to_user_dict(row)}
+    finally:
+        conn.close()
+
+
+@app.post("/api/auth/login")
+def auth_login(payload: LoginRequest):
+    email_norm = payload.email.strip().lower()
+    conn = get_db_connection()
+    try:
+        row = conn.execute(
+            "SELECT * FROM users WHERE LOWER(email) = ?", (email_norm,)
+        ).fetchone()
+        if not row:
+            return {
+                "success": False,
+                "error": "No account found with this email. Please check your credentials or register.",
+            }
+        if not verify_password(payload.password, row["password_hash"]):
+            return {
+                "success": False,
+                "error": "Invalid password. Please re-enter your password.",
+            }
+        return {"success": True, "user": row_to_user_dict(row)}
+    finally:
+        conn.close()
+
+
+@app.post("/api/auth/profile")
+def auth_update_profile(payload: UpdateProfileRequest):
+    email_norm = payload.email.strip().lower()
+    conn = get_db_connection()
+    try:
+        row = conn.execute(
+            "SELECT * FROM users WHERE LOWER(email) = ?", (email_norm,)
+        ).fetchone()
+        if not row:
+            return {"success": False, "error": "User not found."}
+        new_name = payload.name.strip() if payload.name else row["name"]
+        new_company = payload.companyName.strip() if payload.companyName is not None else row["company_name"]
+        new_printer = payload.printerModel.strip() if payload.printerModel is not None else row["printer_model"]
+        new_initials = get_initials(new_name)
+        conn.execute(
+            """
+            UPDATE users
+            SET name = ?, company_name = ?, printer_model = ?, initials = ?
+            WHERE id = ?
+            """,
+            (new_name, new_company, new_printer, new_initials, row["id"]),
+        )
+        conn.commit()
+        updated = conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
+        return {"success": True, "user": row_to_user_dict(updated)}
+    finally:
+        conn.close()
+
+
+@app.post("/api/auth/password")
+def auth_change_password(payload: ChangePasswordRequest):
+    if len(payload.newPassword) < 6:
+        return {"success": False, "error": "New password must be at least 6 characters long."}
+    email_norm = payload.email.strip().lower()
+    conn = get_db_connection()
+    try:
+        row = conn.execute(
+            "SELECT * FROM users WHERE LOWER(email) = ?", (email_norm,)
+        ).fetchone()
+        if not row:
+            return {"success": False, "error": "User not found."}
+        if not verify_password(payload.currentPassword, row["password_hash"]):
+            return {"success": False, "error": "Current password does not match records."}
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (hash_password(payload.newPassword), row["id"]),
+        )
+        conn.commit()
+        return {"success": True}
+    finally:
+        conn.close()
 
 class DesignItem(BaseModel):
     id: str

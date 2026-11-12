@@ -51,7 +51,47 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
   const totalCopiesOnSheet = assets.reduce((sum, a) => sum + (a.copies || 0), 0);
   const highDpiCount = assets.filter((a) => (a.effectiveDpi || 300) >= 250).length;
 
-  const handleDownloadAsset = (asset: ArtworkAsset) => {
+  const handleDownloadAsset = async (asset: ArtworkAsset) => {
+    try {
+      const { loadImage, drawImageProportional } = await import('../utils/imageProcessing');
+      const { injectPngDpi } = await import('../utils/exportRenderer');
+      const { MM_PER_INCH } = await import('../utils/units');
+
+      const img = await loadImage(asset.processedUrl || asset.originalUrl);
+      const wIn = Math.max(0.1, (asset.targetWidthMm || 25.4) / MM_PER_INCH);
+      const hIn = Math.max(0.1, (asset.targetHeightMm || 25.4) / MM_PER_INCH);
+      const dpi = 300;
+      const outW = Math.max(1, Math.round(wIn * dpi));
+      const outH = Math.max(1, Math.round(hIn * dpi));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, outW, outH);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        drawImageProportional(ctx, img, 0, 0, outW, outH, asset.aspectLocked !== false);
+        const rawBlob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
+        if (rawBlob) {
+          const dpiBlob = await injectPngDpi(rawBlob, dpi, outW, outH, wIn, hIn);
+          const url = URL.createObjectURL(dpiBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = asset.filename.replace(/\.[^.]+$/, '') + '.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          onNotification(`Downloaded ${asset.filename} (${wIn.toFixed(2)}" × ${hIn.toFixed(2)}")`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Exact-size asset export fallback:', err);
+    }
+
     const a = document.createElement('a');
     a.href = asset.processedUrl || asset.originalUrl;
     a.download = asset.filename;

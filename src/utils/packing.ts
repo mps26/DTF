@@ -1,9 +1,10 @@
 import { ArtworkAsset, SheetSettings, PackedPlacement, SheetInfo, LayoutResult } from '../types';
 import { MM_PER_INCH } from './units';
+import { findPresetById } from './sheetPresets';
 
-export const MAX_PRINT_WIDTH_INCHES = 22;
+export const MAX_PRINT_WIDTH_INCHES = 23;
 export const MAX_PRINT_HEIGHT_INCHES = 100;
-export const MAX_PRINT_WIDTH_MM = MAX_PRINT_WIDTH_INCHES * MM_PER_INCH; // 558.8 mm
+export const MAX_PRINT_WIDTH_MM = MAX_PRINT_WIDTH_INCHES * MM_PER_INCH; // 584.2 mm
 export const MAX_PRINT_HEIGHT_MM = MAX_PRINT_HEIGHT_INCHES * MM_PER_INCH; // 2540.0 mm
 
 interface ItemToPack {
@@ -38,7 +39,7 @@ export function packGangSheet(
     Math.max(10, Math.max(settings.filmWidthMm, maxItemWidth))
   );
 
-  const spacingMm = Math.max(0, settings.spacingMm ?? 5);
+  const spacingMm = Math.max(5, settings.spacingMm ?? 5);
   const marginMm = Math.max(0, settings.marginMm ?? 5);
 
   // Usable roll width after margins
@@ -67,28 +68,33 @@ export function packGangSheet(
   });
 
   if (items.length === 0) {
+    const emptyLengthMm = Math.max(0, settings.fixedLengthMm || 0);
+    const emptyLengthInches = Math.round((emptyLengthMm / MM_PER_INCH) * 100) / 100;
+    const emptyLengthMeters = Math.round((emptyLengthMm / 1000) * 100) / 100;
+    const emptyFilmAreaMm2 = filmWidthMm * emptyLengthMm;
+
     return {
       placements: [],
       sheets: [{
         sheetIndex: 0,
         placements: [],
         usedWidthMm: filmWidthMm,
-        usedLengthMm: 0,
-        usedLengthInches: 0,
-        usedLengthMeters: 0,
+        usedLengthMm: Math.round(emptyLengthMm * 10) / 10,
+        usedLengthInches: emptyLengthInches,
+        usedLengthMeters: emptyLengthMeters,
         totalCopies: 0,
-        filmAreaMm2: 0,
+        filmAreaMm2: emptyFilmAreaMm2,
         artworkAreaMm2: 0,
-        wastePercent: 0
+        wastePercent: emptyFilmAreaMm2 > 0 ? 100 : 0
       }],
       totalCopies: 0,
       usedWidthMm: filmWidthMm,
-      usedLengthMm: 0,
-      usedLengthInches: 0,
-      usedLengthMeters: 0,
-      filmAreaMm2: 0,
+      usedLengthMm: Math.round(emptyLengthMm * 10) / 10,
+      usedLengthInches: emptyLengthInches,
+      usedLengthMeters: emptyLengthMeters,
+      filmAreaMm2: emptyFilmAreaMm2,
       artworkAreaMm2: 0,
-      wastePercent: 0,
+      wastePercent: emptyFilmAreaMm2 > 0 ? 100 : 0,
       overflow: false,
       overflowCount: 0,
       calculationTimeMs: 0
@@ -96,10 +102,10 @@ export function packGangSheet(
   }
 
   // Calculate candidate maximum height per gang sheet
-  // Hardware bounds: 11" roll max length is 17" (431.8 mm); 22" roll max length is 100" (2540 mm)
-  const maxAllowableLengthMm = settings.filmWidth <= 11.1
-    ? 17 * MM_PER_INCH
-    : MAX_PRINT_HEIGHT_MM;
+  const activePreset = findPresetById(settings.filmWidthPreset);
+  const maxAllowableLengthMm = activePreset
+    ? activePreset.maxLengthIn * MM_PER_INCH
+    : (settings.filmWidth <= 11.1 ? 17 * MM_PER_INCH : MAX_PRINT_HEIGHT_MM);
 
   const candidateMaxHeightMm = settings.lengthMode === 'fixed'
     ? Math.min(maxAllowableLengthMm, settings.fixedLengthMm)

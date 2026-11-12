@@ -39,15 +39,15 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
 
         {/* Navigation Icons */}
         <div className="flex flex-col items-center space-y-2 pt-2">
-          {/* Home / Studio */}
+          {/* Home (DTF / UVDTF Selector) */}
           <button
-            onClick={() => onTabChange('studio')}
+            onClick={() => onTabChange('home')}
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-              activeTab === 'studio'
+              activeTab === 'home'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/30'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
-            title="Layout Studio (Home)"
+            title="Home — Choose DTF or UVDTF"
           >
             <Home className="w-5 h-5" />
           </button>

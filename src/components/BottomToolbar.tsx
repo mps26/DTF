@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ChevronDown,
   Download,
@@ -8,14 +8,26 @@ import {
   FileImage,
   FileText,
   Ruler,
-  Recycle
+  Recycle,
+  Lock,
+  Unlock,
+  Check
 } from 'lucide-react';
 import { SheetSettings, LayoutResult } from '../types';
-import { formatUnit, mmToUnit, unitToMm } from '../utils/units';
+import { UserProfile } from '../types/auth';
+import { mmToUnit } from '../utils/units';
+import {
+  RollPreset,
+  getPresetsForPrintType,
+  findPresetById,
+  hasLockedRollAccess,
+  getSettingsUpdatesForPreset
+} from '../utils/sheetPresets';
 
 interface BottomToolbarProps {
   settings: SheetSettings;
   layout: LayoutResult;
+  currentUser?: UserProfile | null;
   onUpdateSettings: (updates: Partial<SheetSettings>) => void;
   onGenerateLayout: () => void;
   onExportPng: () => void;
@@ -23,12 +35,15 @@ interface BottomToolbarProps {
   onExportJobTicket: () => void;
   onExportSingleSheet?: (sheetIndex: number) => void;
   onOpenPreviewModal: () => void;
+  onLockedPresetClick?: (preset: RollPreset) => void;
+  onSwitchHome?: () => void;
   isGenerating?: boolean;
 }
 
 export const BottomToolbar: React.FC<BottomToolbarProps> = ({
   settings,
   layout,
+  currentUser = null,
   onUpdateSettings,
   onGenerateLayout,
   onExportPng,
@@ -36,43 +51,60 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
   onExportJobTicket,
   onExportSingleSheet,
   onOpenPreviewModal,
+  onLockedPresetClick,
+  onSwitchHome,
   isGenerating = false
 }) => {
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
+  const [presetMenuOpen, setPresetMenuOpen] = useState(false);
+  const presetDropdownRef = useRef<HTMLDivElement>(null);
 
-  const presets = [
-    { label: '11 inches', value: '11', widthIn: 11 },
-    { label: '22 inches', value: '22', widthIn: 22 },
-    { label: '22.2 inches', value: '22.2', widthIn: 22.2 }
-  ];
+  const printType = settings.printType || 'dtf';
+  const presets = getPresetsForPrintType(printType);
+  const activePreset = findPresetById(settings.filmWidthPreset) || presets[0];
+  const isAuthorized = hasLockedRollAccess(currentUser);
 
-  const currentMinLen = settings.filmWidth <= 11.1 ? 8 : 1;
-  const currentMaxLen = settings.filmWidth <= 11.1 ? 17 : 100;
+  const currentMinLen = activePreset ? activePreset.minLengthIn : (settings.filmWidth <= 11.1 ? 8 : 39);
+  const currentMaxLen = activePreset ? activePreset.maxLengthIn : (settings.filmWidth <= 11.1 ? 17 : 100);
+  const isFixedPreset = activePreset?.isFixedLength ?? false;
 
-  const [lengthInput, setLengthInput] = useState<string>(() => (settings.fixedLength || 100).toString());
-  const [spacingInput, setSpacingInput] = useState<string>(() => settings.spacing.toString());
+  const [lengthInput, setLengthInput] = useState<string>(() => (settings.fixedLength || currentMinLen).toString());
+  const [spacingMmInput, setSpacingMmInput] = useState<string>(() =>
+    (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()
+  );
   const [isLengthFocused, setIsLengthFocused] = useState<boolean>(false);
   const [isSpacingFocused, setIsSpacingFocused] = useState<boolean>(false);
 
   useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (presetDropdownRef.current && !presetDropdownRef.current.contains(e.target as Node)) {
+        setPresetMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     if (!isLengthFocused) {
-      setLengthInput((settings.fixedLength || 100).toString());
+      setLengthInput((settings.fixedLength || currentMinLen).toString());
     }
-  }, [settings.fixedLength, isLengthFocused]);
+  }, [settings.fixedLength, currentMinLen, isLengthFocused]);
 
   useEffect(() => {
     if (!isSpacingFocused) {
-      setSpacingInput(settings.spacing.toString());
+      setSpacingMmInput((Math.round((settings.spacingMm ?? 5) * 100) / 100).toString());
     }
-  }, [settings.spacing, isSpacingFocused]);
+  }, [settings.spacingMm, isSpacingFocused]);
 
   const handleLengthChange = (valStr: string) => {
     setLengthInput(valStr);
     const val = parseFloat(valStr);
     if (!isNaN(val) && val > 0) {
+      const clamped = Math.min(currentMaxLen, val);
       onUpdateSettings({
-        fixedLength: Math.min(currentMaxLen, val),
-        fixedLengthMm: Math.min(currentMaxLen, val) * 25.4
+        fixedLength: clamped,
+        fixedLengthMm: clamped * 25.4
       });
     }
   };
@@ -81,204 +113,259 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
     setIsLengthFocused(false);
     const val = parseFloat(lengthInput);
     if (isNaN(val) || val <= 0) {
-      const fallback = Math.max(1, settings.fixedLength || 100);
+      const fallback = Math.max(currentMinLen, Math.min(currentMaxLen, settings.fixedLength || currentMinLen));
       setLengthInput(fallback.toString());
       onUpdateSettings({ fixedLength: fallback, fixedLengthMm: fallback * 25.4 });
     } else {
-      const clamped = Math.max(1, Math.min(currentMaxLen, val));
+      const clamped = Math.max(currentMinLen, Math.min(currentMaxLen, val));
       setLengthInput(clamped.toString());
       onUpdateSettings({ fixedLength: clamped, fixedLengthMm: clamped * 25.4 });
     }
   };
 
   const handleSpacingChange = (valStr: string) => {
-    setSpacingInput(valStr);
+    setSpacingMmInput(valStr);
     const val = parseFloat(valStr);
-    if (!isNaN(val) && val >= 0) {
+    if (!isNaN(val) && val >= 5) {
       onUpdateSettings({
-        spacing: val,
-        spacingMm: unitToMm(val, settings.unit)
+        spacingMm: val,
+        spacing: Math.round(mmToUnit(val, settings.unit) * 1000) / 1000
       });
     }
   };
 
   const handleSpacingBlur = () => {
     setIsSpacingFocused(false);
-    const val = parseFloat(spacingInput);
-    if (isNaN(val) || val < 0) {
-      setSpacingInput(settings.spacing.toString());
-    } else {
-      onUpdateSettings({
-        spacing: val,
-        spacingMm: unitToMm(val, settings.unit)
-      });
+    const val = parseFloat(spacingMmInput);
+    const clamped = isNaN(val) ? Math.max(5, settings.spacingMm ?? 5) : Math.max(5, val);
+    const rounded = Math.round(clamped * 100) / 100;
+    setSpacingMmInput(rounded.toString());
+    onUpdateSettings({
+      spacingMm: rounded,
+      spacing: Math.round(mmToUnit(rounded, settings.unit) * 1000) / 1000
+    });
+  };
+
+  const handleSelectPreset = (preset: RollPreset) => {
+    setPresetMenuOpen(false);
+    if (preset.isLocked && !isAuthorized) {
+      if (onLockedPresetClick) {
+        onLockedPresetClick(preset);
+      }
+      return;
     }
+    onUpdateSettings(getSettingsUpdatesForPreset(preset));
   };
 
   return (
-    <div className="w-full">
-      {/* Dark Navy / Violet Glassmorphic Control Bar matching Image 1 */}
-      <div className="bg-[#0b0e1b]/95 backdrop-blur-xl border border-indigo-900/60 rounded-2xl sm:rounded-3xl p-2.5 sm:px-6 sm:py-2.5 shadow-xl shadow-indigo-950/50 flex flex-wrap items-center justify-between gap-3 text-white">
-          {/* Left: Sheet Width, Spacing, Sheet Length */}
-          <div className="flex flex-wrap items-center gap-3 sm:gap-5">
-            {/* SHEET WIDTH */}
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">
-                Sheet Width
+    <div className="w-full relative z-30">
+      {/* Dark Navy / Violet Glassmorphic Control Bar */}
+      <div className="bg-[#0b0e1b]/95 backdrop-blur-xl border border-indigo-900/60 rounded-2xl sm:rounded-3xl px-3 sm:px-4 py-2 shadow-xl shadow-indigo-950/50 flex flex-nowrap items-center justify-between gap-2 text-white relative z-30">
+          {/* Left: Mode Badge, Sheet Size, Spacing (mm), Sheet Length */}
+          <div className="flex flex-nowrap items-center gap-2.5 xl:gap-3.5 flex-shrink-0">
+            {/* PRINT MODE BADGE */}
+            <div className="flex-shrink-0">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 mb-0.5 whitespace-nowrap">
+                Mode
               </div>
-              <div className="relative">
-                <select
-                  value={settings.filmWidthPreset}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const p = presets.find((x) => x.value === val);
-                    if (p) {
-                      const minL = p.widthIn <= 11.1 ? 8 : (p.widthIn >= 21.9 ? 39 : 1);
-                      const maxL = p.widthIn <= 11.1 ? 17 : 100;
-                      let newLen = settings.fixedLength || minL;
-                      if (newLen < minL) newLen = minL;
-                      if (newLen > maxL) newLen = maxL;
-
-                      onUpdateSettings({
-                        filmWidthPreset: val,
-                        filmWidth: p.widthIn,
-                        filmWidthMm: p.widthIn * 25.4,
-                        fixedLength: newLen,
-                        fixedLengthMm: newLen * 25.4
-                      });
-                    }
-                  }}
-                  className="appearance-none bg-[#161c32] border border-indigo-900/80 hover:border-indigo-600 rounded-xl px-3 py-1.5 pr-8 text-xs font-bold text-slate-100 focus:outline-none cursor-pointer font-mono"
-                >
-                  {presets.map((p) => (
-                    <option key={p.value} value={p.value} className="bg-[#12162d] text-white">
-                      {p.label}
-                    </option>
-                  ))}
-                  {!presets.some((p) => p.value === settings.filmWidthPreset) && (
-                    <option value={settings.filmWidthPreset} className="bg-[#12162d] text-white">
-                      {settings.filmWidth}" (Custom)
-                    </option>
-                  )}
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+              <button
+                type="button"
+                onClick={onSwitchHome}
+                className={`px-3 py-1 rounded-xl text-xs sm:text-[13px] font-black tracking-wide uppercase border transition-all cursor-pointer flex items-center whitespace-nowrap ${
+                  printType === 'uvdtf'
+                    ? 'bg-purple-600/20 border-purple-500/60 text-purple-200 hover:bg-purple-600/30'
+                    : 'bg-indigo-600/20 border-indigo-500/60 text-indigo-200 hover:bg-indigo-600/30'
+                }`}
+                title="Switch between DTF and UVDTF on Home page"
+              >
+                <span>{printType === 'uvdtf' ? 'UVDTF' : 'DTF'}</span>
+              </button>
             </div>
 
-            {/* SPACING */}
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">
+            {/* SHEET WIDTH / ROLL PRESET */}
+            <div ref={presetDropdownRef} className="relative flex-shrink-0">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 mb-0.5 whitespace-nowrap">
+                Sheet Size
+              </div>
+              <button
+                type="button"
+                onClick={() => setPresetMenuOpen(!presetMenuOpen)}
+                className="flex items-center justify-between space-x-1.5 bg-[#161c32] border border-indigo-900/80 hover:border-indigo-500 rounded-xl px-2.5 py-1 text-xs sm:text-[13px] font-bold text-white focus:outline-none cursor-pointer font-mono min-w-[115px] whitespace-nowrap"
+              >
+                <span>{activePreset ? activePreset.shortLabel : `${settings.filmWidth}"`}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
+              </button>
+
+              {presetMenuOpen && (
+                <div className="absolute left-0 top-full mt-2 w-72 bg-[#141830] border border-indigo-800/80 rounded-2xl p-1.5 shadow-2xl z-50 text-left font-sans">
+                  <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-indigo-400">
+                    {printType === 'uvdtf' ? 'UVDTF Sheet & Roll Options' : 'DTF Roll Options'}
+                  </div>
+                  {presets.map((preset) => {
+                    const isSelected = activePreset?.id === preset.id;
+                    const locked = preset.isLocked && !isAuthorized;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => handleSelectPreset(preset)}
+                        className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left text-xs transition-all cursor-pointer ${
+                          locked
+                            ? 'hover:bg-amber-950/50 text-slate-300'
+                            : isSelected
+                            ? 'bg-indigo-600/30 text-white border border-indigo-500/40'
+                            : 'hover:bg-indigo-950/80 text-slate-200 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          {locked ? (
+                            <Lock className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                          ) : preset.isLocked ? (
+                            <Unlock className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                          ) : isSelected ? (
+                            <Check className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                          ) : (
+                            <span className="w-3.5 h-3.5 flex-shrink-0" />
+                          )}
+                          <div>
+                            <div className="font-bold font-mono">{preset.label}</div>
+                            <div className="text-[10px] text-slate-400">
+                              {locked ? 'Locked — Authorized Email Only' : preset.isFixedLength ? 'Standard Sheet Size' : 'Running Roll'}
+                            </div>
+                          </div>
+                        </div>
+                        {locked && (
+                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            Lock
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* SPACING (ALWAYS IN MM) */}
+            <div className="flex-shrink-0">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 mb-0.5 whitespace-nowrap">
                 Spacing
               </div>
               <div className="flex items-center bg-[#161c32] border border-indigo-900/80 rounded-xl overflow-hidden px-2.5 py-1">
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={isSpacingFocused ? spacingInput : settings.spacing.toString()}
+                  value={isSpacingFocused ? spacingMmInput : (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()}
                   onFocus={() => {
                     setIsSpacingFocused(true);
-                    setSpacingInput(settings.spacing.toString());
+                    setSpacingMmInput((Math.round((settings.spacingMm ?? 5) * 100) / 100).toString());
                   }}
                   onChange={(e) => handleSpacingChange(e.target.value)}
                   onBlur={handleSpacingBlur}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                   }}
-                  className="w-12 bg-transparent text-xs font-bold text-white focus:outline-none font-mono text-center"
-                  placeholder="0.3"
+                  className="w-10 bg-transparent text-xs sm:text-[13px] font-bold text-white focus:outline-none font-mono text-center"
+                  placeholder="5"
                 />
-                <span className="text-slate-400 text-[10px] font-bold uppercase ml-1">
-                  {settings.unit === 'inch' ? 'in' : settings.unit}
+                <span className="text-slate-300 text-[11px] font-bold uppercase ml-1">
+                  mm
                 </span>
               </div>
             </div>
 
             {/* SHEET LENGTH */}
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">
-                Sheet Length {settings.lengthMode === 'fixed' ? `(Max ${currentMaxLen}")` : '(Auto)'}
+            <div className="flex-shrink-0">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 mb-0.5 whitespace-nowrap">
+                Sheet Length {isFixedPreset ? '' : settings.lengthMode === 'fixed' ? `(${currentMinLen}"–${currentMaxLen}")` : '(Auto)'}
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center bg-[#161c32] p-0.5 rounded-xl border border-indigo-900/80 text-xs font-bold">
-                  <button
-                    onClick={() => onUpdateSettings({ lengthMode: 'auto' })}
-                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                      settings.lengthMode === 'auto'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Auto
-                  </button>
-                  <button
-                    onClick={() => onUpdateSettings({ lengthMode: 'fixed' })}
-                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                      settings.lengthMode === 'fixed'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Fixed
-                  </button>
+              {isFixedPreset ? (
+                <div className="flex items-center bg-[#161c32] border border-indigo-900/80 rounded-xl px-3 py-1 text-xs sm:text-[13px] font-bold text-indigo-200 font-mono whitespace-nowrap">
+                  <span>{currentMaxLen} in</span>
                 </div>
-                {settings.lengthMode === 'fixed' && (
-                  <div className="flex items-center bg-[#161c32] border border-indigo-900/80 rounded-xl overflow-hidden px-2.5 py-1">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={isLengthFocused ? lengthInput : (settings.fixedLength || 100).toString()}
-                      onFocus={() => {
-                        setIsLengthFocused(true);
-                        setLengthInput((settings.fixedLength || 100).toString());
-                      }}
-                      onChange={(e) => handleLengthChange(e.target.value)}
-                      onBlur={handleLengthBlur}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                      }}
-                      className="w-14 bg-transparent text-xs font-bold text-white focus:outline-none font-mono text-center"
-                      placeholder="100"
-                    />
-                    <span className="text-slate-400 text-[10px] font-bold uppercase ml-1">in</span>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center bg-[#161c32] p-0.5 rounded-xl border border-indigo-900/80 text-xs sm:text-[13px] font-bold">
+                    <button
+                      onClick={() => onUpdateSettings({ lengthMode: 'auto' })}
+                      className={`px-2.5 py-0.5 rounded-lg transition-all cursor-pointer ${
+                        settings.lengthMode === 'auto'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      Auto
+                    </button>
+                    <button
+                      onClick={() => onUpdateSettings({ lengthMode: 'fixed' })}
+                      className={`px-2.5 py-0.5 rounded-lg transition-all cursor-pointer ${
+                        settings.lengthMode === 'fixed'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      Fixed
+                    </button>
                   </div>
-                )}
-              </div>
+                  {settings.lengthMode === 'fixed' && (
+                    <div className="flex items-center bg-[#161c32] border border-indigo-900/80 rounded-xl overflow-hidden px-2.5 py-1">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={isLengthFocused ? lengthInput : (settings.fixedLength || currentMinLen).toString()}
+                        onFocus={() => {
+                          setIsLengthFocused(true);
+                          setLengthInput((settings.fixedLength || currentMinLen).toString());
+                        }}
+                        onChange={(e) => handleLengthChange(e.target.value)}
+                        onBlur={handleLengthBlur}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                        }}
+                        className="w-11 bg-transparent text-xs sm:text-[13px] font-bold text-white focus:outline-none font-mono text-center"
+                        placeholder={currentMinLen.toString()}
+                      />
+                      <span className="text-slate-300 text-[11px] font-bold uppercase ml-1">in</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Middle: Status Metrics matching Image 1 */}
-          <div className="hidden md:flex items-center space-x-4 bg-[#141a2e] px-4 py-1.5 rounded-xl border border-indigo-900/60 font-mono text-xs">
-            <div className="flex items-center space-x-1.5 text-slate-300">
+          {/* Middle: Status Metrics */}
+          <div className="hidden lg:flex items-center space-x-2.5 xl:space-x-3.5 bg-[#141a2e] px-3 py-1.5 rounded-xl border border-indigo-900/60 font-mono text-xs whitespace-nowrap flex-shrink-0">
+            <div className="flex items-center space-x-1 text-slate-200">
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="text-[10px] text-slate-400 uppercase">Total Copies:</span>
-              <span className="font-bold text-white">{layout.totalCopies}</span>
+              <span className="text-[11px] text-slate-300 uppercase">Copies:</span>
+              <span className="font-bold text-white text-[13px]">{layout.totalCopies}</span>
             </div>
 
             <span className="text-slate-700">|</span>
 
-            <div className="flex items-center space-x-1.5 text-slate-300">
+            <div className="flex items-center space-x-1 text-slate-200">
               <Ruler className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-[10px] text-slate-400 uppercase">Sheet Length:</span>
-              <span className="font-bold text-indigo-300">
+              <span className="text-[11px] text-slate-300 uppercase">Length:</span>
+              <span className="font-bold text-indigo-200 text-[13px]">
                 {layout.usedLengthMeters.toFixed(2)} m
               </span>
             </div>
 
             <span className="text-slate-700">|</span>
 
-            <div className="flex items-center space-x-1.5 text-slate-300">
+            <div className="flex items-center space-x-1 text-slate-200">
               <Recycle className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-[10px] text-slate-400 uppercase">Film Waste:</span>
-              <span className="font-bold text-emerald-400">{layout.wastePercent}%</span>
+              <span className="text-[11px] text-slate-300 uppercase">Waste:</span>
+              <span className="font-bold text-emerald-400 text-[13px]">{layout.wastePercent}%</span>
             </div>
           </div>
 
           {/* Right: Preview, Download, Generate */}
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center space-x-2 flex-shrink-0 whitespace-nowrap">
             {/* Preview Button */}
             <button
               onClick={onOpenPreviewModal}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-200 bg-[#161c32] hover:bg-[#202848] border border-indigo-900/80 hover:text-white transition-all shadow-xs"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-[13px] font-bold text-slate-100 bg-[#161c32] hover:bg-[#202848] border border-indigo-900/80 hover:text-white transition-all shadow-xs cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5 text-indigo-400" />
               <span>Preview</span>
@@ -289,14 +376,14 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
               <div className="inline-flex rounded-xl shadow-md">
                 <button
                   onClick={onExportPng}
-                  className="flex items-center space-x-1.5 px-3.5 py-2 rounded-l-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/30"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-l-xl text-xs sm:text-[13px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/30 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download</span>
                 </button>
                 <button
                   onClick={() => setDownloadMenuOpen(!downloadMenuOpen)}
-                  className="px-2 py-2 rounded-r-xl text-xs font-bold text-white bg-indigo-700 hover:bg-indigo-800 border-l border-indigo-500/50 transition-all"
+                  className="px-2 py-1.5 rounded-r-xl text-xs font-bold text-white bg-indigo-700 hover:bg-indigo-800 border-l border-indigo-500/50 transition-all cursor-pointer"
                 >
                   <ChevronDown className="w-3.5 h-3.5" />
                 </button>
@@ -386,9 +473,9 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
             <button
               onClick={onGenerateLayout}
               disabled={isGenerating}
-              className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-black text-white bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-[13px] font-black text-white bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-indigo-200" />
+              <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
               <span>{isGenerating ? 'Packing...' : 'Generate Layout'}</span>
             </button>
           </div>

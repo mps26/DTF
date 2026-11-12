@@ -5,10 +5,12 @@ import {
   Download,
   ZoomIn,
   ZoomOut,
-  Maximize2
+  Maximize2,
+  Loader2
 } from 'lucide-react';
 import { LayoutResult, SheetSettings } from '../types';
 import { formatUnit, mmToUnit } from '../utils/units';
+import { drawImageProportional } from '../utils/imageProcessing';
 
 interface PreviewModalProps {
   layout: LayoutResult;
@@ -17,6 +19,9 @@ interface PreviewModalProps {
   onExportPng: () => void;
   onExportSingleSheet?: (sheetIndex: number) => void;
   onOptimize?: () => void;
+  isExporting?: boolean;
+  exportProgress?: number;
+  exportStatusText?: string;
 }
 
 export const PreviewModal: React.FC<PreviewModalProps> = ({
@@ -25,7 +30,10 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   onClose,
   onExportPng,
   onExportSingleSheet,
-  onOptimize
+  onOptimize,
+  isExporting = false,
+  exportProgress = 0,
+  exportStatusText = ''
 }) => {
   const canvasRefs = useRef<Record<number, HTMLCanvasElement>>({});
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,6 +48,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   const [showBoundingBox, setShowBoundingBox] = useState<boolean>(true);
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({});
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
+  const [optimizeNotice, setOptimizeNotice] = useState<string | null>(null);
 
   const filmWidthMm = settings.filmWidthMm || 292.1;
   const usedLengthMm = Math.max(30, layout.usedLengthMm || 60);
@@ -201,14 +210,14 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
           ctx.translate(pxX + pxW, pxY);
           ctx.rotate(Math.PI / 2);
           if (img && img.complete) {
-            ctx.drawImage(img, 0, 0, pxH, pxW);
+            drawImageProportional(ctx, img, 0, 0, pxH, pxW, p.asset?.aspectLocked !== false);
           } else {
             ctx.fillStyle = '#ea580c';
             ctx.fillRect(0, 0, pxH, pxW);
           }
         } else {
           if (img && img.complete) {
-            ctx.drawImage(img, pxX, pxY, pxW, pxH);
+            drawImageProportional(ctx, img, pxX, pxY, pxW, pxH, p.asset?.aspectLocked !== false);
           } else {
             ctx.fillStyle = '#ea580c';
             ctx.fillRect(pxX, pxY, pxW, pxH);
@@ -285,43 +294,45 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
 
   const handleRunOptimize = () => {
     setIsOptimizing(true);
+    setOptimizeNotice(null);
     if (onOptimize) {
       onOptimize();
     }
     setTimeout(() => {
       setIsOptimizing(false);
-    }, 1000);
+      setOptimizeNotice('Optimized: True-Shape nesting, rotation & tight spacing applied.');
+    }, 350);
   };
 
   const meters = (layout.usedLengthMm / 1000).toFixed(2);
   const copiesCount = layout.totalCopies || 0;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 select-none animate-in fade-in">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6 select-none animate-in fade-in">
       {/* Floating Dialog matching Reference Image */}
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-5xl max-h-[94vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
         {/* ================= MODAL HEADER ================= */}
-        <div className="px-6 py-4 sm:px-8 sm:py-5 flex items-start justify-between border-b border-slate-100">
+        <div className="px-6 py-3.5 sm:px-8 sm:py-4 flex items-start justify-between border-b border-slate-100 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               How it will print
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
               Low-quality preview. Your download will be sharp.
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors shadow-2xs"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors shadow-2xs cursor-pointer"
             title="Close preview"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* ================= DOCKED PREVIEW CONTROLS TOOLBAR (OUTSIDE CANVAS) ================= */}
-        <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs select-none">
+        <div className="px-6 py-2 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2.5 text-xs select-none flex-shrink-0">
           {/* Left: Sheet Selection Tabs */}
           <div className="flex items-center space-x-2">
             {sheetsToDraw.length > 1 ? (
@@ -464,7 +475,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
         {/* ================= CANVAS VIEWPORT (DOTTED BACKGROUND) ================= */}
         <div
           ref={containerRef}
-          className="flex-1 min-h-[460px] max-h-[64vh] overflow-auto p-8 sm:p-12 flex flex-col items-start relative select-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent"
+          className="flex-1 min-h-[140px] overflow-auto p-4 sm:p-8 flex flex-col items-start relative select-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent"
           style={{
             backgroundColor: '#F8FAFC',
             backgroundImage: 'radial-gradient(#cbd5e1 1.2px, transparent 1.2px)',
@@ -518,6 +529,23 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                           </>
                         )}
                       </div>
+                      {/* Direct Single Sheet Download Button on Sheet Card */}
+                      {sheetsToDraw.length > 1 && onExportSingleSheet && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedSheetIndex(sheet.sheetIndex);
+                            onExportSingleSheet(sheet.sheetIndex);
+                          }}
+                          disabled={isExporting}
+                          className="mt-1.5 mb-1 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white text-indigo-700 border border-indigo-200 shadow-xs hover:bg-indigo-50 hover:border-indigo-400 hover:text-indigo-800 transition-all cursor-pointer z-10 disabled:opacity-50"
+                          title={`Download Sheet ${sheet.sheetIndex + 1} as separate PNG`}
+                        >
+                          <Download className="w-3 h-3 text-indigo-600" />
+                          <span>Download Sheet {sheet.sheetIndex + 1}</span>
+                        </button>
+                      )}
+
                       {/* Thin bracket line pointing down to sheet top */}
                       <div
                         className="h-2 border-b border-l border-r border-indigo-400/80 rounded-b-xs"
@@ -563,8 +591,43 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
           </div>
         </div>
 
-        {/* ================= MODAL FOOTER ================= */}
-        <div className="px-6 py-4 sm:px-8 sm:py-4.5 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        {/* Real-time Download Progress Banner (Pinned & Never Pushes Footer Out) */}
+        {isExporting && (
+          <div className="px-6 py-2 bg-gradient-to-r from-indigo-50/90 via-purple-50/90 to-indigo-50/90 border-t border-indigo-100 flex items-center justify-between flex-shrink-0 animate-in fade-in duration-200">
+            <div className="flex items-center space-x-2 text-xs font-bold text-indigo-900 truncate pr-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600 flex-shrink-0" />
+              <span className="truncate">{exportStatusText || 'Generating and downloading high-resolution sheets...'}</span>
+            </div>
+            <div className="flex items-center space-x-2.5 flex-shrink-0">
+              <div className="w-28 sm:w-40 bg-indigo-200/80 h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-indigo-600 h-full transition-all duration-150 ease-out rounded-full"
+                  style={{ width: `${Math.max(4, Math.min(100, exportProgress))}%` }}
+                />
+              </div>
+              <span className="font-mono font-bold text-xs text-indigo-700 w-9 text-right">{Math.round(exportProgress)}%</span>
+            </div>
+          </div>
+        )}
+
+        {/* ================= OPTIMIZE CONFIRMATION BANNER ================= */}
+        {optimizeNotice && !isExporting && (
+          <div className="px-6 py-2 bg-emerald-50 border-t border-emerald-200 flex items-center justify-between text-xs font-bold text-emerald-800 flex-shrink-0">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>{optimizeNotice}</span>
+            </div>
+            <button
+              onClick={() => setOptimizeNotice(null)}
+              className="text-emerald-600 hover:text-emerald-800 text-[11px] font-bold cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* ================= MODAL FOOTER (ALWAYS 100% VISIBLE & PINNED) ================= */}
+        <div className="px-6 py-3 sm:px-8 sm:py-3.5 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
           {/* Left Dimension & Copies Pills */}
           <div className="flex items-center space-x-2.5">
             <div className="bg-slate-100/90 text-slate-900 font-bold font-mono text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-slate-200/60 shadow-2xs">
@@ -581,8 +644,8 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
             {/* Emerald Gradient Optimize Button matching Reference Image */}
             <button
               onClick={handleRunOptimize}
-              disabled={isOptimizing}
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-2xl px-5 py-2.5 shadow-lg shadow-emerald-500/25 flex items-center space-x-2.5 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+              disabled={isOptimizing || isExporting}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 text-white font-bold rounded-2xl px-5 py-2.5 shadow-lg shadow-emerald-500/25 flex items-center space-x-2.5 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none cursor-pointer"
             >
               <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center text-white">
                 <Sparkles className="w-3.5 h-3.5" />
@@ -597,24 +660,60 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
               </div>
             </button>
 
-            {/* Download Selected Sheet Button */}
-            {onExportSingleSheet && sheetsToDraw.length > 1 && (
+            {/* Download Individual Separate Sheets Buttons */}
+            {onExportSingleSheet && sheetsToDraw.length > 1 && sheetsToDraw.length <= 3 ? (
+              sheetsToDraw.map((s) => (
+                <button
+                  key={s.sheetIndex}
+                  onClick={() => {
+                    setSelectedSheetIndex(s.sheetIndex);
+                    onExportSingleSheet(s.sheetIndex);
+                  }}
+                  disabled={isExporting}
+                  className={`border disabled:opacity-50 font-bold text-xs sm:text-sm rounded-2xl px-4 py-2.5 shadow-xs flex items-center space-x-2 transition-all cursor-pointer ${
+                    selectedSheetIndex === s.sheetIndex
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-300'
+                      : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+                  }`}
+                  title={`Download Sheet ${s.sheetIndex + 1} as separate PNG file`}
+                >
+                  <Download className={`w-4 h-4 ${selectedSheetIndex === s.sheetIndex ? 'text-white' : 'text-indigo-600'}`} />
+                  <span>Download Sheet {s.sheetIndex + 1}</span>
+                </button>
+              ))
+            ) : onExportSingleSheet && sheetsToDraw.length > 3 ? (
               <button
                 onClick={() => onExportSingleSheet(selectedSheetIndex)}
-                className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-xs sm:text-sm rounded-2xl px-4 py-2.5 shadow-xs flex items-center space-x-2 transition-colors cursor-pointer"
+                disabled={isExporting}
+                className="bg-indigo-600 text-white border border-indigo-600 disabled:opacity-50 font-bold text-xs sm:text-sm rounded-2xl px-4 py-2.5 shadow-md flex items-center space-x-2 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                title={`Download Sheet ${selectedSheetIndex + 1} separately`}
               >
-                <Download className="w-4 h-4 text-indigo-600" />
+                <Download className="w-4 h-4 text-white" />
                 <span>Download Sheet {selectedSheetIndex + 1}</span>
               </button>
-            )}
+            ) : null}
 
             {/* Download All Button */}
             <button
               onClick={onExportPng}
-              className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl px-5 py-2.5 shadow-xs flex items-center space-x-2 transition-colors cursor-pointer"
+              disabled={isExporting}
+              className={`font-bold text-xs sm:text-sm rounded-2xl px-5 py-2.5 shadow-xs flex items-center space-x-2 transition-all ${
+                isExporting
+                  ? 'bg-indigo-600 text-white cursor-wait shadow-indigo-500/25 ring-2 ring-indigo-400'
+                  : 'bg-slate-200 hover:bg-slate-300 text-slate-800 cursor-pointer'
+              }`}
             >
-              <Download className="w-4 h-4 text-slate-600" />
-              <span>{sheetsToDraw.length > 1 ? `Download All (${sheetsToDraw.length})` : 'Download PNG'}</span>
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  <span>{exportStatusText || `Downloading (${exportProgress}%)...`}</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 text-slate-600" />
+                  <span>{sheetsToDraw.length > 1 ? `Download All (${sheetsToDraw.length})` : 'Download PNG'}</span>
+                </>
+              )}
             </button>
           </div>
         </div>

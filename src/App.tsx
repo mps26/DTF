@@ -4,7 +4,8 @@ import {
   ArtworkAsset,
   SheetSettings,
   Unit,
-  LayoutResult
+  LayoutResult,
+  PrintType
 } from './types';
 import { VerticalNavStrip } from './components/VerticalNavStrip';
 import { TopNavBar } from './components/TopNavBar';
@@ -38,6 +39,15 @@ import { UserProfile } from './types/auth';
 import { getCurrentUser, logoutUser } from './utils/auth';
 import { LandingPage } from './components/LandingPage';
 import { AuthModal } from './components/AuthModal';
+import { HomeSelectorView } from './components/HomeSelectorView';
+import {
+  RollPreset,
+  DTF_PRESETS,
+  UVDTF_PRESETS,
+  findPresetById,
+  getSettingsUpdatesForPreset,
+  hasLockedRollAccess
+} from './utils/sheetPresets';
 
 export const App: React.FC = () => {
   // Navigation active tab (Landing page by default or #studio)
@@ -58,12 +68,13 @@ export const App: React.FC = () => {
 
   // Sheet Settings state
   const [settings, setSettings] = useState<SheetSettings>({
-    filmWidthPreset: '22',
+    printType: 'dtf',
+    filmWidthPreset: 'dtf-22x100',
     filmWidth: 22,
     filmWidthMm: 22 * 25.4,
-    unit: 'meter', // Image 1 displays meters
-    spacing: 0.3,
-    spacingMm: 0.3 * 25.4,
+    unit: 'inch',
+    spacing: mmToUnit(5, 'inch'),
+    spacingMm: 5,
     margin: 0.2,
     marginMm: 0.2 * 25.4,
     lengthMode: 'auto',
@@ -84,6 +95,7 @@ export const App: React.FC = () => {
   const [isHowToUseOpen, setIsHowToUseOpen] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [exportProgress, setExportProgress] = useState<number>(0);
+  const [exportStatusText, setExportStatusText] = useState<string>('');
   const [notification, setNotification] = useState<{ message: string; type?: 'info' | 'warning' | 'success' } | null>(null);
 
   const showNotification = (msg: string, type: 'info' | 'warning' | 'success' = 'info') => {
@@ -94,11 +106,46 @@ export const App: React.FC = () => {
   const handleLogout = () => {
     logoutUser();
     setCurrentUser(null);
+    // Revert any locked preset back to default unlocked preset for the active print mode
+    const activePreset = findPresetById(settings.filmWidthPreset);
+    if (activePreset?.isLocked) {
+      const fallback = (settings.printType || 'dtf') === 'uvdtf' ? UVDTF_PRESETS[0] : DTF_PRESETS[0];
+      setSettings((prev) => ({ ...prev, ...getSettingsUpdatesForPreset(fallback) }));
+    }
     setNavTab('landing');
     if (typeof window !== 'undefined' && window.location.hash) {
       window.location.hash = '';
     }
     showNotification('Signed out of production workstation.', 'info');
+  };
+
+  const handleLockedPresetClick = (preset: RollPreset) => {
+    showNotification(
+      `${preset.shortLabel} is locked. Only authorized email IDs have access to this option.`,
+      'warning'
+    );
+    if (!currentUser) {
+      setAuthModalMode('login');
+      setIsAuthModalOpen(true);
+    }
+  };
+
+  const handleSelectPrintType = (printType: PrintType) => {
+    const defaultPreset = printType === 'uvdtf' ? UVDTF_PRESETS[0] : DTF_PRESETS[0];
+    setSettings((prev) => ({
+      ...prev,
+      ...getSettingsUpdatesForPreset(defaultPreset),
+      unit: 'inch',
+      spacing: mmToUnit(prev.spacingMm, 'inch'),
+      margin: mmToUnit(prev.marginMm, 'inch')
+    }));
+    setNavTab('studio');
+    showNotification(
+      printType === 'uvdtf'
+        ? 'UVDTF Gang Sheet Studio ready (A4, A3, Meter 22×39, 23×100)'
+        : 'DTF Gang Sheet Studio ready (22×100 & 22.5×100)',
+      'success'
+    );
   };
 
   // Re-run packing algorithm whenever assets or layout settings change
@@ -133,7 +180,16 @@ export const App: React.FC = () => {
   }, [settings.unit, settings.filmWidthMm, settings.spacingMm, settings.marginMm, settings.fixedLengthMm]);
 
   const handleUpdateSettings = (updates: Partial<SheetSettings>) => {
-    // Clamp maximum printing width to 24" (allows standard 11", 22", and 22.2" master rolls)
+    // Enforce email-based lock check if switching to a locked preset
+    if (updates.filmWidthPreset !== undefined) {
+      const targetPreset = findPresetById(updates.filmWidthPreset);
+      if (targetPreset?.isLocked && !hasLockedRollAccess(currentUser)) {
+        handleLockedPresetClick(targetPreset);
+        return;
+      }
+    }
+
+    // Clamp maximum printing width to 24" (allows 11", 22", 22.5", 23")
     if (updates.filmWidth !== undefined) {
       updates.filmWidth = Math.min(24, Math.max(1, updates.filmWidth));
       updates.filmWidthMm = updates.filmWidth * 25.4;
@@ -142,16 +198,18 @@ export const App: React.FC = () => {
       updates.filmWidthMm = Math.min(24 * 25.4, Math.max(25.4, updates.filmWidthMm));
     }
 
-    // Evaluate height constraints: for 11" min 8 max 17; for 22" & 22.2" min 39 max 100
+    // Evaluate height constraints from active preset or width
+    const effPresetId = updates.filmWidthPreset ?? settings.filmWidthPreset;
+    const effPreset = findPresetById(effPresetId);
     const effWidth = updates.filmWidth ?? settings.filmWidth;
-    let minLen = 1;
-    let maxLen = 100;
-    if (effWidth <= 11.1) {
-      minLen = 8;
-      maxLen = 17;
-    } else if (effWidth >= 21.9) {
-      minLen = 39;
-      maxLen = 100;
+    let minLen = effPreset ? effPreset.minLengthIn : (effWidth <= 11.1 ? 8 : (effWidth >= 21.9 ? 39 : 1));
+    let maxLen = effPreset ? effPreset.maxLengthIn : (effWidth <= 11.1 ? 17 : 100);
+
+    // If preset is fixed-length (e.g. UVDTF A4 11x8, A3 11x17, Meter 22x39), keep length fixed
+    if (effPreset?.isFixedLength) {
+      updates.lengthMode = 'fixed';
+      updates.fixedLength = effPreset.defaultLengthIn;
+      updates.fixedLengthMm = effPreset.defaultLengthIn * 25.4;
     }
 
     // When filmWidth changes and fixedLength was not explicitly provided, clamp existing fixedLength
@@ -173,6 +231,15 @@ export const App: React.FC = () => {
     if (updates.fixedLengthMm !== undefined) {
       updates.fixedLengthMm = Math.min(maxLen * 25.4, Math.max(minLen * 25.4, updates.fixedLengthMm));
     }
+
+    // Enforce minimum 5 mm spacing
+    if (updates.spacingMm !== undefined) {
+      const clampedSpacingMm = Math.max(5, updates.spacingMm);
+      const effUnit = updates.unit ?? settings.unit;
+      updates.spacingMm = clampedSpacingMm;
+      updates.spacing = Math.round(mmToUnit(clampedSpacingMm, effUnit) * 1000) / 1000;
+    }
+
     setSettings((prev) => ({ ...prev, ...updates }));
   };
 
@@ -185,108 +252,51 @@ export const App: React.FC = () => {
         if (asset.id !== id) return asset;
         const updated = { ...asset, ...updates };
 
-        const isAspectLocked = updates.aspectLocked !== undefined ? updates.aspectLocked : asset.aspectLocked;
+        const isAspectLocked = updated.aspectLocked !== false;
+        updated.aspectLocked = isAspectLocked;
         const origW = asset.trimmedWidth || asset.originalWidth || 1;
         const origH = asset.trimmedHeight || asset.originalHeight || 1;
-        const defaultRatio = (origW > 0 && origH > 0) ? (origW / origH) : 1;
+        const naturalRatio = (origW > 0 && origH > 0) ? (origW / origH) : 1;
 
-        // When aspect lock is enabled, capture and preserve ratio
-        if (updates.aspectLocked === true) {
-          if (updates.lockedRatio !== undefined && updates.lockedRatio > 0) {
-            updated.lockedRatio = updates.lockedRatio;
-          } else if (!asset.lockedRatio) {
-            const currentRatio = (asset.targetWidth > 0 && asset.targetHeight > 0)
-              ? (asset.targetWidth / asset.targetHeight)
-              : defaultRatio;
-            updated.lockedRatio = currentRatio;
-          }
-        } else if (updates.aspectLocked === false) {
-          updated.lockedRatio = undefined;
+        if (updates.lockedRatio !== undefined && updates.lockedRatio > 0) {
+          updated.lockedRatio = updates.lockedRatio;
+        } else if (!asset.lockedRatio || asset.lockedRatio <= 0) {
+          updated.lockedRatio = naturalRatio;
         }
-
-        const activeRatio = updated.lockedRatio && updated.lockedRatio > 0
-          ? updated.lockedRatio
-          : (asset.lockedRatio && asset.lockedRatio > 0 ? asset.lockedRatio : defaultRatio);
-        const safeRatio = (!activeRatio || isNaN(activeRatio) || activeRatio <= 0) ? 1 : activeRatio;
 
         const precision = settings.unit === 'meter' ? 4 : 2;
         const factor = Math.pow(10, precision);
 
-        if (updates.targetWidth !== undefined && updates.targetHeight === undefined) {
-          // User changed width only
+        // Always let the user enter Width and Height independently without overwriting the other field.
+        // Lock Aspect Ratio preserves the image's natural proportions inside the entered Width x Height box during preview & export.
+        if (updates.targetWidth !== undefined) {
           const rawW = Math.max(0.01, updates.targetWidth);
           const clampedW = Math.round(rawW * factor) / factor;
           updated.targetWidth = clampedW;
           updated.targetWidthMm = unitToMm(clampedW, settings.unit);
 
-          if (isAspectLocked) {
-            // newHeight = newWidth / aspectRatio
-            const calcH = clampedW / safeRatio;
-            const clampedH = Math.max(0.01, Math.round(calcH * factor) / factor);
-            updated.targetHeight = clampedH;
-            updated.targetHeightMm = unitToMm(clampedH, settings.unit);
-          }
-
-          const targetWidthInches = settings.unit === 'inch'
-            ? clampedW
-            : updated.targetWidthMm / 25.4;
-          if (targetWidthInches > settings.filmWidth) {
+          const targetWidthInches = updated.targetWidthMm / 25.4;
+          const currentFilmWidthInches = settings.filmWidthMm / 25.4;
+          if (targetWidthInches > currentFilmWidthInches) {
             autoExpandWidth = Math.min(22, targetWidthInches);
           }
-          if (isAspectLocked && settings.lengthMode === 'fixed') {
-            const targetHeightInches = settings.unit === 'inch'
-              ? updated.targetHeight
-              : updated.targetHeightMm / 25.4;
-            if (targetHeightInches > settings.fixedLength) {
-              autoExpandHeight = Math.min(100, targetHeightInches);
-            }
-          }
-        } else if (updates.targetHeight !== undefined && updates.targetWidth === undefined) {
-          // User changed height only
+        }
+
+        if (updates.targetHeight !== undefined) {
           const rawH = Math.max(0.01, updates.targetHeight);
           const clampedH = Math.round(rawH * factor) / factor;
           updated.targetHeight = clampedH;
           updated.targetHeightMm = unitToMm(clampedH, settings.unit);
 
-          if (isAspectLocked) {
-            // newWidth = newHeight * aspectRatio
-            const calcW = clampedH * safeRatio;
-            const clampedW = Math.max(0.01, Math.round(calcW * factor) / factor);
-            updated.targetWidth = clampedW;
-            updated.targetWidthMm = unitToMm(clampedW, settings.unit);
-          }
-
-          const targetHeightInches = settings.unit === 'inch'
-            ? clampedH
-            : updated.targetHeightMm / 25.4;
-          if (settings.lengthMode === 'fixed' && targetHeightInches > settings.fixedLength) {
+          const targetHeightInches = updated.targetHeightMm / 25.4;
+          const currentFixedLengthInches = settings.fixedLengthMm / 25.4;
+          if (settings.lengthMode === 'fixed' && targetHeightInches > currentFixedLengthInches) {
             autoExpandHeight = Math.min(100, targetHeightInches);
           }
-          if (isAspectLocked) {
-            const targetWidthInches = settings.unit === 'inch'
-              ? updated.targetWidth
-              : updated.targetWidthMm / 25.4;
-            if (targetWidthInches > settings.filmWidth) {
-              autoExpandWidth = Math.min(22, targetWidthInches);
-            }
-          }
-        } else {
-          // Both or neither specified
-          if (updates.targetWidth !== undefined) {
-            const rawW = Math.max(0.01, updates.targetWidth);
-            updated.targetWidth = Math.round(rawW * factor) / factor;
-            updated.targetWidthMm = unitToMm(updated.targetWidth, settings.unit);
-          }
-          if (updates.targetHeight !== undefined) {
-            const rawH = Math.max(0.01, updates.targetHeight);
-            updated.targetHeight = Math.round(rawH * factor) / factor;
-            updated.targetHeightMm = unitToMm(updated.targetHeight, settings.unit);
-          }
-          if (isAspectLocked && updates.targetWidth !== undefined && updates.targetHeight !== undefined) {
-            if (updated.targetWidth > 0 && updated.targetHeight > 0) {
-              updated.lockedRatio = updated.targetWidth / updated.targetHeight;
-            }
-          }
+        }
+
+        if (updated.targetWidth > 0 && updated.targetHeight > 0) {
+          updated.lockedRatio = updated.targetWidth / updated.targetHeight;
         }
 
         const px = updated.trimmedWidth || updated.originalWidth;
@@ -431,7 +441,7 @@ export const App: React.FC = () => {
           targetHeight: mmToUnit(targetHMm, settings.unit),
           targetWidthMm: targetWMm,
           targetHeightMm: targetHMm,
-          aspectLocked: false,
+          aspectLocked: true,
           lockedRatio: (img.naturalWidth > 0 && img.naturalHeight > 0) ? (img.naturalWidth / img.naturalHeight) : 1,
           copies: 1,
           allowRotation: false,
@@ -543,23 +553,32 @@ export const App: React.FC = () => {
       showNotification('No placements to export');
       return;
     }
+    const totalSheets = layout.sheets?.length || 1;
     setIsExporting(true);
-    setExportProgress(10);
+    setExportProgress(5);
+    setExportStatusText(totalSheets > 1 ? `Starting export of ${totalSheets} sheets...` : 'Starting export...');
     try {
-      await exportHighResolutionPng(layout, settings, (prog) => {
+      await exportHighResolutionPng(layout, settings, (prog, status) => {
         setExportProgress(prog);
+        if (status) setExportStatusText(status);
       });
       confetti({
         particleCount: 75,
         spread: 60,
         origin: { y: 0.85 }
       });
-      showNotification('Print-Ready 300 DPI Transparent PNG downloaded!');
+      showNotification(
+        totalSheets > 1
+          ? `All ${totalSheets} sheets downloaded as separate files!`
+          : 'Print-Ready Transparent PNG downloaded!'
+      );
     } catch (err) {
       console.error(err);
       alert('Export failed.');
     } finally {
       setIsExporting(false);
+      setExportProgress(0);
+      setExportStatusText('');
     }
   };
 
@@ -573,22 +592,26 @@ export const App: React.FC = () => {
       return;
     }
     setIsExporting(true);
-    setExportProgress(15);
+    setExportProgress(10);
+    setExportStatusText(`Preparing Sheet ${sheetIndex + 1}...`);
     try {
-      await exportSingleSheetPng(layout, settings, sheetIndex, (prog) => {
+      await exportSingleSheetPng(layout, settings, sheetIndex, (prog, status) => {
         setExportProgress(prog);
+        if (status) setExportStatusText(status);
       });
       confetti({
         particleCount: 65,
         spread: 55,
         origin: { y: 0.85 }
       });
-      showNotification(`Sheet ${sheetIndex + 1} PNG downloaded (300 DPI)!`);
+      showNotification(`Sheet ${sheetIndex + 1} PNG downloaded (Print-Ready)!`);
     } catch (err) {
       console.error(err);
       alert('Export failed for this sheet.');
     } finally {
       setIsExporting(false);
+      setExportProgress(0);
+      setExportStatusText('');
     }
   };
 
@@ -607,7 +630,7 @@ export const App: React.FC = () => {
             setIsAuthModalOpen(true);
           }}
           onLogout={handleLogout}
-          onLaunchStudio={() => setNavTab('studio')}
+          onLaunchStudio={() => setNavTab('home')}
           onOpenTiffStudio={() => setNavTab('tiff-export')}
           onOpenTemplates={() => setNavTab('templates')}
         />
@@ -691,7 +714,17 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {navTab === 'tiff-export' ? (
+        {navTab === 'home' ? (
+          <HomeSelectorView
+            currentUser={currentUser}
+            activePrintType={settings.printType || 'dtf'}
+            onSelectPrintType={handleSelectPrintType}
+            onOpenAuth={(mode) => {
+              setAuthModalMode(mode);
+              setIsAuthModalOpen(true);
+            }}
+          />
+        ) : navTab === 'tiff-export' ? (
           <TiffExportStudio
             currentAssets={assets}
             currentSettings={settings}
@@ -750,10 +783,11 @@ export const App: React.FC = () => {
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 sm:px-6 pt-2 pb-3">
               <div className="max-w-[1720px] w-full mx-auto flex-1 flex flex-col min-h-0 space-y-2">
                 {/* Control Toolbar: Represented at TOP above "Create Your Gang Sheet" */}
-                <div className="w-full flex-shrink-0">
+                <div className="w-full flex-shrink-0 relative z-30">
                   <BottomToolbar
                     settings={settings}
                     layout={layout}
+                    currentUser={currentUser}
                     onUpdateSettings={handleUpdateSettings}
                     onGenerateLayout={() => {
                       confetti({ particleCount: 60, spread: 60, origin: { y: 0.85 } });
@@ -764,6 +798,8 @@ export const App: React.FC = () => {
                     onExportJobTicket={handleExportJobTicket}
                     onExportSingleSheet={handleExportSingleSheet}
                     onOpenPreviewModal={() => setIsPreviewModalOpen(true)}
+                    onLockedPresetClick={handleLockedPresetClick}
+                    onSwitchHome={() => setNavTab('home')}
                     isGenerating={isExporting}
                   />
                 </div>
@@ -864,12 +900,17 @@ export const App: React.FC = () => {
           onClose={() => setIsPreviewModalOpen(false)}
           onExportPng={handleExportPng}
           onExportSingleSheet={handleExportSingleSheet}
+          isExporting={isExporting}
+          exportProgress={exportProgress}
+          exportStatusText={exportStatusText}
           onOptimize={() => {
+            const activePreset = findPresetById(settings.filmWidthPreset);
             handleUpdateSettings({
               nestingAlgorithm: 'true-shape',
-              allowItemRotation: true
+              allowItemRotation: true,
+              ...(activePreset?.isFixedLength ? {} : { lengthMode: 'auto' })
             });
-            showNotification('Optimized layout with True Shape nesting!');
+            showNotification('Optimized layout: True-Shape nesting applied with your spacing!');
           }}
         />
       )}

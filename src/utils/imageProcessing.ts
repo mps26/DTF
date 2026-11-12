@@ -154,6 +154,186 @@ export async function cropImageToBoundingBox(img: HTMLImageElement, cropBox: Cro
   return canvas.toDataURL('image/png');
 }
 
+export type RecreateAiStyle = 'hd-redraw' | 'clean-illustration' | 'vivid-print';
+
+/**
+ * AI-Style High-Fidelity Artwork Recreation:
+ * 1. 2x resolution reconstruction (capped at 2400px max side for responsiveness).
+ * 2. 5x5 edge-preserving bilateral redraw to eliminate noise & compression artifacts.
+ * 3. Multi-scale clarity & edge contour reconstruction.
+ * 4. Vibrant DTF tone/color remastering & crisp alpha edge tightening.
+ */
+export async function recreateImageAi(
+  img: HTMLImageElement,
+  style: RecreateAiStyle = 'hd-redraw'
+): Promise<string> {
+  const maxDim = 2400;
+  const rawW = img.naturalWidth * 2;
+  const rawH = img.naturalHeight * 2;
+  const scaleDown = Math.max(rawW, rawH) > maxDim ? maxDim / Math.max(rawW, rawH) : 1;
+  const w = Math.max(1, Math.round(rawW * scaleDown));
+  const h = Math.max(1, Math.round(rawH * scaleDown));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return img.src;
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const src = new Uint8ClampedArray(imageData.data);
+  const out = imageData.data;
+
+  // Style tuning parameters
+  const colorSigma =
+    style === 'clean-illustration' ? 42 : style === 'vivid-print' ? 24 : 30;
+  const twoSigmaSq = 2 * colorSigma * colorSigma;
+  const clarityAmt =
+    style === 'clean-illustration' ? 0.45 : style === 'vivid-print' ? 0.65 : 0.55;
+  const edgeAmt =
+    style === 'clean-illustration' ? 0.65 : style === 'vivid-print' ? 0.55 : 0.60;
+  const satBoost =
+    style === 'clean-illustration' ? 0.22 : style === 'vivid-print' ? 0.34 : 0.24;
+  const contrastBoost =
+    style === 'clean-illustration' ? 1.14 : style === 'vivid-print' ? 1.18 : 1.12;
+
+  // Pass 1: 5x5 Edge-Preserving Bilateral Redraw
+  const bilat = new Uint8ClampedArray(src.length);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+      const a = src[idx + 3];
+      if (a < 10) {
+        bilat[idx + 3] = 0;
+        continue;
+      }
+
+      const cr = src[idx];
+      const cg = src[idx + 1];
+      const cb = src[idx + 2];
+
+      let sumR = 0;
+      let sumG = 0;
+      let sumB = 0;
+      let sumW = 0;
+
+      const y0 = Math.max(0, y - 2);
+      const y1 = Math.min(h - 1, y + 2);
+      const x0 = Math.max(0, x - 2);
+      const x1 = Math.min(w - 1, x + 2);
+
+      for (let ny = y0; ny <= y1; ny++) {
+        const dy = ny - y;
+        const rowOff = ny * w;
+        for (let nx = x0; nx <= x1; nx++) {
+          const nIdx = (rowOff + nx) * 4;
+          if (src[nIdx + 3] < 15) continue;
+
+          const dx = nx - x;
+          const spatialW = Math.exp(-(dx * dx + dy * dy) / 4.5);
+
+          const dr = src[nIdx] - cr;
+          const dg = src[nIdx + 1] - cg;
+          const db = src[nIdx + 2] - cb;
+          const colorDistSq = dr * dr + dg * dg + db * db;
+          const rangeW = Math.exp(-colorDistSq / twoSigmaSq);
+
+          const weight = spatialW * rangeW;
+          sumR += src[nIdx] * weight;
+          sumG += src[nIdx + 1] * weight;
+          sumB += src[nIdx + 2] * weight;
+          sumW += weight;
+        }
+      }
+
+      if (sumW > 0) {
+        bilat[idx] = Math.round(sumR / sumW);
+        bilat[idx + 1] = Math.round(sumG / sumW);
+        bilat[idx + 2] = Math.round(sumB / sumW);
+      } else {
+        bilat[idx] = cr;
+        bilat[idx + 1] = cg;
+        bilat[idx + 2] = cb;
+      }
+      bilat[idx + 3] = a;
+    }
+  }
+
+  // Pass 2: Multi-Scale Clarity, Edge Reconstruction, DTF Tone Remaster & Alpha Tighten
+  for (let y = 1; y < h - 1; y++) {
+    const row = y * w;
+    for (let x = 1; x < w - 1; x++) {
+      const idx = (row + x) * 4;
+      const a = bilat[idx + 3];
+      if (a < 15) {
+        out[idx + 3] = 0;
+        continue;
+      }
+
+      // Compute 3x3 local average & Laplacian edge detail from bilateral-cleaned buffer
+      let meanR = 0, meanG = 0, meanB = 0;
+      for (let ny = y - 1; ny <= y + 1; ny++) {
+        const nRow = ny * w;
+        for (let nx = x - 1; nx <= x + 1; nx++) {
+          const nIdx = (nRow + nx) * 4;
+          meanR += bilat[nIdx];
+          meanG += bilat[nIdx + 1];
+          meanB += bilat[nIdx + 2];
+        }
+      }
+      meanR /= 9;
+      meanG /= 9;
+      meanB /= 9;
+
+      const topIdx = ((y - 1) * w + x) * 4;
+      const botIdx = ((y + 1) * w + x) * 4;
+      const lftIdx = (row + x - 1) * 4;
+      const rgtIdx = (row + x + 1) * 4;
+
+      let r = bilat[idx];
+      let g = bilat[idx + 1];
+      let b = bilat[idx + 2];
+
+      // Local clarity + edge contour boost
+      const lapR = 4 * r - (bilat[topIdx] + bilat[botIdx] + bilat[lftIdx] + bilat[rgtIdx]);
+      const lapG = 4 * g - (bilat[topIdx + 1] + bilat[botIdx + 1] + bilat[lftIdx + 1] + bilat[rgtIdx + 1]);
+      const lapB = 4 * b - (bilat[topIdx + 2] + bilat[botIdx + 2] + bilat[lftIdx + 2] + bilat[rgtIdx + 2]);
+
+      r = r + (r - meanR) * clarityAmt + lapR * edgeAmt;
+      g = g + (g - meanG) * clarityAmt + lapG * edgeAmt;
+      b = b + (b - meanB) * clarityAmt + lapB * edgeAmt;
+
+      // DTF Contrast & Vibrancy Remaster
+      r = (r - 128) * contrastBoost + 128;
+      g = (g - 128) * contrastBoost + 128;
+      b = (b - 128) * contrastBoost + 128;
+
+      const avg = (r + g + b) / 3;
+      const maxCh = Math.max(r, g, b);
+      const minCh = Math.min(r, g, b);
+      const curSat = maxCh > 0 ? (maxCh - minCh) / maxCh : 0;
+      // Adaptive vibrancy: boost less-saturated tones more, protect already vivid tones
+      const vib = satBoost * (1.0 - curSat * 0.45);
+
+      out[idx] = Math.max(0, Math.min(255, Math.round(r + (r - avg) * vib)));
+      out[idx + 1] = Math.max(0, Math.min(255, Math.round(g + (g - avg) * vib)));
+      out[idx + 2] = Math.max(0, Math.min(255, Math.round(b + (b - avg) * vib)));
+
+      // Crisp alpha edge tightening
+      out[idx + 3] = a > 235 ? 255 : Math.max(0, Math.min(255, Math.round((a - 15) * (255 / 220))));
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+
+
 /**
  * Intelligent background removal:
  * Detects background color by sampling perimeter pixels (corners and edges).
@@ -314,6 +494,9 @@ export async function removeImageBackground(
 
 
 
+
+
+
 /**
  * Pixel Doctor / Despeckle: Removes single isolated rogue pixels
  */
@@ -354,6 +537,9 @@ export async function despeckleImage(img: HTMLImageElement): Promise<string> {
 
 
 
+
+
+
 /**
  * Adds an outline stroke (white underbase or colored contour) around transparent artwork
  */
@@ -389,6 +575,8 @@ export async function addStrokeOutline(
 
   return canvas.toDataURL('image/png');
 }
+
+
 
 /**
  * AI Super-Resolution & Sharpen Upscaler (2x / 4x)
@@ -442,6 +630,8 @@ export async function upscaleImageAi(
   return canvas.toDataURL('image/png');
 }
 
+
+
 /**
  * Color & Tone Adjustments: Brightness, Contrast, Saturation, Hue Shift
  */
@@ -464,11 +654,9 @@ export async function adjustColorAndTone(
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  const bFactor = (adj.brightness / 100) * 128;
-  const cFactor = (adj.contrast >= 0)
-    ? (adj.contrast + 100) / 100
-    : (100 + adj.contrast) / 100;
-  const sFactor = (adj.saturation + 100) / 100;
+  const bFactor = Math.max(0.1, 1 + adj.brightness / 100);
+  const cFactor = Math.max(0.1, 1 + adj.contrast / 100);
+  const sFactor = Math.max(0, 1 + adj.saturation / 100);
   const hueRad = (adj.hue * Math.PI) / 180;
   const cosH = Math.cos(hueRad);
   const sinH = Math.sin(hueRad);
@@ -481,9 +669,9 @@ export async function adjustColorAndTone(
     let b = data[i + 2];
 
     // Brightness
-    r += bFactor;
-    g += bFactor;
-    b += bFactor;
+    r *= bFactor;
+    g *= bFactor;
+    b *= bFactor;
 
     // Contrast
     r = (r - 128) * cFactor + 128;
@@ -523,8 +711,53 @@ export async function adjustColorAndTone(
 
 
 
+
+
+
 /**
- * Texture & Distressed Crackle Effect for breathable vintage DTF prints
+ * Fast deterministic 2D hash & smooth value noise / FBM helpers for organic textures
+ */
+function hash2D(ix: number, iy: number): number {
+  let n = Math.imul(ix, 374761393) + Math.imul(iy, 668265263);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+}
+
+function smoothNoise2D(x: number, y: number): number {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+
+  const a = hash2D(ix, iy);
+  const b = hash2D(ix + 1, iy);
+  const c = hash2D(ix, iy + 1);
+  const d = hash2D(ix + 1, iy + 1);
+
+  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+}
+
+function fbm2D(x: number, y: number, octaves: number = 3): number {
+  let value = 0;
+  let amp = 0.5;
+  let freq = 1;
+  let norm = 0;
+  for (let i = 0; i < octaves; i++) {
+    value += amp * smoothNoise2D(x * freq, y * freq);
+    norm += amp;
+    amp *= 0.5;
+    freq *= 2.03;
+  }
+  return value / norm;
+}
+
+/**
+ * Texture & Distressed Effect for breathable vintage DTF prints:
+ * - 'cracked': Organic domain-warped Voronoi crackle (real branching plastisol ink cracks)
+ * - 'vintage': Washed-out cotton slub streaks + subtle faded ink tone
+ * - 'grunge': Multi-octave organic FBM blotches, grit & splatter erosion
  */
 export async function applyTextureEffect(
   img: HTMLImageElement,
@@ -542,32 +775,120 @@ export async function applyTextureEffect(
   const data = imageData.data;
   const w = canvas.width;
   const h = canvas.height;
-  const thresh = (intensity / 100) * 0.45;
+  const minDim = Math.min(w, h);
+  const t = Math.max(0.08, Math.min(1, intensity / 100));
 
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const idx = (y * w + x) * 4;
-      if (data[idx + 3] === 0) continue;
+  if (style === 'cracked') {
+    // Domain-warped Voronoi cell-edge distance (d2 - d1) produces authentic branching cracks
+    const cellSize = Math.max(18, minDim / 18);
+    const invCell = 1 / cellSize;
+    const crackWidth = 0.045 + t * 0.16;
+    const warpAmp = cellSize * 0.55;
 
-      let noise = 0;
-      if (style === 'cracked') {
-        // High frequency cellular crack pattern
-        const nx = Math.sin(x * 0.07) * Math.cos(y * 0.07);
-        const ny = Math.cos(x * 0.15 + y * 0.15);
-        noise = Math.abs(nx * ny);
-      } else if (style === 'vintage') {
-        // Horizontal distressed striping wear
-        noise = Math.abs(Math.sin(y * 0.12) * Math.cos((x + y) * 0.03));
-      } else {
-        // Organic grunge splatter
-        const n1 = Math.sin(x * 0.05 + y * 0.05);
-        const n2 = Math.cos(x * 0.12 - y * 0.08);
-        noise = Math.abs(n1 * n2);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        const alpha = data[idx + 3];
+        if (alpha === 0) continue;
+
+        // Organic warp so crack lines branch & jag naturally
+        const wx = x + (fbm2D(x * 0.018, y * 0.018, 2) - 0.5) * warpAmp;
+        const wy = y + (fbm2D(x * 0.018 + 31.7, y * 0.018 + 17.3, 2) - 0.5) * warpAmp;
+
+        const gx = wx * invCell;
+        const gy = wy * invCell;
+        const ix = Math.floor(gx);
+        const iy = Math.floor(gy);
+
+        let d1 = 999;
+        let d2 = 999;
+
+        for (let oy = -1; oy <= 1; oy++) {
+          for (let ox = -1; ox <= 1; ox++) {
+            const cx = ix + ox;
+            const cy = iy + oy;
+            const px = cx + 0.15 + hash2D(cx * 3 + 7, cy * 5 + 11) * 0.7;
+            const py = cy + 0.15 + hash2D(cx * 7 + 19, cy * 3 + 23) * 0.7;
+            const dx = px - gx;
+            const dy = py - gy;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < d1) {
+              d2 = d1;
+              d1 = d;
+            } else if (d < d2) {
+              d2 = d;
+            }
+          }
+        }
+
+        const edgeDist = d2 - d1;
+        // Modulate crack width organically so some cracks are wider and some taper off
+        const localWidth = crackWidth * (0.55 + fbm2D(x * 0.01, y * 0.01, 2) * 0.9);
+        if (edgeDist < localWidth) {
+          const crackFactor = edgeDist / localWidth;
+          // Crisp crack cutout with subtle micro-roughness
+          const grit = hash2D(x, y) * 0.25;
+          const keep = Math.max(0, Math.min(1, crackFactor * 1.15 - grit * (1 - crackFactor)));
+          data[idx + 3] = Math.round(alpha * keep);
+        }
       }
+    }
+  } else if (style === 'vintage') {
+    // Washed-out cotton slub streaks + subtle faded vintage ink tone
+    const baseScale = Math.max(0.008, 12 / minDim);
+    const wearThreshold = 0.24 + t * 0.36;
+    const fadeAmt = 0.12 + t * 0.26;
 
-      if (noise < thresh) {
-        // Modulate alpha to create the print crack/cutout
-        data[idx + 3] = Math.round(data[idx + 3] * (noise / thresh));
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        const alpha = data[idx + 3];
+        if (alpha === 0) continue;
+
+        // Horizontal cotton-jersey slub fibers + organic blotchiness
+        const slub = fbm2D(x * baseScale * 0.45, y * baseScale * 3.8, 3);
+        const grain = fbm2D(x * baseScale * 2.5 + 13.1, y * baseScale * 2.5 + 7.4, 2);
+        const micro = hash2D(x, y);
+        const wear = slub * 0.62 + grain * 0.28 + micro * 0.10;
+
+        // Subtle vintage washed-out ink fade (lifted shadows + slight warm desaturation)
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        data[idx] = Math.min(255, Math.round(r + (lum - r) * fadeAmt * 0.45 + 18 * fadeAmt));
+        data[idx + 1] = Math.min(255, Math.round(g + (lum - g) * fadeAmt * 0.45 + 14 * fadeAmt));
+        data[idx + 2] = Math.min(255, Math.round(b + (lum - b) * fadeAmt * 0.55 + 6 * fadeAmt));
+
+        if (wear < wearThreshold) {
+          const keep = Math.max(0, (wear / wearThreshold) * 0.85);
+          data[idx + 3] = Math.round(alpha * keep);
+        }
+      }
+    }
+  } else {
+    // 'grunge': Multi-octave organic FBM blotches, grit & splatter erosion
+    const baseScale = Math.max(0.007, 10 / minDim);
+    const thresh = 0.22 + t * 0.42;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        const alpha = data[idx + 3];
+        if (alpha === 0) continue;
+
+        // Multi-scale organic grunge: large blotches + medium tears + fine grit
+        const macro = fbm2D(x * baseScale * 0.85, y * baseScale * 0.85, 3);
+        const mid = fbm2D(x * baseScale * 3.2 + 41.3, y * baseScale * 3.2 + 19.7, 2);
+        const grit = hash2D(x, y);
+        const n = macro * 0.55 + mid * 0.30 + grit * 0.15;
+
+        if (n < thresh) {
+          // Sharp organic tear edges
+          const ratio = n / thresh;
+          const keep = ratio < 0.72 ? 0 : (ratio - 0.72) / 0.28;
+          data[idx + 3] = Math.round(alpha * keep);
+        }
       }
     }
   }
@@ -578,13 +899,21 @@ export async function applyTextureEffect(
 
 
 
+
+
+
+export type HalftoneStyle = 'color' | 'duotone' | 'bw';
+
 /**
- * Halftone Screen Dot Effect
+ * 45-Degree Angled Halftone Screen Dot Effect for DTF & Screen Printing:
+ * - Scales dot pitch & radius cleanly with image resolution so dots are always crisp and visible.
+ * - Uses a 45° rotated screen grid and cell-averaged color sampling.
  */
 export async function applyHalftoneFilter(
   img: HTMLImageElement,
   dotSpacing: number = 8,
-  dotRadiusMax: number = 4
+  dotRadiusMax: number = 4,
+  style: HalftoneStyle = 'color'
 ): Promise<string> {
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;
@@ -596,26 +925,91 @@ export async function applyHalftoneFilter(
   const srcData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
   const w = canvas.width;
   const h = canvas.height;
+  const minDim = Math.min(w, h);
 
-  // Clear canvas to rebuild in pure halftone screen
+  // Automatic resolution-aware halftone pitch matching classic print screens
+  const pitch = Math.max(6, Math.round(minDim / 90));
+  const maxR = pitch * 0.68;
+
+  // Clear canvas to rebuild in pure 45° halftone screen
   ctx.clearRect(0, 0, w, h);
 
-  for (let y = 0; y < h; y += dotSpacing) {
-    for (let x = 0; x < w; x += dotSpacing) {
-      const idx = (Math.min(y, h - 1) * w + Math.min(x, w - 1)) * 4;
-      const alpha = srcData[idx + 3];
-      if (alpha < 30) continue;
+  const angle = Math.PI / 4; // 45-degree classic halftone screen
+  const cosA = Math.cos(angle);
+  const sinA = Math.sin(angle);
 
-      const r = srcData[idx];
-      const g = srcData[idx + 1];
-      const b = srcData[idx + 2];
+  // Bounding box in rotated (u, v) screen space
+  const corners = [
+    [0, 0],
+    [w, 0],
+    [0, h],
+    [w, h]
+  ];
+  let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+  for (const [cx, cy] of corners) {
+    const u = cx * cosA + cy * sinA;
+    const v = -cx * sinA + cy * cosA;
+    if (u < minU) minU = u;
+    if (u > maxU) maxU = u;
+    if (v < minV) minV = v;
+    if (v > maxV) maxV = v;
+  }
+
+  const sampleStep = Math.max(1, Math.floor(pitch / 3));
+
+  for (let v = minV; v <= maxV; v += pitch) {
+    for (let u = minU; u <= maxU; u += pitch) {
+      // Convert rotated grid center (u, v) back to image (x, y)
+      const cx = Math.round(u * cosA - v * sinA);
+      const cy = Math.round(u * sinA + v * cosA);
+      if (cx < 0 || cx >= w || cy < 0 || cy >= h) continue;
+
+      // Average color & alpha over the dot cell for clean, noise-free sampling
+      let sumR = 0, sumG = 0, sumB = 0, sumA = 0, count = 0;
+      const half = Math.max(1, Math.floor(pitch * 0.38));
+      for (let sy = Math.max(0, cy - half); sy <= Math.min(h - 1, cy + half); sy += sampleStep) {
+        const rowOff = sy * w;
+        for (let sx = Math.max(0, cx - half); sx <= Math.min(w - 1, cx + half); sx += sampleStep) {
+          const sIdx = (rowOff + sx) * 4;
+          const a = srcData[sIdx + 3];
+          if (a >= 25) {
+            sumR += srcData[sIdx];
+            sumG += srcData[sIdx + 1];
+            sumB += srcData[sIdx + 2];
+            sumA += a;
+            count++;
+          }
+        }
+      }
+
+      if (count === 0) continue;
+
+      const r = Math.round(sumR / count);
+      const g = Math.round(sumG / count);
+      const b = Math.round(sumB / count);
+      const avgAlpha = (sumA / count) / 255;
       const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      const dotRadius = (1 - luminance * 0.8) * dotRadiusMax * (alpha / 255);
 
-      if (dotRadius > 0.5) {
+      let dotRadius = 0;
+      if (style === 'bw') {
+        // Classic B&W halftone (Image 1 & 2): darks merge solid, midtones form 45° dots, highlights shrink
+        dotRadius = Math.pow(1 - luminance * 0.92, 0.85) * maxR * avgAlpha;
+      } else if (style === 'duotone') {
+        // Uniform perforated dot matrix (Image 3): crisp, even breathable DTF dot screen
+        dotRadius = pitch * 0.36 * avgAlpha;
+      } else {
+        // Color Dots: 45° tonal halftone preserving vivid artwork colors
+        dotRadius = (0.34 + (1 - luminance) * 0.66) * (pitch * 0.58) * avgAlpha;
+      }
+
+      if (dotRadius > 0.6) {
         ctx.beginPath();
-        ctx.fillStyle = `rgb(${r},${g},${b})`;
-        ctx.arc(x + dotSpacing / 2, y + dotSpacing / 2, dotRadius, 0, Math.PI * 2);
+        if (style === 'bw') {
+          ctx.fillStyle = `rgba(12, 12, 16, ${avgAlpha.toFixed(3)})`;
+        } else {
+          ctx.fillStyle = `rgba(${r},${g},${b},${avgAlpha.toFixed(3)})`;
+        }
+        ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -623,6 +1017,8 @@ export async function applyHalftoneFilter(
 
   return canvas.toDataURL('image/png');
 }
+
+
 
 /**
  * Replace / Remove specific Color (Eyedropper tool)
@@ -679,6 +1075,41 @@ export async function replaceColorInImage(
   return canvas.toDataURL('image/png');
 }
 
+/**
+ * Draws an image inside a target box, preserving aspect ratio (centered contain fit)
+ * when aspectLocked is true so custom box dimensions never stretch or squish the artwork.
+ */
+export function drawImageProportional(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  boxX: number,
+  boxY: number,
+  boxW: number,
+  boxH: number,
+  aspectLocked: boolean = true
+): void {
+  if (!aspectLocked || img.naturalWidth <= 0 || img.naturalHeight <= 0 || boxW <= 0 || boxH <= 0) {
+    ctx.drawImage(img, boxX, boxY, boxW, boxH);
+    return;
+  }
+  const imgRatio = img.naturalWidth / img.naturalHeight;
+  const boxRatio = boxW / boxH;
+  let drawW = boxW;
+  let drawH = boxH;
+  if (boxRatio > imgRatio) {
+    drawH = boxH;
+    drawW = boxH * imgRatio;
+  } else {
+    drawW = boxW;
+    drawH = boxW / imgRatio;
+  }
+  const drawX = boxX + (boxW - drawW) / 2;
+  const drawY = boxY + (boxH - drawH) / 2;
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+}
+
+
+
 
 
 /**
@@ -719,6 +1150,8 @@ export function generateTextArtwork(opts: {
 
   return canvas.toDataURL('image/png');
 }
+
+
 
 export interface EmbroideryOptions {
   stitchPitch?: number; // Thread thickness / row spacing (8 - 24px, default 10)
@@ -765,18 +1198,22 @@ export async function applyEmbroideryEffect(
   const imgData = ctx.getImageData(0, 0, w, h);
   const data = imgData.data;
 
-  // Adaptive pitch based on image dimensions
+  // Fine thread strand sizing (authentic dense 3D threads, never blocky bricks)
   const minDim = Math.min(w, h);
-  const autoPitch = Math.max(9, Math.round(minDim / 70));
-  const rawPitch = opts.stitchPitch ?? autoPitch;
-  const pitch = Math.max(7, Math.min(26, rawPitch));
-  const stitchLen = opts.stitchLength ?? Math.round(pitch * 3.1);
+  const resScale = Math.max(1.0, minDim / 1000);
+  const rawPitch = opts.stitchPitch ?? 10;
+  // Map slider (8..24) to fine realistic thread strand width (~2.6px..5.5px * resScale)
+  const pitch = Math.max(2.4, Math.min(8.5, (2.4 + (rawPitch - 8) * 0.18) * resScale));
+  const stitchLen = opts.stitchLength ?? Math.round(pitch * 4.5);
   const angleDeg = opts.stitchAngle ?? 45;
   const angleRad = (angleDeg * Math.PI) / 180;
   const sheen = (opts.sheenIntensity ?? 85) / 100;
-  const relief = ((opts.reliefStrength ?? 80) / 100) * 8.5;
+  const relief = ((opts.reliefStrength ?? 80) / 100) * 6.0;
   const hasBorder = opts.hasBorder !== false;
-  const borderWidth = Math.max(4, Math.min(14, opts.borderWidth ?? Math.round(pitch * 0.85)));
+  const borderWidth = Math.max(
+    5,
+    Math.min(22, (opts.borderWidth ?? Math.round(6 + (rawPitch - 8) * 0.35)) * resScale)
+  );
   const fabric = opts.fabricBacking ?? 'transparent';
 
   const cosT = Math.cos(angleRad);
@@ -827,8 +1264,8 @@ export async function applyEmbroideryEffect(
     }
   }
 
-  // 2. Compute internal color seam map
-  const colorSeam = new Float32Array(w * h);
+  // 2. Compute smoothed internal color seam map (gives 3D raised puff & tuck-in seams at color boundaries)
+  const rawSeam = new Float32Array(w * h);
   for (let y = 1; y < h - 1; y++) {
     const row = y * w;
     for (let x = 1; x < w - 1; x++) {
@@ -843,15 +1280,38 @@ export async function applyEmbroideryEffect(
       const db = Math.abs(data[pIdx + 2] - data[rIdx + 2]) + Math.abs(data[pIdx + 2] - data[bIdx + 2]);
       const diff = dr + dg + db;
 
-      if (diff > 55) {
-        colorSeam[idx] = Math.min(1.0, (diff - 55) / 120);
+      if (diff > 65) {
+        rawSeam[idx] = Math.min(1.0, (diff - 65) / 140);
       }
     }
   }
 
-  // 3. Compute 3D Embroidery Height Map
+  // Smooth the seam map with a fast 3x3 box pass so color boundaries form smooth 3D bevels
+  const colorSeam = new Float32Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    const row = y * w;
+    for (let x = 1; x < w - 1; x++) {
+      const idx = row + x;
+      if (alphaMap[idx] < 15) continue;
+      colorSeam[idx] =
+        (rawSeam[idx - w - 1] +
+          rawSeam[idx - w] +
+          rawSeam[idx - w + 1] +
+          rawSeam[idx - 1] +
+          rawSeam[idx] * 2 +
+          rawSeam[idx + 1] +
+          rawSeam[idx + w - 1] +
+          rawSeam[idx + w] +
+          rawSeam[idx + w + 1]) /
+        10;
+    }
+  }
+
+  // 3. Compute 3D Embroidery Height Map (fine spun thread strands + satin contour border)
   const H = new Float32Array(w * h);
-  const borderPitch = Math.max(4.5, pitch * 0.58);
+  const cylMap = new Float32Array(w * h);
+  const creviceMap = new Float32Array(w * h);
+  const borderPitch = Math.max(2.4, pitch * 0.92);
 
   for (let y = 0; y < h; y++) {
     const row = y * w;
@@ -862,7 +1322,7 @@ export async function applyEmbroideryEffect(
 
       const dEdge = dist[idx];
 
-      // Edge normal gradient
+      // Edge normal gradient for perpendicular satin border stitches
       const leftIdx = row + Math.max(0, x - 1);
       const rightIdx = row + Math.min(w - 1, x + 1);
       const topIdx = Math.max(0, y - 1) * w + x;
@@ -880,60 +1340,64 @@ export async function applyEmbroideryEffect(
       let bCrevice = 0;
 
       if (hasBorder && dEdge <= borderWidth) {
-        borderFactor = Math.pow((borderWidth - dEdge) / borderWidth, 1.4);
+        borderFactor = Math.pow((borderWidth - dEdge) / borderWidth, 1.15);
         const borderV = -x * normY + y * normX;
         const bFracV = (((borderV % borderPitch + borderPitch) % borderPitch) / borderPitch - 0.5) * 2;
         bHCyl = Math.sqrt(Math.max(0, 1.0 - bFracV * bFracV));
-        bCrevice = Math.pow(Math.max(0, (Math.abs(bFracV) - 0.55) / 0.45), 2);
+        bCrevice = Math.pow(Math.max(0, (Math.abs(bFracV) - 0.65) / 0.35), 2);
       }
 
-      // Interior Tatami weave
+      // Interior fine spun thread weave
       const posU = x * cosT + y * sinT;
       const posV = -x * sinT + y * cosT;
-
-      const pIdx = idx * 4;
-      const r = data[pIdx];
-      const g = data[pIdx + 1];
-      const b = data[pIdx + 2];
-      const colorHash = ((r * 3 + g * 7 + b * 11) % 100);
 
       const rIndex = Math.floor(posV / pitch);
       const fracV = (((posV % pitch + pitch) % pitch) / pitch - 0.5) * 2;
       const hCyl = Math.sqrt(Math.max(0, 1.0 - fracV * fracV));
-      const rowCrevice = Math.pow(Math.max(0, (Math.abs(fracV) - 0.65) / 0.35), 2);
+      const rowCrevice = Math.pow(Math.max(0, (Math.abs(fracV) - 0.68) / 0.32), 2);
 
-      // Staggered stitch pattern (Tatami weave)
-      const stagger = (rIndex * 0.382) * stitchLen + colorHash * 0.22;
+      // Organic per-strand phase & spun yarn twist (like real twisted embroidery thread)
+      const strandSeed = Math.sin(rIndex * 12.9898) * 43758.5453;
+      const strandPhase = (strandSeed - Math.floor(strandSeed)) * stitchLen;
+      const stagger = ((rIndex % 3) * 0.3333) * stitchLen + strandPhase * 0.35;
       const uOffset = posU + stagger;
       const fracU = (((uOffset % stitchLen + stitchLen) % stitchLen) / stitchLen - 0.5) * 2;
 
-      // Needle puncture dimples at stitch ends
+      // Subtle stitch tuck-in at stitch ends (no blocky cuts)
       const holeDistU = (1.0 - Math.abs(fracU)) * (stitchLen / pitch);
       const holeDistV = Math.abs(fracV);
       const distToNeedle = Math.sqrt(holeDistU * holeDistU + holeDistV * holeDistV);
-      const needleHole = Math.pow(Math.max(0, 1.0 - distToNeedle / 1.3), 2);
+      const needleHole = Math.pow(Math.max(0, 1.0 - distToNeedle / 1.1), 2);
 
-      // Blend border satin with interior tatami
+      // Blend border satin with interior thread weave
       const effHCyl = bHCyl * borderFactor + hCyl * (1.0 - borderFactor);
       const effCrevice = bCrevice * borderFactor + rowCrevice * (1.0 - borderFactor);
       const effNeedle = needleHole * (1.0 - borderFactor);
+      cylMap[idx] = effHCyl;
+      creviceMap[idx] = effCrevice;
 
-      // Patch pillowing 3D height
-      const hPillow = Math.min(1.0, Math.pow(dEdge / 14.0, 0.62));
-      // Raised border crest ridge
+      // Patch pillowing & raised 3D satin border ridge
+      const hPillow = Math.min(1.0, Math.pow(dEdge / (12.0 * resScale), 0.65));
       const borderRidge = hasBorder
-        ? Math.sin(Math.min(1.0, dEdge / borderWidth) * Math.PI) * 0.45
+        ? Math.sin(Math.min(1.0, dEdge / borderWidth) * Math.PI) * 0.55
         : 0;
 
-      // Thread ply twist grain
-      const ply = Math.sin(posU * 1.4 + fracV * 2.5) * 0.07 * (1.0 - borderFactor);
+      // Spun yarn twist micro-grain along each thread
+      const ply = Math.sin(posU * 1.35 + fracV * 3.1 + strandPhase) * 0.09 * (1.0 - borderFactor * 0.6);
       const cSeam = colorSeam[idx];
 
-      H[idx] = hPillow * 0.60 + borderRidge + effHCyl * 0.35 - effNeedle * 0.42 - effCrevice * 0.28 - cSeam * 0.26 + ply;
+      H[idx] =
+        hPillow * 0.32 +
+        borderRidge +
+        effHCyl * 0.52 -
+        effNeedle * 0.22 -
+        effCrevice * 0.24 -
+        cSeam * 0.42 +
+        ply;
     }
   }
 
-  // 4. Directional Lighting & Specular Silk Thread Rendering
+  // 4. Brightness-Preserving Directional Lighting & Glossy Thread Rendering
   const Lx = -0.55, Ly = -0.65, Lz = 0.70;
   const lNorm = Math.sqrt(Lx * Lx + Ly * Ly + Lz * Lz);
   const lx = Lx / lNorm, ly = Ly / lNorm, lz = Lz / lNorm;
@@ -959,66 +1423,82 @@ export async function applyEmbroideryEffect(
       if (alpha < 15) {
         if (!hasFabric) {
           outData[pIdx + 3] = 0;
-          continue;
         }
+        continue;
       }
 
-      if (alpha >= 15) {
-        const dEdge = dist[idx];
+      // Gradient of H for normal vector
+      const leftIdx = row + Math.max(0, x - 1);
+      const rightIdx = row + Math.min(w - 1, x + 1);
+      const topIdx = Math.max(0, y - 1) * w + x;
+      const bottomIdx = Math.min(h - 1, y + 1) * w + x;
 
-        // Gradient of H for normal vector
-        const leftIdx = row + Math.max(0, x - 1);
-        const rightIdx = row + Math.min(w - 1, x + 1);
-        const topIdx = Math.max(0, y - 1) * w + x;
-        const bottomIdx = Math.min(h - 1, y + 1) * w + x;
+      const dhX = H[rightIdx] - H[leftIdx];
+      const dhY = H[bottomIdx] - H[topIdx];
 
-        const dhX = (H[rightIdx] - H[leftIdx]);
-        const dhY = (H[bottomIdx] - H[topIdx]);
+      let nx = -dhX * relief;
+      let ny = -dhY * relief;
+      let nz = 1.0;
+      const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+      nx /= nLen;
+      ny /= nLen;
+      nz /= nLen;
 
-        let nx = -dhX * relief;
-        let ny = -dhY * relief;
-        let nz = 1.0;
-        const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-        nx /= nLen;
-        ny /= nLen;
-        nz /= nLen;
+      // Brightness-preserving directional shade + subtle thread-crevice separation
+      const nDotL = Math.max(0, nx * lx + ny * ly + nz * lz);
+      const lightDelta = nDotL - lz;
+      const baseShade = Math.max(
+        0.78,
+        Math.min(1.26, lightDelta >= 0 ? 1.0 + lightDelta * 0.52 : 1.0 + lightDelta * 0.42)
+      );
+      const creviceShade = 1.0 - creviceMap[idx] * 0.22 - colorSeam[idx] * 0.16;
+      const shade = baseShade * creviceShade;
 
-        // Diffuse
-        const nDotL = Math.max(0, nx * lx + ny * ly + nz * lz);
-        const diffuse = 0.42 + 0.58 * nDotL;
+      // Specular (rayon/polyester thread sheen along thread crowns)
+      const nDotH = Math.max(0, nx * hx + ny * hy + nz * hz);
+      const effHCyl = cylMap[idx];
+      const specular = Math.pow(nDotH, 16) * 85 * sheen * (0.3 + 0.7 * effHCyl);
 
-        // Specular (silk rayon luster)
-        const nDotH = Math.max(0, nx * hx + ny * hy + nz * hz);
-        const specular = Math.pow(nDotH, 22) * 115 * sheen;
+      // Preserve full artwork detail with subtle 1px along-thread blending
+      const uStepX = Math.round(cosT);
+      const uStepY = Math.round(sinT);
+      const prevX = Math.max(0, Math.min(w - 1, x - uStepX));
+      const prevY = Math.max(0, Math.min(h - 1, y - uStepY));
+      const nextX = Math.max(0, Math.min(w - 1, x + uStepX));
+      const nextY = Math.max(0, Math.min(h - 1, y + uStepY));
+      const prevIdx = (prevY * w + prevX) * 4;
+      const nextIdx = (nextY * w + nextX) * 4;
 
-        // Ambient Occlusion
-        const hPillow = Math.min(1.0, Math.pow(dEdge / 14.0, 0.62));
-        const ao = 0.55 + 0.45 * hPillow;
+      let r = data[pIdx];
+      let g = data[pIdx + 1];
+      let b = data[pIdx + 2];
 
-        let r = data[pIdx];
-        let g = data[pIdx + 1];
-        let b = data[pIdx + 2];
+      if (data[prevIdx + 3] >= 128 && data[nextIdx + 3] >= 128) {
+        r = r * 0.55 + (data[prevIdx] + data[nextIdx]) * 0.225;
+        g = g * 0.55 + (data[prevIdx + 1] + data[nextIdx + 1]) * 0.225;
+        b = b * 0.55 + (data[prevIdx + 2] + data[nextIdx + 2]) * 0.225;
+      }
 
-        // Thread saturation boost for vibrant embroidery floss
-        const avg = (r + g + b) / 3;
-        r = Math.min(255, r + (r - avg) * 0.28);
-        g = Math.min(255, g + (g - avg) * 0.28);
-        b = Math.min(255, b + (b - avg) * 0.28);
+      // Thread saturation boost for vibrant embroidery floss
+      const avg = (r + g + b) / 3;
+      r = Math.max(0, Math.min(255, r + (r - avg) * 0.22));
+      g = Math.max(0, Math.min(255, g + (g - avg) * 0.22));
+      b = Math.max(0, Math.min(255, b + (b - avg) * 0.22));
 
-        // Final lit color
-        outData[pIdx] = Math.max(0, Math.min(255, Math.round(r * diffuse * ao + specular)));
-        outData[pIdx + 1] = Math.max(0, Math.min(255, Math.round(g * diffuse * ao + specular)));
-        outData[pIdx + 2] = Math.max(0, Math.min(255, Math.round(b * diffuse * ao + specular)));
+      // Final lit color
+      outData[pIdx] = Math.max(0, Math.min(255, Math.round(r * shade + specular)));
+      outData[pIdx + 1] = Math.max(0, Math.min(255, Math.round(g * shade + specular)));
+      outData[pIdx + 2] = Math.max(0, Math.min(255, Math.round(b * shade + specular)));
 
-        // Authentic micro-scalloped loop turnarounds on perimeter
-        if (dEdge <= 3.5) {
-          const borderV = -x * sinT + y * cosT;
-          const loopScallop = Math.sin(borderV * 0.9) * 0.5;
-          const edgeAlpha = Math.min(1.0, Math.max(0, (dEdge + loopScallop - 0.4) / 1.5));
-          outData[pIdx + 3] = Math.round(alpha * edgeAlpha);
-        } else {
-          outData[pIdx + 3] = alpha;
-        }
+      // Authentic micro-scalloped loop turnarounds on perimeter when satin border is active
+      const dEdge = dist[idx];
+      if (hasBorder && dEdge <= 2.5) {
+        const borderV = -x * sinT + y * cosT;
+        const loopScallop = Math.sin(borderV * 0.9) * 0.35;
+        const edgeAlpha = Math.min(1.0, Math.max(0, (dEdge + loopScallop - 0.15) / 1.4));
+        outData[pIdx + 3] = Math.round(alpha * edgeAlpha);
+      } else {
+        outData[pIdx + 3] = alpha;
       }
     }
   }
@@ -1090,4 +1570,6 @@ export async function applyEmbroideryEffect(
   ctx.putImageData(outImgData, 0, 0);
   return canvas.toDataURL('image/png');
 }
+
+
 

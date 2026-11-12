@@ -16,6 +16,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { LayoutResult, SheetSettings, Unit, PackedPlacement, ArtworkAsset } from '../types';
+import { drawImageProportional } from '../utils/imageProcessing';
 import { mmToUnit, formatUnit, MM_PER_INCH } from '../utils/units';
 import { Ruler } from './Ruler';
 
@@ -207,14 +208,14 @@ export const ProductionWorkspace: React.FC<ProductionWorkspaceProps> = ({
         ctx.translate(pxX + pxW, pxY);
         ctx.rotate(Math.PI / 2);
         if (img && img.complete) {
-          ctx.drawImage(img, 0, 0, pxH, pxW);
+          drawImageProportional(ctx, img, 0, 0, pxH, pxW, placement.asset?.aspectLocked !== false);
         } else {
           ctx.fillStyle = '#312e81';
           ctx.fillRect(0, 0, pxH, pxW);
         }
       } else {
         if (img && img.complete) {
-          ctx.drawImage(img, pxX, pxY, pxW, pxH);
+          drawImageProportional(ctx, img, pxX, pxY, pxW, pxH, placement.asset?.aspectLocked !== false);
         } else {
           ctx.fillStyle = '#312e81';
           ctx.fillRect(pxX, pxY, pxW, pxH);

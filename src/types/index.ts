@@ -46,7 +46,10 @@ export interface ArtworkAsset {
   visible?: boolean;
 }
 
+export type PrintType = 'dtf' | 'uvdtf';
+
 export interface SheetSettings {
+  printType?: PrintType;
   filmWidthPreset: string;
   filmWidth: number; // in current unit
   filmWidthMm: number;
