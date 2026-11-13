@@ -111,181 +111,99 @@ export function packGangSheet(
     ? Math.min(maxAllowableLengthMm, settings.fixedLengthMm)
     : maxAllowableLengthMm;
 
-  // Sort items descending by height, then width, so large designs are anchored first
-  // and smaller designs nest into all available cavities and gaps before a new sheet is started.
-  const sortedItems = [...items].sort((a, b) => {
-    const diffH = b.heightMm - a.heightMm;
-    if (Math.abs(diffH) > 1) return diffH;
-    return (b.widthMm * b.heightMm) - (a.widthMm * a.heightMm);
-  });
-
-  interface FreeRect {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  }
-
+  // Industrial DTF Sequential Shelf Packing:
+  // 1. Preserve original asset & copy sequence without random height-based sorting.
+  // 2. Lay out designs in orderly horizontal rows from left margin to right edge.
+  // 3. Whenever a row is filled or a new row starts, strictly align to the left margin (x = marginMm).
+  // 4. Proportional scaling if an artwork's width exceeds printable roll width.
+  // 5. Zero rotation: preserve upright 0° orientation.
   interface InternalSheet {
     sheetIndex: number;
-    freeRects: FreeRect[];
     placements: PackedPlacement[];
   }
 
   const internalSheets: InternalSheet[] = [
     {
       sheetIndex: 0,
-      freeRects: [
-        {
-          x: marginMm,
-          y: marginMm,
-          w: usableWidthMm,
-          h: Math.max(10, candidateMaxHeightMm - marginMm * 2)
-        }
-      ],
       placements: []
     }
   ];
 
+  let currentSheetIndex = 0;
+  let curX = marginMm;
+  let curY = marginMm;
+  let curRowHeight = 0;
   let totalArtworkAreaMm2 = 0;
 
-  for (const item of sortedItems) {
-    const itemW = Math.min(usableWidthMm, item.widthMm);
-    const itemH = item.heightMm;
+  for (const item of items) {
+    let itemW = item.widthMm;
+    let itemH = item.heightMm;
+
+    // Preserve proportional aspect ratio if item is wider than printable roll width
+    if (itemW > usableWidthMm) {
+      const scale = usableWidthMm / itemW;
+      itemW = usableWidthMm;
+      itemH = itemH * scale;
+    }
+
     totalArtworkAreaMm2 += itemW * itemH;
 
-    let placed = false;
+    // Check if item fits in current row horizontally
+    const fitsInCurrentRow = curX + itemW <= filmWidthMm - marginMm + 0.001;
 
-    // First attempt: try placing into existing sheets in order (guarantees Sheet 1 is 100% utilized first!)
-    for (const sheet of internalSheets) {
-      let bestX = Infinity;
-      let bestY = Infinity;
-      let bestShort = Infinity;
-      let found = false;
-
-      for (const r of sheet.freeRects) {
-        if (r.w >= itemW - 0.001 && r.h >= itemH - 0.001) {
-          const shortFit = Math.min(r.w - itemW, r.h - itemH);
-          if (
-            r.y < bestY - 0.1 ||
-            (Math.abs(r.y - bestY) <= 0.1 && (r.x < bestX - 0.1 || (Math.abs(r.x - bestX) <= 0.1 && shortFit < bestShort)))
-          ) {
-            bestY = r.y;
-            bestX = r.x;
-            bestShort = shortFit;
-            found = true;
-          }
-        }
-      }
-
-      if (found) {
-        sheet.placements.push({
-          id: item.id,
-          assetId: item.assetId,
-          copyIndex: item.copyIndex,
-          sheetIndex: sheet.sheetIndex,
-          xMm: bestX,
-          yMm: bestY,
-          widthMm: itemW,
-          heightMm: itemH,
-          rotated: false,
-          asset: item.asset
+    if (fitsInCurrentRow) {
+      // Check if current row exceeds candidateMaxHeightMm
+      if (curY + itemH > candidateMaxHeightMm - marginMm + 0.001 && curY > marginMm) {
+        // Current sheet cannot fit this row vertically, start next sheet
+        currentSheetIndex++;
+        internalSheets.push({
+          sheetIndex: currentSheetIndex,
+          placements: []
         });
+        curX = marginMm;
+        curY = marginMm;
+        curRowHeight = itemH;
+      } else {
+        curRowHeight = Math.max(curRowHeight, itemH);
+      }
+    } else {
+      // Row is full. Advance to next row, strictly resetting x to left margin!
+      const nextY = curY + curRowHeight + spacingMm;
 
-        // Footprint with spacing
-        const fpX = bestX;
-        const fpY = bestY;
-        const fpW = Math.min(filmWidthMm - marginMm - fpX, itemW + spacingMm);
-        const fpH = Math.min(candidateMaxHeightMm - marginMm - fpY, itemH + spacingMm);
-
-        const nextFree: FreeRect[] = [];
-        for (const r of sheet.freeRects) {
-          if (r.x >= fpX + fpW || r.x + r.w <= fpX || r.y >= fpY + fpH || r.y + r.h <= fpY) {
-            nextFree.push(r);
-            continue;
-          }
-          if (fpY > r.y && fpY < r.y + r.h) {
-            nextFree.push({ x: r.x, y: r.y, w: r.w, h: fpY - r.y });
-          }
-          if (fpY + fpH > r.y && fpY + fpH < r.y + r.h) {
-            nextFree.push({ x: r.x, y: fpY + fpH, w: r.w, h: (r.y + r.h) - (fpY + fpH) });
-          }
-          if (fpX > r.x && fpX < r.x + r.w) {
-            nextFree.push({ x: r.x, y: r.y, w: fpX - r.x, h: r.h });
-          }
-          if (fpX + fpW > r.x && fpX + fpW < r.x + r.w) {
-            nextFree.push({ x: fpX + fpW, y: r.y, w: (r.x + r.w) - (fpX + fpW), h: r.h });
-          }
-        }
-
-        // Prune contained rects
-        const filtered: FreeRect[] = [];
-        for (let i = 0; i < nextFree.length; i++) {
-          const a = nextFree[i];
-          if (a.w < 1 || a.h < 1) continue;
-          let contained = false;
-          for (let j = 0; j < nextFree.length; j++) {
-            if (i === j) continue;
-            const b = nextFree[j];
-            if (a.x >= b.x - 0.01 && a.y >= b.y - 0.01 && a.x + a.w <= b.x + b.w + 0.01 && a.y + a.h <= b.y + b.h + 0.01) {
-              contained = true;
-              break;
-            }
-          }
-          if (!contained) filtered.push(a);
-        }
-
-        sheet.freeRects = filtered;
-        placed = true;
-        break;
+      // Does the new row fit on the current sheet?
+      if (nextY + itemH <= candidateMaxHeightMm - marginMm + 0.001) {
+        curY = nextY;
+        curX = marginMm;
+        curRowHeight = itemH;
+      } else {
+        // Start a new sheet!
+        currentSheetIndex++;
+        internalSheets.push({
+          sheetIndex: currentSheetIndex,
+          placements: []
+        });
+        curX = marginMm;
+        curY = marginMm;
+        curRowHeight = itemH;
       }
     }
 
-    // Only when an item cannot fit anywhere on any existing sheet, start a new sheet!
-    if (!placed) {
-      const newSheetIndex = internalSheets.length;
-      const initialHeight = Math.max(10, candidateMaxHeightMm - marginMm * 2);
-      const newSheet: InternalSheet = {
-        sheetIndex: newSheetIndex,
-        freeRects: [],
-        placements: [
-          {
-            id: item.id,
-            assetId: item.assetId,
-            copyIndex: item.copyIndex,
-            sheetIndex: newSheetIndex,
-            xMm: marginMm,
-            yMm: marginMm,
-            widthMm: itemW,
-            heightMm: itemH,
-            rotated: false,
-            asset: item.asset
-          }
-        ]
-      };
+    // Place the item at (curX, curY)
+    internalSheets[currentSheetIndex].placements.push({
+      id: item.id,
+      assetId: item.assetId,
+      copyIndex: item.copyIndex,
+      sheetIndex: currentSheetIndex,
+      xMm: Math.round(curX * 100) / 100,
+      yMm: Math.round(curY * 100) / 100,
+      widthMm: Math.round(itemW * 100) / 100,
+      heightMm: Math.round(itemH * 100) / 100,
+      rotated: false,
+      asset: item.asset
+    });
 
-      const fpW = Math.min(usableWidthMm, itemW + spacingMm);
-      const fpH = Math.min(initialHeight, itemH + spacingMm);
-      const initialFree: FreeRect[] = [];
-      if (marginMm + fpH < candidateMaxHeightMm - marginMm) {
-        initialFree.push({
-          x: marginMm,
-          y: marginMm + fpH,
-          w: usableWidthMm,
-          h: (candidateMaxHeightMm - marginMm) - (marginMm + fpH)
-        });
-      }
-      if (marginMm + fpW < filmWidthMm - marginMm) {
-        initialFree.push({
-          x: marginMm + fpW,
-          y: marginMm,
-          w: (filmWidthMm - marginMm) - (marginMm + fpW),
-          h: itemH
-        });
-      }
-      newSheet.freeRects = initialFree;
-      internalSheets.push(newSheet);
-    }
+    // Advance curX for the next item in this row
+    curX += itemW + spacingMm;
   }
 
   const placements: PackedPlacement[] = [];
