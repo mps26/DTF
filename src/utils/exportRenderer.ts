@@ -223,7 +223,7 @@ export async function exportHighResolutionPng(
   singleSheetIndex?: number
 ): Promise<string> {
   const exportDpi = settings.exportDpi || 300;
-  const filmWidthInches = Math.min(24, settings.filmWidthMm / MM_PER_INCH);
+  const filmWidthInches = settings.filmWidthMm / MM_PER_INCH;
 
   const allSheets = layout.sheets && layout.sheets.length > 0
     ? layout.sheets
@@ -296,25 +296,15 @@ export async function exportHighResolutionPng(
       : (sheet.usedLengthMm > 0 ? sheet.usedLengthMm : settings.fixedLengthMm);
     const sheetLengthInches = Math.min(100, Math.max(1, targetLengthMm / MM_PER_INCH));
 
-    // Dynamic Safe Canvas & DPI calculation to strictly prevent browser texture/memory overflow:
-    // Chromium has a 16,384 px limit and 256MB memory cap.
-    // For long rolls (e.g. 100" / 2.54m), scaling to safe DPI guarantees instant rendering and encoding.
-    // Photoshop / RIP uses the PNG pHYs chunk so the physical print scale (22" x 100") is 100% exact.
-    const MAX_SAFE_CANVAS_DIMENSION = 14000;
-    const MAX_SAFE_CANVAS_PIXELS = 45000000; // 45 Megapixels max
+    // Maximum hardware canvas limit supported by Chromium & WebKit (16,384 px)
+    const MAX_CANVAS_DIMENSION = 16384;
 
     let effectiveDpi = exportDpi;
-    if (sheetLengthInches * effectiveDpi > MAX_SAFE_CANVAS_DIMENSION) {
-      effectiveDpi = Math.floor(MAX_SAFE_CANVAS_DIMENSION / sheetLengthInches);
+    if (sheetLengthInches * effectiveDpi > MAX_CANVAS_DIMENSION) {
+      effectiveDpi = Math.floor(MAX_CANVAS_DIMENSION / sheetLengthInches);
     }
-    if (filmWidthInches * effectiveDpi > MAX_SAFE_CANVAS_DIMENSION) {
-      effectiveDpi = Math.min(effectiveDpi, Math.floor(MAX_SAFE_CANVAS_DIMENSION / filmWidthInches));
-    }
-    if ((filmWidthInches * effectiveDpi) * (sheetLengthInches * effectiveDpi) > MAX_SAFE_CANVAS_PIXELS) {
-      effectiveDpi = Math.min(
-        effectiveDpi,
-        Math.floor(Math.sqrt(MAX_SAFE_CANVAS_PIXELS / (filmWidthInches * sheetLengthInches)))
-      );
+    if (filmWidthInches * effectiveDpi > MAX_CANVAS_DIMENSION) {
+      effectiveDpi = Math.min(effectiveDpi, Math.floor(MAX_CANVAS_DIMENSION / filmWidthInches));
     }
     effectiveDpi = Math.max(72, Math.min(exportDpi, effectiveDpi));
 

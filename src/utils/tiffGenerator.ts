@@ -354,7 +354,7 @@ export function createDtfTiffBlob(
   const xResOffset = bitsPerSampleOffset + bitsPerSampleByteLength;
   const yResOffset = xResOffset + 8;
   const softwareOffset = yResOffset + 8;
-  const softwareString = "DTF Layout Pro - Precision RIP Multi-Channel TIFF Encoder\x00";
+  const softwareString = "DTF Set Files - Precision RIP Multi-Channel TIFF Encoder\x00";
   const softwareByteLength = softwareString.length;
 
   const psOffset = softwareOffset + softwareByteLength;

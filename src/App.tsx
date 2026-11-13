@@ -252,23 +252,18 @@ export const App: React.FC = () => {
         if (asset.id !== id) return asset;
         const updated = { ...asset, ...updates };
 
-        const isAspectLocked = updated.aspectLocked !== false;
-        updated.aspectLocked = isAspectLocked;
+        // Lock Aspect Ratio is permanently enabled across the application
+        updated.aspectLocked = true;
         const origW = asset.trimmedWidth || asset.originalWidth || 1;
         const origH = asset.trimmedHeight || asset.originalHeight || 1;
         const naturalRatio = (origW > 0 && origH > 0) ? (origW / origH) : 1;
-
-        if (updates.lockedRatio !== undefined && updates.lockedRatio > 0) {
-          updated.lockedRatio = updates.lockedRatio;
-        } else if (!asset.lockedRatio || asset.lockedRatio <= 0) {
-          updated.lockedRatio = naturalRatio;
-        }
+        updated.lockedRatio = naturalRatio;
 
         const precision = settings.unit === 'meter' ? 4 : 2;
         const factor = Math.pow(10, precision);
 
-        // Always let the user enter Width and Height independently without overwriting the other field.
-        // Lock Aspect Ratio preserves the image's natural proportions inside the entered Width x Height box during preview & export.
+        // User enters exact desired numbers in Width and Height independently.
+        // Changing Width NEVER alters Height; changing Height NEVER alters Width.
         if (updates.targetWidth !== undefined) {
           const rawW = Math.max(0.01, updates.targetWidth);
           const clampedW = Math.round(rawW * factor) / factor;
@@ -295,10 +290,6 @@ export const App: React.FC = () => {
           }
         }
 
-        if (updated.targetWidth > 0 && updated.targetHeight > 0) {
-          updated.lockedRatio = updated.targetWidth / updated.targetHeight;
-        }
-
         const px = updated.trimmedWidth || updated.originalWidth;
         updated.effectiveDpi = calculateEffectiveDpi(px, updated.targetWidthMm);
         updated.dpiStatus = getDpiStatus(updated.effectiveDpi);
@@ -306,6 +297,8 @@ export const App: React.FC = () => {
         return updated;
       })
     );
+
+    setSelectedAssetForEdit((prev) => (prev && prev.id === id ? ({ ...prev, ...updates } as ArtworkAsset) : prev));
 
     if (autoExpandWidth !== null || autoExpandHeight !== null) {
       setSettings((s) => ({
@@ -876,8 +869,10 @@ export const App: React.FC = () => {
       {selectedAssetForEdit && (
         <EditModal
           asset={selectedAssetForEdit}
+          assets={assets}
           initialTool={activeToolForEdit}
           onClose={() => setSelectedAssetForEdit(null)}
+          onSelectAsset={(a) => setSelectedAssetForEdit(a)}
           onSave={(updated) => {
             handleUpdateAsset(updated.id, updated);
             showNotification(`Updated ${updated.filename}`);

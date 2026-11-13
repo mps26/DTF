@@ -566,70 +566,31 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                           </div>
                         </div>
 
-                        {/* Original Resolution (Image 2) */}
+                        {/* Original Resolution */}
                         <div className="text-xs text-slate-400 font-medium mb-3">
                           Original: {asset.originalWidth} × {asset.originalHeight} px
-                        </div>
-
-                        {/* Amber Notice (Exact wording & styling from Image 2!) */}
-                        <div className="bg-[#FFFBEB] border border-[#FEF3C7] rounded-xl p-3 text-xs text-[#78350F] mb-3 leading-relaxed flex items-center justify-between">
-                          <div>
-                            <div className="font-bold text-[#78350F]">
-                              Your design prints {actualPrintW} × {actualPrintH} {settings.unit === 'inch' ? 'inches' : settings.unit === 'meter' ? 'meters' : settings.unit}
-                            </div>
-                            <div className="text-[11px] text-[#92400E] mt-0.5">
-                              The rest is empty space in the file.
-                            </div>
-                          </div>
-                          {asset.cropBox && asset.cropBox.emptyPercent > 10 && !asset.isTrimmed && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onTrimAsset(asset.id);
-                              }}
-                              className="ml-2 px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-[10px] shadow-xs flex-shrink-0 transition-colors"
-                            >
-                              Trim it
-                            </button>
-                          )}
                         </div>
 
                         {/* Divider */}
                         <div className="border-t border-slate-100 my-2" />
 
-                        {/* Lock Aspect Ratio Toggle */}
-                        {(() => {
-                          const isLocked = asset.aspectLocked !== false;
-                          return (
-                            <div
-                              className="flex items-center space-x-2 py-1 mb-2.5 select-none cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onUpdateAsset(asset.id, {
-                                  aspectLocked: !isLocked
-                                });
-                              }}
-                              title={isLocked ? 'Aspect ratio locked (width & height scale proportionally). Click to unlock.' : 'Aspect ratio unlocked (edit width & height independently). Click to lock.'}
-                            >
-                              <button
-                                type="button"
-                                aria-pressed={isLocked}
-                                className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer ${
-                                  isLocked ? 'bg-indigo-600' : 'bg-slate-300'
-                                }`}
-                              >
-                                <div
-                                  className={`w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${
-                                    isLocked ? 'translate-x-4' : 'translate-x-0'
-                                  }`}
-                                />
-                              </button>
-                              <span className="text-xs font-semibold text-slate-700">
-                                Lock Aspect Ratio
-                              </span>
-                            </div>
-                          );
-                        })()}
+                        {/* Lock Aspect Ratio Toggle (Permanently Enabled) */}
+                        <div
+                          className="flex items-center space-x-2 py-1 mb-2.5 select-none"
+                          title="Lock Aspect Ratio is permanently enabled"
+                        >
+                          <button
+                            type="button"
+                            aria-pressed={true}
+                            disabled
+                            className="w-9 h-5 rounded-full transition-colors relative p-0.5 bg-indigo-600 cursor-default opacity-100"
+                          >
+                            <div className="w-4 h-4 rounded-full bg-white shadow-xs transition-transform translate-x-4" />
+                          </button>
+                          <span className="text-xs font-semibold text-slate-700">
+                            Lock Aspect Ratio
+                          </span>
+                        </div>
 
                         {/* Copies on sheet row with direct manual editing (Image 2) */}
                         <div className="flex items-center justify-between bg-[#F8FAFC] border border-slate-200/80 rounded-2xl p-2.5 mb-3.5">

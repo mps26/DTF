@@ -189,28 +189,17 @@ export const StudioToolsPalette: React.FC<StudioToolsPaletteProps> = ({
 
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => onSelectTool('special-effects')}
-                className="p-2.5 rounded-xl bg-white hover:bg-pink-50/50 border border-slate-200/80 hover:border-pink-300 text-left transition-all hover:scale-[1.02] shadow-2xs group relative overflow-hidden"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <Wand2 className="w-4 h-4 text-pink-600" />
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-fuchsia-600 text-white px-1.5 py-0.2 rounded-full">
-                    AI TOOL
-                  </span>
-                </div>
-                <div className="font-bold text-xs text-slate-900 group-hover:text-pink-600">Special Effects</div>
-                <div className="text-[10px] text-slate-400 truncate">AI style renders</div>
-              </button>
-
-              <button
                 onClick={() => onSelectTool('texture')}
                 className="p-2.5 rounded-xl bg-white hover:bg-purple-50/50 border border-slate-200/80 hover:border-purple-300 text-left transition-all hover:scale-[1.02] shadow-2xs group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <Layers className="w-4 h-4 text-purple-500" />
+                  <Layers className="w-4 h-4 text-purple-600" />
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.2 rounded-full">
+                    11
+                  </span>
                 </div>
                 <div className="font-bold text-xs text-slate-900 group-hover:text-purple-600">Texture Effects</div>
-                <div className="text-[10px] text-slate-400 truncate">Distressed & vintage</div>
+                <div className="text-[10px] text-slate-400 truncate">11 creative filters</div>
               </button>
 
               <button

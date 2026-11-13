@@ -27,7 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 bg-clip-text text-transparent">
-                DTF Layout
+                DTF Set Files
               </span>
               <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/60 rounded-full">
                 Auto Gang Sheet Pro

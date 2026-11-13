@@ -30,9 +30,21 @@ import {
   CheckCircle2,
   FileStack,
   ShieldCheck,
-  Shirt
+  Shirt,
+  Eye,
+  MoveHorizontal,
+  ArrowRight,
+  Images,
+  ChevronLeft,
+  Copy
 } from 'lucide-react';
 import { ArtworkAsset } from '../types';
+import { vectorizeImage, downloadSvgFile } from '../utils/vectorizer';
+import {
+  TEXTURE_EFFECTS_LIST,
+  TextureEffectType,
+  applyTextureFilter
+} from '../utils/textureEffects';
 import {
   loadImage,
   removeImageBackground,
@@ -47,6 +59,7 @@ import {
   applyTextureEffect,
   applyHalftoneFilter,
   HalftoneStyle,
+  HalftoneOptions,
   replaceColorInImage,
   applyEmbroideryEffect,
   generateTextArtwork
@@ -54,9 +67,11 @@ import {
 
 interface EditModalProps {
   asset: ArtworkAsset | null;
+  assets?: ArtworkAsset[];
   initialTool?: string;
   onClose: () => void;
   onSave: (updatedAsset: ArtworkAsset) => void;
+  onSelectAsset?: (asset: ArtworkAsset) => void;
   onAddNewAsset?: (newAsset: ArtworkAsset) => void;
   onOpenAudit?: () => void;
   onOpenTiff?: () => void;
@@ -79,18 +94,32 @@ interface CategoryDef {
 
 export const EditModal: React.FC<EditModalProps> = ({
   asset,
+  assets = [],
   initialTool = 'upscaler',
   onClose,
   onSave,
+  onSelectAsset,
   onOpenAudit,
   onOpenTiff
 }) => {
   if (!asset) return null;
 
+  // Active Asset state (enables switching between all uploaded images inside the modal)
+  const [currentAsset, setCurrentAsset] = useState<ArtworkAsset>(asset);
+
+  // Sync if asset prop changes from outside
+  useEffect(() => {
+    if (asset && asset.id !== currentAsset.id) {
+      setCurrentAsset(asset);
+      loadAssetData(asset);
+    }
+  }, [asset?.id]);
+
   // Normalize incoming tool ID
   const normalizeTool = (id: string) => {
     if (id === 'upscale') return 'upscaler';
     if (id === 'remove-color') return 'remove-replace-color';
+    if (id === 'special-effects') return 'texture';
     return id;
   };
 
@@ -124,8 +153,7 @@ export const EditModal: React.FC<EditModalProps> = ({
       name: 'Style & Effects',
       icon: Wand2,
       tools: [
-        { id: 'special-effects', name: 'Special Effects', desc: 'Neon, sepia, duo-tone & invert', badge: 'AI', badgeColor: 'bg-pink-100 text-pink-700 border-pink-200' },
-        { id: 'texture', name: 'Texture Effects', desc: 'Vintage distressed cracked t-shirt', badge: 'PRO', badgeColor: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+        { id: 'texture', name: 'Texture Effects', desc: '11 creative color & texture filters', badge: '11', badgeColor: 'bg-purple-100 text-purple-700 border-purple-200' },
         { id: 'halftone', name: 'Halftone Dots', desc: 'Screen dots for breathable prints', badge: 'PRINT', badgeColor: 'bg-teal-100 text-teal-700 border-teal-200' },
         { id: 'stroke-outline', name: 'Stroke / Outline', desc: 'Contour edge outline & choke' }
       ]
@@ -177,6 +205,13 @@ export const EditModal: React.FC<EditModalProps> = ({
   // 1. Fix & Quality -> Upscaler
   const [upscaleFactor, setUpscaleFactor] = useState<number>(2);
   const [upscaleSharpness, setUpscaleSharpness] = useState<number>(50);
+  const [upscaledUrl, setUpscaledUrl] = useState<string | null>(null);
+  const [upscaledDims, setUpscaledDims] = useState<{ width: number; height: number } | null>(null);
+  const [upscaleCompareMode, setUpscaleCompareMode] = useState<boolean>(true);
+  const [upscaleSplitPos, setUpscaleSplitPos] = useState<number>(50);
+  const [isDraggingUpscaleSplit, setIsDraggingUpscaleSplit] = useState<boolean>(false);
+  const upscaleContainerRef = useRef<HTMLDivElement>(null);
+  const [upscaleError, setUpscaleError] = useState<string | null>(null);
 
   // 1. Fix & Quality -> Color & Tone
   const [brightness, setBrightness] = useState<number>(0);
@@ -200,18 +235,30 @@ export const EditModal: React.FC<EditModalProps> = ({
   const [eraserSize, setEraserSize] = useState<number>(24);
   const [isErasing, setIsErasing] = useState<boolean>(false);
 
-  // 3. Style & Effects -> Texture
-  const [textureType, setTextureType] = useState<'cracked' | 'vintage' | 'grunge'>('cracked');
+  // 3. Style & Effects -> Texture (11 Image Filters)
+  const [selectedTextureEffect, setSelectedTextureEffect] = useState<TextureEffectType>('vintage');
   const [textureIntensity, setTextureIntensity] = useState<number>(50);
+  const [textureBaseUrl, setTextureBaseUrl] = useState<string>(asset.originalUrl || currentUrl);
+  const [texturePreviewUrl, setTexturePreviewUrl] = useState<string | null>(null);
 
   // 3. Style & Effects -> Halftone
-  const [halftoneSpacing, setHalftoneSpacing] = useState<number>(8);
-  const [halftoneRadius, setHalftoneRadius] = useState<number>(4);
   const [halftoneStyle, setHalftoneStyle] = useState<HalftoneStyle>('color');
+  const [halftoneDotSize, setHalftoneDotSize] = useState<number>(8);
+  const [halftoneDensity, setHalftoneDensity] = useState<number>(70);
+  const [halftoneFadeSpread, setHalftoneFadeSpread] = useState<number>(40);
+  const [halftoneAngle, setHalftoneAngle] = useState<number>(0);
+  const [useCustomDotColor, setUseCustomDotColor] = useState<boolean>(false);
+  const [halftoneDotColor, setHalftoneDotColor] = useState<string>('#FF0000');
+  const [halftoneDotColorHex, setHalftoneDotColorHex] = useState<string>('#FF0000');
+  const [halftoneBaseUrl, setHalftoneBaseUrl] = useState<string>(asset.originalUrl || currentUrl);
+  const [halftonePreviewUrl, setHalftonePreviewUrl] = useState<string | null>(null);
 
   // 3. Style & Effects -> Stroke
-  const [strokeWidth, setStrokeWidth] = useState<number>(4);
+  const [strokeWidth, setStrokeWidth] = useState<number>(3);
   const [strokeColor, setStrokeColor] = useState<string>('#ffffff');
+  const [strokeHexInput, setStrokeHexInput] = useState<string>('#ffffff');
+  const [strokeBaseUrl, setStrokeBaseUrl] = useState<string>(asset.originalUrl || currentUrl);
+  const [strokePreviewUrl, setStrokePreviewUrl] = useState<string | null>(null);
 
   // 3. Style & Effects -> Embroidery
   const [recreateStyle, setRecreateStyle] = useState<RecreateAiStyle>('hd-redraw');
@@ -259,6 +306,115 @@ export const EditModal: React.FC<EditModalProps> = ({
   // 4. Create & Convert -> TIFF Export Process Mode (DTF vs UVDTF)
   const [tiffProcessMode, setTiffProcessMode] = useState<'dtf' | 'uvdtf'>('dtf');
 
+  // 4. Create & Convert -> Vectorizer
+  const [vectorMode, setVectorMode] = useState<'color' | 'binary'>('color');
+  const [vectorDetailLevel, setVectorDetailLevel] = useState<'low' | 'medium' | 'high'>('medium');
+  const [vectorSmoothness, setVectorSmoothness] = useState<number>(70);
+  const [vectorRemoveBg, setVectorRemoveBg] = useState<boolean>(true);
+  const [vectorOptimize, setVectorOptimize] = useState<boolean>(true);
+  const [vectorizedSvg, setVectorizedSvg] = useState<string | null>(asset?.svgContent || null);
+  const [vectorizedSvgUrl, setVectorizedSvgUrl] = useState<string | null>(asset?.isVector ? asset.processedUrl : null);
+  const [vectorCompareMode, setVectorCompareMode] = useState<boolean>(true);
+  const [vectorSplitPos, setVectorSplitPos] = useState<number>(50);
+  const [isDraggingSplit, setIsDraggingSplit] = useState<boolean>(false);
+  const vectorContainerRef = useRef<HTMLDivElement>(null);
+
+  // Synchronize internal state with a target asset
+  const loadAssetData = (target: ArtworkAsset) => {
+    const url = target.processedUrl || target.originalUrl;
+    setCurrentUrl(url);
+    setHistory([url]);
+    setHistoryIndex(0);
+    setTextureBaseUrl(url);
+    setTexturePreviewUrl(null);
+    setHalftoneBaseUrl(url);
+    setHalftonePreviewUrl(null);
+    setStrokeBaseUrl(url);
+    setStrokePreviewUrl(null);
+    setVectorizedSvg(target.svgContent || null);
+    setVectorizedSvgUrl(target.isVector ? (target.processedUrl || null) : null);
+    setUpscaledUrl(null);
+    setUpscaledDims(null);
+    setUpscaleError(null);
+    setEmptyPercent(target.cropBox?.emptyPercent || 0);
+    setImageNaturalSize({
+      width: target.trimmedWidth || target.originalWidth || 1000,
+      height: target.trimmedHeight || target.originalHeight || 1000
+    });
+  };
+
+  // Switch active asset across any tool inside Design Studio without closing
+  const handleSwitchAsset = async (targetAsset: ArtworkAsset) => {
+    if (targetAsset.id === currentAsset.id) return;
+
+    // Automatically persist edits for the previous asset if active
+    try {
+      if (activeTool === 'texture' && selectedTextureEffect !== 'none' && textureIntensity > 0) {
+        const baseSrc = textureBaseUrl || currentUrl;
+        const baseImg = await loadImage(baseSrc);
+        const filteredUrl = await applyTextureFilter(baseImg, selectedTextureEffect, textureIntensity);
+        onSave({
+          ...currentAsset,
+          processedUrl: filteredUrl
+        });
+      } else if (activeTool === 'stroke-outline' && strokeWidth > 0 && strokePreviewUrl) {
+        const baseSrc = strokeBaseUrl || currentUrl;
+        const baseImg = await loadImage(baseSrc);
+        const strokedUrl = await addStrokeOutline(baseImg, strokeColor, strokeWidth);
+        onSave({
+          ...currentAsset,
+          processedUrl: strokedUrl
+        });
+      } else if (activeTool === 'halftone' && halftonePreviewUrl) {
+        const baseSrc = halftoneBaseUrl || currentUrl;
+        const baseImg = await loadImage(baseSrc);
+        const maxDim = Math.max(baseImg.naturalWidth, baseImg.naturalHeight);
+        const scale = Math.max(1, maxDim / 600);
+        const halfUrl = await applyHalftoneFilter(baseImg, {
+          style: halftoneStyle,
+          dotSize: Math.max(2, Math.round(halftoneDotSize * scale)),
+          density: halftoneDensity,
+          fadeSpread: halftoneFadeSpread,
+          angle: halftoneAngle,
+          customColor: useCustomDotColor ? halftoneDotColor : null
+        });
+        onSave({
+          ...currentAsset,
+          processedUrl: halfUrl
+        });
+      }
+    } catch (err) {
+      console.warn('Could not auto-save previous asset on switch', err);
+    }
+
+    setCurrentAsset(targetAsset);
+    onSelectAsset?.(targetAsset);
+    loadAssetData(targetAsset);
+  };
+
+  // Batch apply current texture effect to all uploaded images
+  const handleApplyEffectToAllAssets = async () => {
+    if (!assets || assets.length <= 1 || selectedTextureEffect === 'none' || textureIntensity === 0) return;
+    setIsProcessing(true);
+    try {
+      for (const item of assets) {
+        const baseSrc = item.processedUrl || item.originalUrl;
+        const baseImg = await loadImage(baseSrc);
+        const filteredUrl = await applyTextureFilter(baseImg, selectedTextureEffect, textureIntensity);
+        onSave({
+          ...item,
+          processedUrl: filteredUrl
+        });
+      }
+      const refreshed = assets.find((a) => a.id === currentAsset.id) || currentAsset;
+      loadAssetData(refreshed);
+    } catch (err) {
+      console.error('Failed to apply effect to all assets', err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Initialize bounds on mount or image change
   useEffect(() => {
     let cancelled = false;
@@ -277,6 +433,215 @@ export const EditModal: React.FC<EditModalProps> = ({
     };
   }, [currentUrl, paddingPx]);
 
+  // Global mousemove and mouseup listeners for split comparison sliders (vector & upscale)
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isDraggingSplit && vectorContainerRef.current) {
+        const rect = vectorContainerRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const pct = Math.max(5, Math.min(95, (x / rect.width) * 100));
+        setVectorSplitPos(pct);
+      }
+      if (isDraggingUpscaleSplit && upscaleContainerRef.current) {
+        const rect = upscaleContainerRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const pct = Math.max(5, Math.min(95, (x / rect.width) * 100));
+        setUpscaleSplitPos(pct);
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (isDraggingSplit) {
+        setIsDraggingSplit(false);
+      }
+      if (isDraggingUpscaleSplit) {
+        setIsDraggingUpscaleSplit(false);
+      }
+    };
+
+    if (isDraggingSplit || isDraggingUpscaleSplit) {
+      window.addEventListener('mousemove', handleGlobalMouseMove);
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDraggingSplit, isDraggingUpscaleSplit]);
+
+  // Texture Effects: sync base image when switching tools
+  useEffect(() => {
+    if (activeTool === 'texture') {
+      setTextureBaseUrl(currentUrl);
+    } else {
+      setTexturePreviewUrl(null);
+    }
+  }, [activeTool]);
+
+  // Texture Effects: Real-time responsive preview (debounced 16ms)
+  useEffect(() => {
+    if (activeTool !== 'texture') return;
+
+    if (selectedTextureEffect === 'none' || textureIntensity === 0) {
+      setTexturePreviewUrl(null);
+      return;
+    }
+
+    let isCancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const baseSrc = textureBaseUrl || currentUrl;
+        const img = await loadImage(baseSrc);
+        if (isCancelled) return;
+
+        let prevImg = img;
+        const maxPrev = 600;
+        if (img.naturalWidth > maxPrev || img.naturalHeight > maxPrev) {
+          const c = document.createElement('canvas');
+          const s = maxPrev / Math.max(img.naturalWidth, img.naturalHeight);
+          c.width = Math.round(img.naturalWidth * s);
+          c.height = Math.round(img.naturalHeight * s);
+          const cx = c.getContext('2d');
+          if (cx) {
+            cx.drawImage(img, 0, 0, c.width, c.height);
+            prevImg = await loadImage(c.toDataURL('image/png'));
+            if (isCancelled) return;
+          }
+        }
+
+        const res = await applyTextureFilter(prevImg, selectedTextureEffect, textureIntensity);
+        if (!isCancelled) {
+          setTexturePreviewUrl(res);
+        }
+      } catch (err) {
+        console.error('Texture preview calculation failed:', err);
+      }
+    }, 16);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activeTool, selectedTextureEffect, textureIntensity, textureBaseUrl, currentUrl]);
+
+  // Stroke / Outline: sync base image when switching tools
+  useEffect(() => {
+    if (activeTool === 'stroke-outline') {
+      setStrokeBaseUrl(currentUrl);
+    } else {
+      setStrokePreviewUrl(null);
+    }
+  }, [activeTool]);
+
+  // Stroke / Outline: Real-time responsive preview (debounced 16ms)
+  useEffect(() => {
+    if (activeTool !== 'stroke-outline') return;
+
+    if (strokeWidth <= 0) {
+      setStrokePreviewUrl(null);
+      return;
+    }
+
+    let isCancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const baseSrc = strokeBaseUrl || currentUrl;
+        const img = await loadImage(baseSrc);
+        if (isCancelled) return;
+
+        // Downscale to max 600px for instant 60fps live slider & color preview
+        let prevImg = img;
+        const maxPrev = 600;
+        if (img.naturalWidth > maxPrev || img.naturalHeight > maxPrev) {
+          const c = document.createElement('canvas');
+          const s = maxPrev / Math.max(img.naturalWidth, img.naturalHeight);
+          c.width = Math.round(img.naturalWidth * s);
+          c.height = Math.round(img.naturalHeight * s);
+          const cx = c.getContext('2d');
+          if (cx) {
+            cx.drawImage(img, 0, 0, c.width, c.height);
+            prevImg = await loadImage(c.toDataURL('image/png'));
+            if (isCancelled) return;
+          }
+        }
+
+        const effectiveWidth = Math.max(1, Math.round(strokeWidth * (prevImg.naturalWidth / img.naturalWidth)));
+        const res = await addStrokeOutline(prevImg, strokeColor, effectiveWidth);
+        if (!isCancelled) {
+          setStrokePreviewUrl(res);
+        }
+      } catch (err) {
+        console.error('Stroke preview calculation failed:', err);
+      }
+    }, 16);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activeTool, strokeWidth, strokeColor, strokeBaseUrl, currentUrl]);
+
+  // Halftone: sync base image when switching tools
+  useEffect(() => {
+    if (activeTool === 'halftone') {
+      setHalftoneBaseUrl(currentUrl);
+    } else {
+      setHalftonePreviewUrl(null);
+    }
+  }, [activeTool]);
+
+  // Halftone: Real-time responsive preview (debounced 16ms)
+  useEffect(() => {
+    if (activeTool !== 'halftone') return;
+
+    let isCancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const baseSrc = halftoneBaseUrl || currentUrl;
+        const img = await loadImage(baseSrc);
+        if (isCancelled) return;
+
+        // Downscale to max 600px for instant 60fps real-time live preview
+        let prevImg = img;
+        const maxPrev = 600;
+        const maxDim = Math.max(img.naturalWidth, img.naturalHeight);
+        if (maxDim > maxPrev) {
+          const c = document.createElement('canvas');
+          const s = maxPrev / maxDim;
+          c.width = Math.round(img.naturalWidth * s);
+          c.height = Math.round(img.naturalHeight * s);
+          const cx = c.getContext('2d');
+          if (cx) {
+            cx.drawImage(img, 0, 0, c.width, c.height);
+            prevImg = await loadImage(c.toDataURL('image/png'));
+            if (isCancelled) return;
+          }
+        }
+
+        const res = await applyHalftoneFilter(prevImg, {
+          style: halftoneStyle,
+          dotSize: halftoneDotSize,
+          density: halftoneDensity,
+          fadeSpread: halftoneFadeSpread,
+          angle: halftoneAngle,
+          customColor: useCustomDotColor ? halftoneDotColor : null,
+          scale: 1.0
+        });
+
+        if (!isCancelled) {
+          setHalftonePreviewUrl(res);
+        }
+      } catch (err) {
+        console.error('Halftone preview failed:', err);
+      }
+    }, 16);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activeTool, halftoneStyle, halftoneDotSize, halftoneDensity, halftoneFadeSpread, halftoneAngle, useCustomDotColor, halftoneDotColor, halftoneBaseUrl, currentUrl]);
+
   const pushHistory = (newUrl: string) => {
     const newHist = history.slice(0, historyIndex + 1);
     newHist.push(newUrl);
@@ -287,34 +652,64 @@ export const EditModal: React.FC<EditModalProps> = ({
 
   const handleUndo = () => {
     if (historyIndex > 0) {
+      const prevUrl = history[historyIndex - 1];
       setHistoryIndex(historyIndex - 1);
-      setCurrentUrl(history[historyIndex - 1]);
+      setCurrentUrl(prevUrl);
+      setStrokeBaseUrl(prevUrl);
+      setStrokePreviewUrl(null);
+      setHalftoneBaseUrl(prevUrl);
+      setHalftonePreviewUrl(null);
     }
   };
 
   const handleRedo = () => {
     if (historyIndex < history.length - 1) {
       const nextIndex = historyIndex + 1;
+      const nextUrl = history[nextIndex];
       setHistoryIndex(nextIndex);
-      setCurrentUrl(history[nextIndex]);
+      setCurrentUrl(nextUrl);
+      setStrokeBaseUrl(nextUrl);
+      setStrokePreviewUrl(null);
+      setHalftoneBaseUrl(nextUrl);
+      setHalftonePreviewUrl(null);
     }
   };
 
   const handleRevertOriginal = () => {
-    pushHistory(asset.originalUrl);
+    pushHistory(currentAsset.originalUrl);
+    setCurrentUrl(currentAsset.originalUrl);
+    setStrokeBaseUrl(currentAsset.originalUrl);
+    setStrokePreviewUrl(null);
+    setHalftoneBaseUrl(currentAsset.originalUrl);
+    setHalftonePreviewUrl(null);
+    setTextureBaseUrl(currentAsset.originalUrl);
+    setTexturePreviewUrl(null);
+    setUpscaledUrl(null);
+    setUpscaledDims(null);
+    setUpscaleError(null);
+    setImageNaturalSize({
+      width: currentAsset.originalWidth || 1000,
+      height: currentAsset.originalHeight || 1000
+    });
   };
 
   // --- ACTIONS ---
 
-  // 1. AI Upscaler
+  // 1. AI Upscaler (Genuine 2× Super-Resolution & 4× Ultra-Resolution)
   const handleApplyUpscaler = async () => {
     setIsProcessing(true);
+    setUpscaleError(null);
     try {
-      const img = await loadImage(currentUrl);
-      const resultUrl = await upscaleImageAi(img, upscaleFactor, upscaleSharpness);
-      pushHistory(resultUrl);
-    } catch (err) {
-      console.error(err);
+      const sourceUrl = currentAsset.originalUrl || currentUrl;
+      const res = await upscaleImageAi(sourceUrl, upscaleFactor, upscaleSharpness);
+      setUpscaledUrl(res.dataUrl);
+      setUpscaledDims({ width: res.width, height: res.height });
+      setCurrentUrl(res.dataUrl);
+      pushHistory(res.dataUrl);
+      setImageNaturalSize({ width: res.width, height: res.height });
+    } catch (err: any) {
+      console.error('AI Upscaler failed:', err);
+      setUpscaleError(err?.message || 'AI Upscaling failed. Please retry.');
     } finally {
       setIsProcessing(false);
     }
@@ -622,39 +1017,86 @@ export const EditModal: React.FC<EditModalProps> = ({
     }
   };
 
-  // Vectorise & Recreate AI Handlers
-  const handleVectorizeTrace = async () => {
+  // Vectorize Image Handlers (Image 2 mockup)
+  const handleRunVectorize = async () => {
     setIsProcessing(true);
     try {
-      const img = await loadImage(currentUrl);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imgData.data;
-
-      const levels = 8;
-      const step = 255 / (levels - 1);
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] < 12) {
-          data[i + 3] = 0;
-          continue;
-        }
-        data[i] = Math.round(Math.round(data[i] / step) * step);
-        data[i + 1] = Math.round(Math.round(data[i + 1] / step) * step);
-        data[i + 2] = Math.round(Math.round(data[i + 2] / step) * step);
-        data[i + 3] = data[i + 3] > 128 ? 255 : data[i + 3];
-      }
-      ctx.putImageData(imgData, 0, 0);
-      const res = canvas.toDataURL('image/png');
-      pushHistory(res);
+      const res = await vectorizeImage(currentUrl, {
+        colormode: vectorMode,
+        detailLevel: vectorDetailLevel,
+        smoothness: vectorSmoothness,
+        removeBackground: vectorRemoveBg,
+        optimizePaths: vectorOptimize
+      });
+      setVectorizedSvg(res.svgContent);
+      setVectorizedSvgUrl(res.svgDataUrl);
+      pushHistory(res.svgDataUrl);
     } catch (err) {
-      console.error(err);
+      console.error('Vectorization failed:', err);
     } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSaveVectorAndApply = async () => {
+    setIsProcessing(true);
+    try {
+      let finalSvgUrl = vectorizedSvgUrl;
+      let finalSvg = vectorizedSvg;
+      if (!finalSvgUrl) {
+        const res = await vectorizeImage(currentUrl, {
+          colormode: vectorMode,
+          detailLevel: vectorDetailLevel,
+          smoothness: vectorSmoothness,
+          removeBackground: vectorRemoveBg,
+          optimizePaths: vectorOptimize
+        });
+        finalSvg = res.svgContent;
+        finalSvgUrl = res.svgDataUrl;
+      }
+      const img = await loadImage(finalSvgUrl);
+      const box = await calculateAlphaBoundingBox(img, 8, paddingPx);
+      onSave({
+        ...currentAsset,
+        processedUrl: finalSvgUrl,
+        svgContent: finalSvg || undefined,
+        isVector: true,
+        fileType: 'svg',
+        trimmedWidth: img.naturalWidth,
+        trimmedHeight: img.naturalHeight,
+        cropBox: box,
+        isTrimmed: true,
+        isBgRemoved: vectorRemoveBg || currentAsset.isBgRemoved
+      });
+      onClose();
+    } catch (err) {
+      console.error('Save vector failed:', err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDownloadSvg = async () => {
+    try {
+      let svgToDownload = vectorizedSvg;
+      if (!svgToDownload) {
+        setIsProcessing(true);
+        const res = await vectorizeImage(currentUrl, {
+          colormode: vectorMode,
+          detailLevel: vectorDetailLevel,
+          smoothness: vectorSmoothness,
+          removeBackground: vectorRemoveBg,
+          optimizePaths: vectorOptimize
+        });
+        svgToDownload = res.svgContent;
+        setVectorizedSvg(res.svgContent);
+        setVectorizedSvgUrl(res.svgDataUrl);
+        setIsProcessing(false);
+      }
+      const baseName = currentAsset.filename ? currentAsset.filename.replace(/\.[^/.]+$/, '') : 'vectorized-design';
+      downloadSvgFile(svgToDownload, `${baseName}.svg`);
+    } catch (err) {
+      console.error('Download SVG failed:', err);
       setIsProcessing(false);
     }
   };
@@ -672,13 +1114,17 @@ export const EditModal: React.FC<EditModalProps> = ({
     }
   };
 
-  // 8. Texture Effects (Distressed / Vintage)
+  // 8. Texture Effects (11 Filters)
   const handleApplyTexture = async () => {
+    if (selectedTextureEffect === 'none' || textureIntensity === 0) return;
     setIsProcessing(true);
     try {
-      const img = await loadImage(currentUrl);
-      const res = await applyTextureEffect(img, textureType, textureIntensity);
+      const baseSrc = textureBaseUrl || currentUrl;
+      const img = await loadImage(baseSrc);
+      const res = await applyTextureFilter(img, selectedTextureEffect, textureIntensity);
       pushHistory(res);
+      setTextureBaseUrl(res);
+      setTexturePreviewUrl(null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -690,9 +1136,21 @@ export const EditModal: React.FC<EditModalProps> = ({
   const handleApplyHalftone = async () => {
     setIsProcessing(true);
     try {
-      const img = await loadImage(currentUrl);
-      const res = await applyHalftoneFilter(img, halftoneSpacing, halftoneRadius, halftoneStyle);
+      const baseSrc = halftoneBaseUrl || currentUrl;
+      const img = await loadImage(baseSrc);
+      const maxDim = Math.max(img.naturalWidth, img.naturalHeight);
+      const scale = Math.max(1, maxDim / 600);
+      const res = await applyHalftoneFilter(img, {
+        style: halftoneStyle,
+        dotSize: Math.max(2, Math.round(halftoneDotSize * scale)),
+        density: halftoneDensity,
+        fadeSpread: halftoneFadeSpread,
+        angle: halftoneAngle,
+        customColor: useCustomDotColor ? halftoneDotColor : null
+      });
       pushHistory(res);
+      setHalftoneBaseUrl(res);
+      setHalftonePreviewUrl(null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -704,154 +1162,12 @@ export const EditModal: React.FC<EditModalProps> = ({
   const handleApplyStroke = async () => {
     setIsProcessing(true);
     try {
-      const img = await loadImage(currentUrl);
+      const baseSrc = strokeBaseUrl || currentUrl;
+      const img = await loadImage(baseSrc);
       const strokedUrl = await addStrokeOutline(img, strokeColor, strokeWidth);
       pushHistory(strokedUrl);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // 11. Special Effects Preset
-  const handleApplyPresetEffect = async (
-    preset: 'neon' | 'sepia' | 'posterize' | 'bw' | 'invert' | 'embroidery'
-  ) => {
-    setIsProcessing(true);
-    try {
-      const img = await loadImage(currentUrl);
-
-      if (preset === 'embroidery') {
-        const resultUrl = await applyEmbroideryEffect(img, {
-          stitchPitch: embroideryPitch,
-          sheenIntensity: embroiderySheen,
-          stitchAngle: embroideryAngle,
-          hasBorder: embroideryHasBorder,
-          fabricBacking: embroideryFabric
-        });
-        pushHistory(resultUrl);
-        return;
-      }
-
-      const canvas = document.createElement('canvas');
-      const w = img.naturalWidth;
-      const h = img.naturalHeight;
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      if (preset === 'neon') {
-        // High-impact Electric Neon Glow for DTF apparel
-        // Pass 1: Multi-layer luminous bloom aura on transparent background
-        const glowCanvas = document.createElement('canvas');
-        glowCanvas.width = w;
-        glowCanvas.height = h;
-        const gCtx = glowCanvas.getContext('2d');
-        if (gCtx) {
-          // Electric Cyan wide outer bloom
-          gCtx.shadowColor = '#00f5ff';
-          gCtx.shadowBlur = Math.max(14, Math.round(Math.min(w, h) / 45));
-          gCtx.drawImage(img, 0, 0);
-          // Vivid Magenta intense inner aura
-          gCtx.shadowColor = '#ff00aa';
-          gCtx.shadowBlur = Math.max(7, Math.round(Math.min(w, h) / 90));
-          gCtx.drawImage(img, 0, 0);
-        }
-
-        // Pass 2: Electric color enhancement with edge luminescence
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, w, h);
-        const d = imgData.data;
-
-        for (let i = 0; i < d.length; i += 4) {
-          if (d[i + 3] === 0) continue;
-          let r = d[i];
-          let g = d[i + 1];
-          let b = d[i + 2];
-
-          // High-contrast S-curve
-          r = Math.min(255, Math.max(0, (r - 128) * 1.35 + 128));
-          g = Math.min(255, Math.max(0, (g - 128) * 1.35 + 128));
-          b = Math.min(255, Math.max(0, (b - 128) * 1.35 + 128));
-
-          // Boost electric neon saturation & vibrance
-          if (r >= g && r >= b) {
-            d[i] = Math.min(255, r * 1.45 + 25);
-            d[i + 1] = Math.max(0, g * 0.75);
-            d[i + 2] = Math.min(255, b * 1.35 + 40);
-          } else if (g >= r && g >= b) {
-            d[i] = Math.max(0, r * 0.7);
-            d[i + 1] = Math.min(255, g * 1.45 + 30);
-            d[i + 2] = Math.min(255, b * 1.4 + 40);
-          } else {
-            d[i] = Math.min(255, r * 1.25 + 30);
-            d[i + 1] = Math.max(0, g * 0.7);
-            d[i + 2] = Math.min(255, b * 1.55 + 35);
-          }
-        }
-        ctx.putImageData(imgData, 0, 0);
-
-        // Blend bloom aura with vibrant core
-        const finalCanvas = document.createElement('canvas');
-        finalCanvas.width = w;
-        finalCanvas.height = h;
-        const fCtx = finalCanvas.getContext('2d');
-        if (fCtx) {
-          fCtx.drawImage(glowCanvas, 0, 0);
-          fCtx.drawImage(canvas, 0, 0);
-          pushHistory(finalCanvas.toDataURL('image/png'));
-          return;
-        }
-      }
-
-      ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, w, h);
-      const d = imgData.data;
-
-      for (let i = 0; i < d.length; i += 4) {
-        if (d[i + 3] === 0) continue;
-        let r = d[i];
-        let g = d[i + 1];
-        let b = d[i + 2];
-
-        if (preset === 'invert') {
-          d[i] = 255 - r;
-          d[i + 1] = 255 - g;
-          d[i + 2] = 255 - b;
-        } else if (preset === 'bw') {
-          // Perceptual luminance + S-curve high contrast
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          let v = lum / 255;
-          v = v < 0.5 ? 2 * v * v : 1 - 2 * (1 - v) * (1 - v);
-          const bwVal = Math.max(0, Math.min(255, Math.round(v * 255)));
-          d[i] = bwVal;
-          d[i + 1] = bwVal;
-          d[i + 2] = bwVal;
-        } else if (preset === 'sepia') {
-          // Authentic rich vintage sepia with warm contrast
-          const tr = r * 0.393 + g * 0.769 + b * 0.189;
-          const tg = r * 0.349 + g * 0.686 + b * 0.168;
-          const tb = r * 0.272 + g * 0.534 + b * 0.131;
-          d[i] = Math.min(255, Math.max(0, tr * 1.08 - 8));
-          d[i + 1] = Math.min(255, Math.max(0, tg * 1.02 - 6));
-          d[i + 2] = Math.min(255, Math.max(0, tb * 0.88));
-        } else if (preset === 'posterize') {
-          // Vibrant screenprint / pop-art posterization (5 clean tonal levels + 35% saturation boost)
-          const step = 255 / 4; // 63.75 -> 5 discrete bands: 0, 64, 128, 191, 255
-          let qr = Math.round(r / step) * step;
-          let qg = Math.round(g / step) * step;
-          let qb = Math.round(b / step) * step;
-          const avg = (qr + qg + qb) / 3;
-          d[i] = Math.max(0, Math.min(255, Math.round(avg + (qr - avg) * 1.35)));
-          d[i + 1] = Math.max(0, Math.min(255, Math.round(avg + (qg - avg) * 1.35)));
-          d[i + 2] = Math.max(0, Math.min(255, Math.round(avg + (qb - avg) * 1.35)));
-        }
-      }
-
-      ctx.putImageData(imgData, 0, 0);
-      pushHistory(canvas.toDataURL('image/png'));
+      setStrokeBaseUrl(strokedUrl);
+      setStrokePreviewUrl(null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -961,17 +1277,88 @@ export const EditModal: React.FC<EditModalProps> = ({
           saturation,
           hue
         });
+      } else if (
+        activeTool === 'texture' &&
+        selectedTextureEffect !== 'none' &&
+        textureIntensity > 0
+      ) {
+        const baseSrc = textureBaseUrl || currentUrl;
+        const baseImg = await loadImage(baseSrc);
+        finalUrl = await applyTextureFilter(baseImg, selectedTextureEffect, textureIntensity);
+      } else if (
+        activeTool === 'stroke-outline' &&
+        strokeWidth > 0 &&
+        strokePreviewUrl
+      ) {
+        const baseSrc = strokeBaseUrl || currentUrl;
+        const baseImg = await loadImage(baseSrc);
+        finalUrl = await addStrokeOutline(baseImg, strokeColor, strokeWidth);
+      } else if (
+        activeTool === 'halftone' &&
+        halftonePreviewUrl
+      ) {
+        const baseSrc = halftoneBaseUrl || currentUrl;
+        const baseImg = await loadImage(baseSrc);
+        const maxDim = Math.max(baseImg.naturalWidth, baseImg.naturalHeight);
+        const scale = Math.max(1, maxDim / 600);
+        finalUrl = await applyHalftoneFilter(baseImg, {
+          style: halftoneStyle,
+          dotSize: Math.max(2, Math.round(halftoneDotSize * scale)),
+          density: halftoneDensity,
+          fadeSpread: halftoneFadeSpread,
+          angle: halftoneAngle,
+          customColor: useCustomDotColor ? halftoneDotColor : null
+        });
+      } else if (
+        activeTool === 'vectorize'
+      ) {
+        let finalSvg = vectorizedSvg;
+        let finalSvgUrl = vectorizedSvgUrl;
+        if (!finalSvgUrl) {
+          const res = await vectorizeImage(currentUrl, {
+            colormode: vectorMode,
+            detailLevel: vectorDetailLevel,
+            smoothness: vectorSmoothness,
+            removeBackground: vectorRemoveBg,
+            optimizePaths: vectorOptimize
+          });
+          finalSvg = res.svgContent;
+          finalSvgUrl = res.svgDataUrl;
+          setVectorizedSvg(finalSvg);
+          setVectorizedSvgUrl(finalSvgUrl);
+        }
+        if (finalSvgUrl) {
+          finalUrl = finalSvgUrl;
+        }
+      } else if (activeTool === 'upscaler' && !upscaledUrl) {
+        const sourceUrl = currentAsset.originalUrl || currentUrl;
+        const res = await upscaleImageAi(sourceUrl, upscaleFactor, upscaleSharpness);
+        finalUrl = res.dataUrl;
       }
       const img = await loadImage(finalUrl);
       const box = await calculateAlphaBoundingBox(img, 8, paddingPx);
+
+      const newWidth = img.naturalWidth;
+      const newHeight = img.naturalHeight;
+
+      // Recalculate effective DPI based on physical target print width on gang sheet
+      const targetWidthMm = currentAsset.targetWidthMm || 100;
+      const effectiveDpi = Math.round(newWidth / (targetWidthMm / 25.4));
+
       onSave({
-        ...asset,
+        ...currentAsset,
         processedUrl: finalUrl,
-        trimmedWidth: img.naturalWidth,
-        trimmedHeight: img.naturalHeight,
+        svgContent: vectorizedSvg || currentAsset.svgContent,
+        isVector: Boolean(vectorizedSvg || currentAsset.isVector),
+        fileType: vectorizedSvg ? 'svg' : currentAsset.fileType,
+        trimmedWidth: newWidth,
+        trimmedHeight: newHeight,
+        originalWidth: newWidth,
+        originalHeight: newHeight,
+        effectiveDpi: effectiveDpi,
         cropBox: box,
-        isTrimmed: finalUrl !== asset.originalUrl && box.emptyPercent < 5,
-        isBgRemoved: true
+        isTrimmed: finalUrl !== currentAsset.originalUrl && box.emptyPercent < 5,
+        isBgRemoved: currentAsset.isBgRemoved
       });
       onClose();
     } catch (err) {
@@ -999,12 +1386,49 @@ export const EditModal: React.FC<EditModalProps> = ({
                 <h3 className="font-black text-base text-slate-900 tracking-tight">
                   Design Studio & Image Suite
                 </h3>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  {asset.filename}
-                </span>
+                {assets && assets.length > 1 ? (
+                  <div className="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const idx = assets.findIndex((a) => a.id === currentAsset.id);
+                        const prevIdx = (idx - 1 + assets.length) % assets.length;
+                        handleSwitchAsset(assets[prevIdx]);
+                      }}
+                      className="p-1 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                      title="Previous image"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center space-x-1.5 shadow-xs">
+                      <span className="truncate max-w-[140px]">{currentAsset.filename}</span>
+                      <span className="text-[10px] text-indigo-500 font-extrabold">
+                        ({assets.findIndex((a) => a.id === currentAsset.id) + 1}/{assets.length})
+                      </span>
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const idx = assets.findIndex((a) => a.id === currentAsset.id);
+                        const nextIdx = (idx + 1) % assets.length;
+                        handleSwitchAsset(assets[nextIdx]);
+                      }}
+                      className="p-1 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                      title="Next image"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {currentAsset.filename}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500 font-medium">
-                Active: <span className="text-indigo-600 font-bold capitalize">{activeTool.replace('-', ' ')}</span> • {asset.originalWidth} × {asset.originalHeight} px • 300 DPI High-Res
+                Active: <span className="text-indigo-600 font-bold capitalize">{activeTool.replace('-', ' ')}</span> • {currentAsset.trimmedWidth || currentAsset.originalWidth || imageNaturalSize.width} × {currentAsset.trimmedHeight || currentAsset.originalHeight || imageNaturalSize.height} px • 300 DPI High-Res
               </p>
             </div>
           </div>
@@ -1175,9 +1599,184 @@ export const EditModal: React.FC<EditModalProps> = ({
               >
                 Fit
               </button>
+
+              {(activeTool === 'vectorize' || (activeTool === 'upscaler' && upscaledUrl)) && (
+                <button
+                  onClick={() => {
+                    if (activeTool === 'vectorize') setVectorCompareMode(!vectorCompareMode);
+                    if (activeTool === 'upscaler') setUpscaleCompareMode(!upscaleCompareMode);
+                  }}
+                  className={`ml-2 pl-2 border-l border-slate-200 flex items-center space-x-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                    (activeTool === 'vectorize' ? vectorCompareMode : upscaleCompareMode) ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Toggle Compare Side-by-Side"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Compare</span>
+                </button>
+              )}
             </div>
 
             {/* Canvas / Image Display */}
+            {activeTool === 'upscaler' ? (
+              <div className="flex flex-col items-center justify-center w-full max-h-full">
+                {/* Upscaler Comparison Preview Canvas */}
+                <div
+                  className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-4 sm:p-6 w-full h-full"
+                  style={{
+                    maxHeight: 'calc(100% - 1rem)',
+                    maxWidth: 'calc(100% - 1rem)',
+                    transform: `scale(${zoom})`,
+                    transformOrigin: 'center center',
+                    backgroundColor: '#ffffff',
+                    backgroundImage: `
+                      linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                      linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                      linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                      linear-gradient(-45deg, transparent 75%, #e2e8f0 75%)
+                    `,
+                    backgroundSize: '16px 16px',
+                    backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px'
+                  }}
+                >
+                  <div
+                    ref={upscaleContainerRef}
+                    className="relative inline-block select-none max-h-[min(540px,calc(100vh-280px))] max-w-full"
+                  >
+                    {/* Top Badges */}
+                    <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                      <span className="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-white font-extrabold text-[10px] tracking-wide shadow-md">
+                        Original: {currentAsset?.originalWidth || imageNaturalSize.width} × {currentAsset?.originalHeight || imageNaturalSize.height} px
+                      </span>
+                    </div>
+                    <div className="absolute top-2 right-2 z-20 pointer-events-none">
+                      <span className="px-2.5 py-1 rounded-full bg-indigo-600 text-white font-extrabold text-[10px] tracking-wide shadow-md">
+                        {upscaledDims
+                          ? `AI Upscaled (${upscaleFactor}× • ${upscaleSharpness}% Sharp): ${upscaledDims.width} × ${upscaledDims.height} px`
+                          : `AI Target (${upscaleFactor}×): ${(currentAsset?.originalWidth || imageNaturalSize.width) * upscaleFactor} × ${(currentAsset?.originalHeight || imageNaturalSize.height) * upscaleFactor} px`}
+                      </span>
+                    </div>
+
+                    {/* Base Image: Upscaled output if processed, or current */}
+                    <img
+                      src={upscaledUrl || currentUrl}
+                      alt="Upscaled Preview"
+                      className="max-h-[min(540px,calc(100vh-280px))] max-w-full w-auto h-auto object-contain block drop-shadow-sm select-none"
+                    />
+
+                    {/* Overlaid clipped Original for split comparison */}
+                    {upscaleCompareMode && upscaledUrl && (
+                      <div
+                        className="absolute inset-0 overflow-hidden pointer-events-none"
+                        style={{ width: `${upscaleSplitPos}%` }}
+                      >
+                        <img
+                          src={currentAsset?.originalUrl || currentUrl}
+                          alt="Original Input"
+                          className="max-h-[min(540px,calc(100vh-280px))] max-w-none w-auto h-auto object-contain block select-none"
+                          style={{
+                            width: upscaleContainerRef.current?.clientWidth,
+                            height: upscaleContainerRef.current?.clientHeight
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Draggable Divider with <-> Handle */}
+                    {upscaleCompareMode && upscaledUrl && (
+                      <div
+                        className="absolute top-0 bottom-0 z-30 cursor-ew-resize flex items-center justify-center pointer-events-auto"
+                        style={{ left: `${upscaleSplitPos}%`, transform: 'translateX(-50%)' }}
+                        onMouseDown={() => setIsDraggingUpscaleSplit(true)}
+                      >
+                        <div className="w-0.5 h-full bg-white shadow-md shadow-black/40" />
+                        <div className="absolute w-7 h-7 rounded-full bg-white border border-slate-300 shadow-lg flex items-center justify-center text-slate-700 hover:scale-110 active:scale-95 transition-transform">
+                          <MoveHorizontal className="w-4 h-4 text-indigo-600" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : activeTool === 'vectorize' ? (
+              <div className="flex flex-col items-center justify-center w-full max-h-full">
+                {/* Comparison Preview Canvas */}
+                <div
+                  className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-4 sm:p-6 w-full h-full"
+                  style={{
+                    maxHeight: 'calc(100% - 1rem)',
+                    maxWidth: 'calc(100% - 1rem)',
+                    transform: `scale(${zoom})`,
+                    transformOrigin: 'center center',
+                    backgroundColor: '#ffffff',
+                    backgroundImage: `
+                      linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                      linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                      linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                      linear-gradient(-45deg, transparent 75%, #e2e8f0 75%)
+                    `,
+                    backgroundSize: '16px 16px',
+                    backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px'
+                  }}
+                >
+                  <div
+                    ref={vectorContainerRef}
+                    className="relative inline-block select-none max-h-[min(540px,calc(100vh-280px))] max-w-full"
+                  >
+                    {/* Top Badges */}
+                    <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                      <span className="px-2.5 py-1 rounded-full bg-indigo-600 text-white font-extrabold text-[10px] tracking-wide shadow-md">
+                        Original (Raster)
+                      </span>
+                    </div>
+                    <div className="absolute top-2 right-2 z-20 pointer-events-none">
+                      <span className="px-2.5 py-1 rounded-full bg-blue-600 text-white font-extrabold text-[10px] tracking-wide shadow-md">
+                        {vectorizedSvgUrl ? 'Vectorized (SVG)' : 'Vectorized (Preview)'}
+                      </span>
+                    </div>
+
+                    {/* Base Image: Vectorized SVG if generated, or current */}
+                    <img
+                      src={vectorizedSvgUrl || currentUrl}
+                      alt="Vectorized Output"
+                      className="max-h-[min(540px,calc(100vh-280px))] max-w-full w-auto h-auto object-contain block drop-shadow-sm select-none"
+                    />
+
+                    {/* Overlaid clipped Original for split comparison */}
+                    {vectorCompareMode && (
+                      <div
+                        className="absolute inset-0 overflow-hidden pointer-events-none"
+                        style={{ width: `${vectorSplitPos}%` }}
+                      >
+                        <img
+                          src={currentAsset?.originalUrl || currentUrl}
+                          alt="Original Raster"
+                          className="max-h-[min(540px,calc(100vh-280px))] max-w-none w-auto h-auto object-contain block select-none"
+                          style={{
+                            width: vectorContainerRef.current?.clientWidth,
+                            height: vectorContainerRef.current?.clientHeight
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Draggable Divider with <-> Handle */}
+                    {vectorCompareMode && (
+                      <div
+                        className="absolute top-0 bottom-0 z-30 cursor-ew-resize flex items-center justify-center pointer-events-auto"
+                        style={{ left: `${vectorSplitPos}%`, transform: 'translateX(-50%)' }}
+                        onMouseDown={() => setIsDraggingSplit(true)}
+                      >
+                        <div className="w-0.5 h-full bg-white shadow-md shadow-black/40" />
+                        <div className="absolute w-7 h-7 rounded-full bg-white border border-slate-300 shadow-lg flex items-center justify-center text-slate-700 hover:scale-110 active:scale-95 transition-transform">
+                          <MoveHorizontal className="w-4 h-4 text-indigo-600" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div
               className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-4 sm:p-6"
               style={{
@@ -1208,7 +1807,15 @@ export const EditModal: React.FC<EditModalProps> = ({
                 <div ref={cropWrapperRef} className="relative inline-block select-none max-h-full max-w-full">
                   <img
                     ref={imgRef}
-                    src={currentUrl}
+                    src={
+                      activeTool === 'halftone' && halftonePreviewUrl
+                        ? halftonePreviewUrl
+                        : activeTool === 'stroke-outline' && strokePreviewUrl
+                        ? strokePreviewUrl
+                        : activeTool === 'texture' && texturePreviewUrl
+                        ? texturePreviewUrl
+                        : currentUrl
+                    }
                     alt="Current Preview"
                     onLoad={(e) => {
                       const target = e.currentTarget;
@@ -1325,6 +1932,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                 </div>
               )}
             </div>
+            )}
 
             {/* Processing Indicator */}
             {isProcessing && (
@@ -1345,16 +1953,102 @@ export const EditModal: React.FC<EditModalProps> = ({
               <div className="border-b border-slate-100 pb-3">
                 <div className="flex items-center space-x-2">
                   <h4 className="font-extrabold text-sm text-slate-900 capitalize">
-                    {activeTool.replace('-', ' ')}
+                    {activeTool === 'texture' ? 'Texture Effects' : activeTool === 'stroke-outline' ? 'Stroke Outline' : activeTool.replace('-', ' ')}
                   </h4>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
                     DTF Ready
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Adjust settings below and preview results in real time before applying to your gang sheet.
+                  {activeTool === 'texture'
+                    ? 'Apply creative texture and color effects to your image. Select an effect, adjust its intensity, and preview in real time.'
+                    : 'Adjust settings below and preview results in real time before applying to your gang sheet.'}
                 </p>
               </div>
+
+              {/* Uploaded Images Selector (Visible when multiple images uploaded) */}
+              {assets && assets.length > 1 && (
+                <div className="bg-slate-50/90 border border-slate-200 rounded-2xl p-3 shadow-xs">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-1.5">
+                      <Images className="w-3.5 h-3.5 text-indigo-600" />
+                      <span className="text-xs font-black text-slate-800">
+                        Uploaded Images
+                      </span>
+                      <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-700">
+                        {assets.length}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400">
+                      Click image to edit
+                    </span>
+                  </div>
+
+                  {/* Grid of uploaded images */}
+                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-0.5">
+                    {assets.map((item, idx) => {
+                      const isSelected = item.id === currentAsset.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleSwitchAsset(item)}
+                          className={`group relative flex flex-col items-center p-1.5 rounded-xl border text-center transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-white border-indigo-600 ring-2 ring-indigo-500/30 shadow-sm shadow-indigo-600/10'
+                              : 'bg-white/80 border-slate-200 hover:bg-white hover:border-slate-300 hover:shadow-xs'
+                          }`}
+                          title={item.filename}
+                        >
+                          {/* Square Thumbnail */}
+                          <div
+                            className={`w-full aspect-square rounded-lg overflow-hidden flex items-center justify-center relative ${
+                              isSelected ? 'bg-indigo-50/30' : 'bg-slate-100'
+                            }`}
+                            style={{
+                              backgroundImage: `
+                                linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                                linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                                linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                                linear-gradient(-45deg, transparent 75%, #e2e8f0 75%)
+                              `,
+                              backgroundSize: '8px 8px'
+                            }}
+                          >
+                            <img
+                              src={item.processedUrl || item.originalUrl}
+                              alt={item.filename}
+                              className="w-full h-full object-contain p-0.5"
+                            />
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-black shadow-xs">
+                                ✓
+                              </div>
+                            )}
+                            <span
+                              className={`absolute bottom-0.5 left-0.5 px-1 py-0.2 rounded text-[8px] font-black ${
+                                isSelected ? 'bg-indigo-600 text-white' : 'bg-black/60 text-white'
+                              }`}
+                            >
+                              #{idx + 1}
+                            </span>
+                          </div>
+
+                          {/* Filename */}
+                          <span
+                            className={`text-[10px] mt-1 font-bold truncate w-full block leading-tight ${
+                              isSelected ? 'text-indigo-700 font-extrabold' : 'text-slate-600 group-hover:text-slate-900'
+                            }`}
+                            title={item.filename}
+                          >
+                            {item.filename}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* 1. Fix & Quality -> Upscaler */}
               {activeTool === 'upscaler' && (
@@ -1365,32 +2059,51 @@ export const EditModal: React.FC<EditModalProps> = ({
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => setUpscaleFactor(2)}
-                        className={`py-2 rounded-xl text-xs font-black transition-all ${
+                        onClick={() => {
+                          setUpscaleFactor(2);
+                          setUpscaledUrl(null);
+                          setUpscaledDims(null);
+                        }}
+                        className={`p-2.5 rounded-xl text-left transition-all cursor-pointer ${
                           upscaleFactor === 2
                             ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-600/20'
                             : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
                         }`}
                       >
-                        2× Super-Resolution
+                        <div className="text-xs font-black">2× Super-Resolution</div>
+                        <div className={`text-[10px] font-mono mt-0.5 ${upscaleFactor === 2 ? 'text-indigo-200' : 'text-slate-500'}`}>
+                          {(currentAsset.originalWidth || imageNaturalSize.width) * 2} × {(currentAsset.originalHeight || imageNaturalSize.height) * 2} px
+                        </div>
                       </button>
                       <button
-                        onClick={() => setUpscaleFactor(4)}
-                        className={`py-2 rounded-xl text-xs font-black transition-all ${
+                        onClick={() => {
+                          setUpscaleFactor(4);
+                          setUpscaledUrl(null);
+                          setUpscaledDims(null);
+                        }}
+                        className={`p-2.5 rounded-xl text-left transition-all cursor-pointer ${
                           upscaleFactor === 4
                             ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-600/20'
                             : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
                         }`}
                       >
-                        4× Ultra-Resolution
+                        <div className="text-xs font-black">4× Ultra-Resolution</div>
+                        <div className={`text-[10px] font-mono mt-0.5 ${upscaleFactor === 4 ? 'text-indigo-200' : 'text-slate-500'}`}>
+                          {(currentAsset.originalWidth || imageNaturalSize.width) * 4} × {(currentAsset.originalHeight || imageNaturalSize.height) * 4} px
+                        </div>
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
                       <span>Edge Clarity & Sharpness</span>
-                      <span className="text-indigo-600 font-extrabold">{upscaleSharpness}%</span>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 font-extrabold">
+                          {upscaleSharpness === 0 ? 'Minimal (0%)' : upscaleSharpness <= 25 ? 'Slight (25%)' : upscaleSharpness <= 50 ? 'Balanced (50%)' : upscaleSharpness <= 75 ? 'Strong (75%)' : 'Maximum (100%)'}
+                        </span>
+                        <span className="text-indigo-600 font-extrabold">{upscaleSharpness}%</span>
+                      </div>
                     </div>
                     <input
                       type="range"
@@ -1402,14 +2115,50 @@ export const EditModal: React.FC<EditModalProps> = ({
                     />
                   </div>
 
-                  <button
-                    onClick={handleApplyUpscaler}
-                    disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Run AI Upscaler ({upscaleFactor}×)</span>
-                  </button>
+                  {/* Status Indicator */}
+                  {upscaledDims && (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
+                      <div className="flex items-center space-x-1.5 font-black text-emerald-700">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>AI Super-Resolution Active ({upscaleFactor}×)</span>
+                      </div>
+                      <p className="text-[11px] text-emerald-600 mt-1">
+                        Resolution enhanced to <strong>{upscaledDims.width} × {upscaledDims.height} px</strong>. Use the split slider to compare details.
+                      </p>
+                    </div>
+                  )}
+
+                  {upscaleError && (
+                    <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                      <span className="font-bold">Notice:</span> {upscaleError}
+                    </div>
+                  )}
+
+                  <div className="space-y-2 pt-1">
+                    <button
+                      onClick={handleApplyUpscaler}
+                      disabled={isProcessing}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>{isProcessing ? `Upscaling with AI (${upscaleFactor}×)...` : `Run AI Upscaler (${upscaleFactor}×)`}</span>
+                    </button>
+
+                    {upscaledUrl && (
+                      <button
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = upscaledUrl;
+                          link.download = `${currentAsset.filename.replace(/\.[^/.]+$/, '')}_upscaled_${upscaleFactor}x.png`;
+                          link.click();
+                        }}
+                        className="w-full py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      >
+                        <Download className="w-4 h-4 text-slate-500" />
+                        <span>Download Upscaled PNG ({upscaledDims ? `${upscaledDims.width}×${upscaledDims.height}` : `${upscaleFactor}×`})</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1539,13 +2288,13 @@ export const EditModal: React.FC<EditModalProps> = ({
                       <div>
                         <span className="font-bold text-slate-800 block">Resolution & Density</span>
                         <span className="text-[11px] text-slate-500 font-mono">
-                          {imageNaturalSize.width} × {imageNaturalSize.height} px • {asset.effectiveDpi || 300} DPI
+                          {imageNaturalSize.width} × {imageNaturalSize.height} px • {currentAsset.effectiveDpi || 300} DPI
                         </span>
                       </div>
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        (asset.effectiveDpi || 300) >= 250 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
+                        (currentAsset.effectiveDpi || 300) >= 250 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
                       }`}>
-                        {(asset.effectiveDpi || 300) >= 250 ? 'Optimal (300 DPI)' : 'Low DPI'}
+                        {(currentAsset.effectiveDpi || 300) >= 250 ? 'Optimal (300 DPI)' : 'Low DPI'}
                       </span>
                     </div>
 
@@ -1905,53 +2654,107 @@ export const EditModal: React.FC<EditModalProps> = ({
                 </div>
               )}
 
-              {/* 3. Style & Effects -> Texture (Vintage T-Shirt Wear) */}
+              {/* 3. Style & Effects -> Texture Effects (11 Filters - media_1794569328933_76ae2ae0.jpg) */}
               {activeTool === 'texture' && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                      Distress Texture Style
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {(['cracked', 'vintage', 'grunge'] as const).map((st) => (
+                  {/* Grid of 11 effects */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {TEXTURE_EFFECTS_LIST.map((eff) => {
+                      const isSelected = selectedTextureEffect === eff.id;
+                      return (
                         <button
-                          key={st}
-                          onClick={() => setTextureType(st)}
-                          className={`py-2 rounded-xl text-xs font-bold capitalize transition-all ${
-                            textureType === st
-                              ? 'bg-indigo-600 text-white shadow-md'
-                              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                          key={eff.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTextureEffect(eff.id);
+                            if (textureIntensity === 0) {
+                              setTextureIntensity(50);
+                            }
+                          }}
+                          className={`flex items-center justify-between p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-indigo-50/50 border-indigo-600 ring-2 ring-indigo-500/20 text-indigo-950 font-bold shadow-xs'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
                           }`}
                         >
-                          {st}
+                          <div className="flex items-center space-x-2 min-w-0">
+                            {/* Twin overlapping color preview circles matching screenshot */}
+                            <div className="relative w-5 h-5 flex-shrink-0">
+                              <span
+                                className="absolute left-0 top-0.5 w-3.5 h-3.5 rounded-full border border-white shadow-xs"
+                                style={{ backgroundColor: eff.colors[0] }}
+                              />
+                              <span
+                                className="absolute right-0 bottom-0.5 w-3.5 h-3.5 rounded-full border border-white shadow-xs opacity-90"
+                                style={{ backgroundColor: eff.colors[1] }}
+                              />
+                            </div>
+                            <span className="text-xs font-bold leading-tight truncate">
+                              {eff.name}
+                            </span>
+                          </div>
+
+                          {isSelected && (
+                            <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] flex-shrink-0 ml-1">
+                              ✓
+                            </span>
+                          )}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
 
-                  <div>
+                  {/* Intensity Slider */}
+                  <div className="pt-1">
                     <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                      <span>Wear Intensity</span>
+                      <span>Intensity</span>
                       <span className="text-indigo-600 font-extrabold">{textureIntensity}%</span>
                     </div>
                     <input
                       type="range"
-                      min="10"
-                      max="90"
+                      min="0"
+                      max="100"
                       value={textureIntensity}
                       onChange={(e) => setTextureIntensity(Number(e.target.value))}
                       className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
-                  <button
-                    onClick={handleApplyTexture}
-                    disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-700 hover:to-indigo-700 text-white text-xs font-black shadow-md shadow-pink-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                  >
-                    <Layers className="w-4 h-4" />
-                    <span>{isProcessing ? 'Applying Texture...' : 'Apply Distressed Texture'}</span>
-                  </button>
+                  {/* Reset Effect & Apply to All Options */}
+                  <div className="flex justify-between items-center pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTextureEffect('none');
+                        setTextureIntensity(0);
+                        setTexturePreviewUrl(null);
+                      }}
+                      className="text-[11px] font-bold text-slate-500 hover:text-indigo-600 flex items-center space-x-1.5 transition-colors cursor-pointer py-1"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset Effect</span>
+                    </button>
+
+                    <div className="flex items-center space-x-2">
+                      {assets && assets.length > 1 && selectedTextureEffect !== 'none' && textureIntensity > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleApplyEffectToAllAssets}
+                          disabled={isProcessing}
+                          className="text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-all flex items-center space-x-1 cursor-pointer"
+                          title="Apply this effect to all uploaded images"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Apply to All ({assets.length})</span>
+                        </button>
+                      )}
+                      <span className="text-[11px] font-semibold text-slate-400">
+                        {selectedTextureEffect !== 'none' && textureIntensity > 0
+                          ? `${TEXTURE_EFFECTS_LIST.find((e) => e.id === selectedTextureEffect)?.name} (${textureIntensity}%)`
+                          : 'Original (No Effect)'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1971,7 +2774,15 @@ export const EditModal: React.FC<EditModalProps> = ({
                         <button
                           key={mode.id}
                           type="button"
-                          onClick={() => setHalftoneStyle(mode.id as HalftoneStyle)}
+                          onClick={() => {
+                            const newStyle = mode.id as HalftoneStyle;
+                            setHalftoneStyle(newStyle);
+                            if (newStyle === 'duotone') {
+                              setHalftoneAngle(0);
+                            } else if (halftoneAngle === 0) {
+                              setHalftoneAngle(45);
+                            }
+                          }}
                           className={`py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                             halftoneStyle === mode.id
                               ? 'bg-teal-600 text-white shadow-md'
@@ -1983,6 +2794,115 @@ export const EditModal: React.FC<EditModalProps> = ({
                       ))}
                     </div>
                   </div>
+
+                  {/* Dot Size */}
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                      <span>Dot Size</span>
+                      <span className="text-teal-600 font-extrabold">{halftoneDotSize} px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="2"
+                      max="25"
+                      value={halftoneDotSize}
+                      onChange={(e) => setHalftoneDotSize(Number(e.target.value))}
+                      className="w-full accent-teal-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Density / Spacing */}
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                      <span>Density / Spacing</span>
+                      <span className="text-teal-600 font-extrabold">{halftoneDensity}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="20"
+                      max="100"
+                      value={halftoneDensity}
+                      onChange={(e) => setHalftoneDensity(Number(e.target.value))}
+                      className="w-full accent-teal-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Fade / Spread */}
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                      <span>Fade / Spread</span>
+                      <span className="text-teal-600 font-extrabold">{halftoneFadeSpread}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={halftoneFadeSpread}
+                      onChange={(e) => setHalftoneFadeSpread(Number(e.target.value))}
+                      className="w-full accent-teal-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Dot Angle (Rotation) */}
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                      <span>Dot Angle (Rotation)</span>
+                      <span className="text-teal-600 font-extrabold">{halftoneAngle}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="90"
+                      value={halftoneAngle}
+                      onChange={(e) => setHalftoneAngle(Number(e.target.value))}
+                      className="w-full accent-teal-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Dot Color (for Color Dots) */}
+                  {halftoneStyle === 'color' && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-slate-700">
+                          Dot Color (for Color Dots)
+                        </label>
+                        <label className="flex items-center space-x-1 cursor-pointer text-[10px] font-bold text-teal-700">
+                          <input
+                            type="checkbox"
+                            checked={useCustomDotColor}
+                            onChange={(e) => setUseCustomDotColor(e.target.checked)}
+                            className="accent-teal-600 rounded"
+                          />
+                          <span>Custom Tint</span>
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="color"
+                          disabled={!useCustomDotColor}
+                          value={halftoneDotColor}
+                          onChange={(e) => {
+                            setHalftoneDotColor(e.target.value);
+                            setHalftoneDotColorHex(e.target.value);
+                          }}
+                          className={`w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-200 ${!useCustomDotColor ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        />
+                        <input
+                          type="text"
+                          disabled={!useCustomDotColor}
+                          value={useCustomDotColor ? halftoneDotColorHex : 'Original Colors (Sampled Multi-Color)'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setHalftoneDotColorHex(val);
+                            if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)) {
+                              setHalftoneDotColor(val);
+                            }
+                          }}
+                          className={`flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-mono text-slate-800 ${!useCustomDotColor ? 'opacity-70 cursor-not-allowed italic' : ''}`}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     onClick={handleApplyHalftone}
@@ -2020,15 +2940,29 @@ export const EditModal: React.FC<EditModalProps> = ({
                     <div className="flex items-center space-x-2">
                       <input
                         type="color"
-                        value={strokeColor}
-                        onChange={(e) => setStrokeColor(e.target.value)}
+                        value={strokeColor.startsWith('#') && (strokeColor.length === 7 || strokeColor.length === 4) ? strokeColor : '#ffffff'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setStrokeColor(val);
+                          setStrokeHexInput(val);
+                        }}
                         className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-200"
                       />
                       <input
                         type="text"
-                        value={strokeColor}
-                        onChange={(e) => setStrokeColor(e.target.value)}
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-mono text-slate-800"
+                        value={strokeHexInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setStrokeHexInput(val);
+                          if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)) {
+                            const fullHex = val.length === 4
+                              ? `#${val[1]}${val[1]}${val[2]}${val[2]}${val[3]}${val[3]}`
+                              : val;
+                            setStrokeColor(fullHex);
+                          }
+                        }}
+                        placeholder="#ffffff"
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                     </div>
                   </div>
@@ -2036,196 +2970,11 @@ export const EditModal: React.FC<EditModalProps> = ({
                   <button
                     onClick={handleApplyStroke}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
                     <PenTool className="w-4 h-4" />
-                    <span>Apply Outline Stroke</span>
+                    <span>{isProcessing ? 'Applying Outline Stroke...' : 'Apply Outline Stroke'}</span>
                   </button>
-                </div>
-              )}
-
-              {/* 3. Style & Effects -> Special Effects */}
-              {activeTool === 'special-effects' && (
-                <div className="space-y-3.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 block">
-                      Style Filter Presets
-                    </label>
-                    <span className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-full">
-                      DTF Ready
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => handleApplyPresetEffect('neon')}
-                      disabled={isProcessing}
-                      className="py-2.5 px-3 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold text-xs border border-pink-200 text-left transition-colors"
-                    >
-                      ⚡ Neon Glow
-                    </button>
-                    <button
-                      onClick={() => handleApplyPresetEffect('sepia')}
-                      disabled={isProcessing}
-                      className="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-200 text-left transition-colors"
-                    >
-                      📜 Vintage Sepia
-                    </button>
-                    <button
-                      onClick={() => handleApplyPresetEffect('posterize')}
-                      disabled={isProcessing}
-                      className="py-2.5 px-3 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-800 font-bold text-xs border border-cyan-200 text-left transition-colors"
-                    >
-                      🎨 Posterize
-                    </button>
-                    <button
-                      onClick={() => handleApplyPresetEffect('bw')}
-                      disabled={isProcessing}
-                      className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-300 text-left transition-colors"
-                    >
-                      ⚪ Black & White
-                    </button>
-                    <button
-                      onClick={() => handleApplyPresetEffect('invert')}
-                      disabled={isProcessing}
-                      className="py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 text-left transition-colors"
-                    >
-                      🔄 Invert Colors
-                    </button>
-                    <button
-                      onClick={() => handleApplyPresetEffect('embroidery')}
-                      disabled={isProcessing}
-                      className="py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-300 text-left transition-colors shadow-xs flex items-center justify-between group"
-                    >
-                      <span>🧵 Embroidery Effect</span>
-                      <span className="text-[10px] bg-emerald-200/90 text-emerald-900 px-1.5 py-0.5 rounded-full font-black group-hover:scale-105 transition-transform">
-                        NEW
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Embroidery Fine-Tuning Controls */}
-                  <div className="pt-3 border-t border-slate-100 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                        <span>🧵 3D Realistic Embroidery Controls</span>
-                      </span>
-                      <button
-                        onClick={() => handleApplyPresetEffect('embroidery')}
-                        disabled={isProcessing}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        {isProcessing ? 'Stitching...' : 'Apply Embroidery'}
-                      </button>
-                    </div>
-
-                    {/* Stitch Direction */}
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-500 mb-1.5 block">
-                        Stitch Angle (Direction)
-                      </span>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {[
-                          { label: '45°', val: 45 },
-                          { label: '-45°', val: -45 },
-                          { label: '0° Flat', val: 0 },
-                          { label: '90° Vert', val: 90 }
-                        ].map((item) => (
-                          <button
-                            key={item.val}
-                            type="button"
-                            onClick={() => setEmbroideryAngle(item.val)}
-                            className={`py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
-                              embroideryAngle === item.val
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                            }`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Outer Satin Border Toggle */}
-                    <div className="flex items-center justify-between py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                      <div>
-                        <span className="text-[11px] font-bold text-slate-700 block">
-                          Satin Edge Border (Badge Contour)
-                        </span>
-                        <span className="text-[9px] text-slate-400">
-                          3D raised border with turnaround thread loops
-                        </span>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={embroideryHasBorder}
-                        onChange={(e) => setEmbroideryHasBorder(e.target.checked)}
-                        className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Fabric Backing Selection */}
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-500 mb-1.5 block">
-                        Fabric Backing (Background)
-                      </span>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {[
-                          { id: 'transparent', label: 'Transparent (DTF Film)' },
-                          { id: 'twill-canvas', label: 'Twill Canvas (Khaki)' },
-                          { id: 'dark-denim', label: 'Dark Denim' },
-                          { id: 'heather-gray', label: 'Heather Gray' }
-                        ].map((fab) => (
-                          <button
-                            key={fab.id}
-                            type="button"
-                            onClick={() => setEmbroideryFabric(fab.id as any)}
-                            className={`py-1.5 px-2 text-[10px] font-bold rounded-lg border text-left transition-all cursor-pointer ${
-                              embroideryFabric === fab.id
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-400 ring-1 ring-emerald-400 shadow-xs'
-                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                            }`}
-                          >
-                            {fab.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Sliders */}
-                    <div>
-                      <div className="flex justify-between text-[11px] font-bold text-slate-500 mb-1">
-                        <span>Thread Thickness (Stitch Density)</span>
-                        <span className="text-slate-800 font-mono">{embroideryPitch}px</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="8"
-                        max="24"
-                        step="1"
-                        value={embroideryPitch}
-                        onChange={(e) => setEmbroideryPitch(Number(e.target.value))}
-                        className="w-full accent-emerald-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-[11px] font-bold text-slate-500 mb-1">
-                        <span>Thread Luster & 3D Specular Sheen</span>
-                        <span className="text-slate-800 font-mono">{embroiderySheen}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="40"
-                        max="100"
-                        step="5"
-                        value={embroiderySheen}
-                        onChange={(e) => setEmbroiderySheen(Number(e.target.value))}
-                        className="w-full accent-emerald-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-                      />
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -2279,20 +3028,141 @@ export const EditModal: React.FC<EditModalProps> = ({
                 </div>
               )}
 
-              {/* 4. Create & Convert -> Vectorise */}
+              {/* 4. Create & Convert -> Vectoriser (Image 2 mockup) */}
               {activeTool === 'vectorize' && (
                 <div className="space-y-4">
-                  <div className="p-3 rounded-xl bg-cyan-50 border border-cyan-200 text-xs text-cyan-900 font-medium">
-                    Traces pixel boundaries into clean, sharp vector-like contour edges and eliminates anti-aliasing blur for plotter cutting and crisp screen printing.
+                  <div>
+                    <h3 className="font-extrabold text-slate-900 text-sm">Vectorize Image</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Convert your image to a scalable SVG with clean, smooth vectors.
+                    </p>
                   </div>
-                  <button
-                    onClick={handleVectorizeTrace}
-                    disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-black shadow-md shadow-cyan-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                  >
-                    <PenTool className="w-4 h-4" />
-                    <span>Vectorize & Trace Vector Contours</span>
-                  </button>
+
+                  {/* Vectorization Mode */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                      Vectorization Mode
+                    </label>
+                    <div className="space-y-1.5">
+                      <label className={`flex items-center space-x-2.5 p-2 rounded-xl border cursor-pointer transition-all ${
+                        vectorMode === 'color'
+                          ? 'bg-indigo-50/70 border-indigo-500/80 text-indigo-950 font-bold shadow-xs'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="vectorMode"
+                          checked={vectorMode === 'color'}
+                          onChange={() => setVectorMode('color')}
+                          className="w-4 h-4 text-indigo-600 accent-indigo-600 cursor-pointer"
+                        />
+                        <span className="text-xs">Color (Multicolor)</span>
+                      </label>
+                      <label className={`flex items-center space-x-2.5 p-2 rounded-xl border cursor-pointer transition-all ${
+                        vectorMode === 'binary'
+                          ? 'bg-indigo-50/70 border-indigo-500/80 text-indigo-950 font-bold shadow-xs'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="vectorMode"
+                          checked={vectorMode === 'binary'}
+                          onChange={() => setVectorMode('binary')}
+                          className="w-4 h-4 text-indigo-600 accent-indigo-600 cursor-pointer"
+                        />
+                        <span className="text-xs">Black & White (Trace)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Detail Level */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                      Detail Level
+                    </label>
+                    <div className="flex items-center space-x-4 px-1 py-0.5">
+                      {(['low', 'medium', 'high'] as const).map((lvl) => (
+                        <label key={lvl} className="flex items-center space-x-1.5 cursor-pointer text-xs font-bold text-slate-700 capitalize">
+                          <input
+                            type="radio"
+                            name="vectorDetailLevel"
+                            checked={vectorDetailLevel === lvl}
+                            onChange={() => setVectorDetailLevel(lvl)}
+                            className="w-4 h-4 text-indigo-600 accent-indigo-600 cursor-pointer"
+                          />
+                          <span>{lvl}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Smoothness Slider */}
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                      <span>Smoothness</span>
+                      <span className="text-indigo-600 font-extrabold">{vectorSmoothness}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={vectorSmoothness}
+                      onChange={(e) => setVectorSmoothness(Number(e.target.value))}
+                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Checkboxes */}
+                  <div className="space-y-2 pt-1 border-t border-slate-100">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={vectorRemoveBg}
+                        onChange={(e) => setVectorRemoveBg(e.target.checked)}
+                        className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-slate-700">Remove Background</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={vectorOptimize}
+                        onChange={(e) => setVectorOptimize(e.target.checked)}
+                        className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-slate-700">Optimize Paths (Reduce File Size)</span>
+                    </label>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-2 space-y-2 border-t border-slate-100">
+                    <button
+                      onClick={handleRunVectorize}
+                      disabled={isProcessing}
+                      className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>{isProcessing ? 'Vectorizing Artwork...' : 'Vectorize & Preview'}</span>
+                    </button>
+
+                    <button
+                      onClick={handleSaveVectorAndApply}
+                      disabled={isProcessing}
+                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Save as SVG & Apply</span>
+                    </button>
+
+                    <button
+                      onClick={handleDownloadSvg}
+                      disabled={isProcessing}
+                      className="w-full py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 text-slate-500" />
+                      <span>Download SVG</span>
+                    </button>
+                  </div>
                 </div>
               )}
 

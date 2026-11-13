@@ -186,35 +186,21 @@ export const ToolGrid: React.FC<ToolGridProps> = ({ onSelectTool, collapsed = fa
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {/* Special Effects */}
-              <button
-                onClick={() => onSelectTool('special-effects')}
-                className="bg-fuchsia-50/70 hover:bg-fuchsia-100/80 border border-fuchsia-200/60 p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="w-6 h-6 rounded-lg bg-fuchsia-600 text-white flex items-center justify-center shadow-xs">
-                    <Wand2 className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-fuchsia-600 text-white px-1.5 py-0.5 rounded-full">
-                    AI TOOL
-                  </span>
-                </div>
-                <div className="font-bold text-xs text-slate-800">Special Effects</div>
-                <div className="text-[10px] text-slate-500 truncate">AI style renders</div>
-              </button>
-
               {/* Texture Effects */}
               <button
                 onClick={() => onSelectTool('texture')}
-                className="bg-pink-50/70 hover:bg-pink-100/80 border border-pink-200/60 p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
+                className="bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/60 p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="w-6 h-6 rounded-lg bg-pink-500 text-white flex items-center justify-center shadow-xs">
+                  <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
                     <Layers className="w-3.5 h-3.5" />
                   </div>
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.5 rounded-full">
+                    11
+                  </span>
                 </div>
                 <div className="font-bold text-xs text-slate-800">Texture Effects</div>
-                <div className="text-[10px] text-slate-500 truncate">Distressed & vintage</div>
+                <div className="text-[10px] text-slate-500 truncate">11 creative filters</div>
               </button>
 
               {/* Halftone */}

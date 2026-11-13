@@ -139,22 +139,12 @@ export const ToolsDrawer: React.FC<ToolsDrawerProps> = ({
 
     // Category 3: STYLE & EFFECTS
     {
-      id: 'special-effects',
-      cat: 'style',
-      name: 'Special Effects',
-      desc: 'Glow, neon edge enhancement, and DTF blend styles',
-      badge: 'AI TOOL',
-      badgeColor: 'bg-fuchsia-900/60 text-fuchsia-300 border-fuchsia-700',
-      icon: Wand2,
-      action: () => onApplyToolAction('special-effects')
-    },
-    {
       id: 'texture',
       cat: 'style',
-      name: 'Texture & Grunge',
-      desc: 'Distressed vintage cracks for flexible garment feel',
-      badge: 'STYLE',
-      badgeColor: 'bg-pink-900/60 text-pink-300 border-pink-700',
+      name: 'Texture Effects',
+      desc: '11 creative color and texture filters with live intensity',
+      badge: '11',
+      badgeColor: 'bg-purple-900/60 text-purple-300 border-purple-700',
       icon: Layers,
       action: () => onApplyToolAction('texture')
     },

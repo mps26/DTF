@@ -114,7 +114,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const result = await registerUser(registerData);
       if (result.success && result.user) {
         onSuccess(result.user);
-        onNotification?.(`Account created successfully! Welcome to DTF Layout PRO, ${result.user.name}.`, 'success');
+        onNotification?.(`Account created successfully! Welcome to DTF Set Files, ${result.user.name}.`, 'success');
         onClose();
       } else {
         setErrorMessage(result.error || 'Registration failed.');

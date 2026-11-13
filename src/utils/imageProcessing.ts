@@ -1,4 +1,5 @@
 import { CropBox } from '../types';
+export * from './textureEffects';
 
 /**
  * Loads an image from a URL or data URL and returns an HTMLImageElement
@@ -541,93 +542,418 @@ export async function despeckleImage(img: HTMLImageElement): Promise<string> {
 
 
 /**
- * Adds an outline stroke (white underbase or colored contour) around transparent artwork
+ * Generates an accurate, clean contour outline (die-cut sticker stroke)
+ * around the actual outer silhouette of transparent artwork.
+ * Preserves transparency, internal gaps, colors, and resolution.
  */
 export async function addStrokeOutline(
   img: HTMLImageElement,
   strokeColor: string = '#ffffff',
-  strokeWidth: number = 4
+  strokeWidth: number = 3
 ): Promise<string> {
-  const canvas = document.createElement('canvas');
-  canvas.width = img.naturalWidth + strokeWidth * 4;
-  canvas.height = img.naturalHeight + strokeWidth * 4;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return img.src;
+  const width = img.naturalWidth || img.width;
+  const height = img.naturalHeight || img.height;
 
-  const offsetX = strokeWidth * 2;
-  const offsetY = strokeWidth * 2;
-
-  // Draw outline using multiple angular offsets
-  ctx.save();
-  ctx.shadowColor = strokeColor;
-  ctx.shadowBlur = 0;
-
-  for (let angle = 0; angle < 360; angle += 15) {
-    const rad = (angle * Math.PI) / 180;
-    const dx = Math.cos(rad) * strokeWidth;
-    const dy = Math.sin(rad) * strokeWidth;
-    ctx.drawImage(img, offsetX + dx, offsetY + dy);
+  // If stroke width is 0 or negative, return original image
+  if (strokeWidth <= 0) {
+    const c = document.createElement('canvas');
+    c.width = width;
+    c.height = height;
+    const cx = c.getContext('2d');
+    if (cx) cx.drawImage(img, 0, 0);
+    return c.toDataURL('image/png');
   }
 
-  // Draw original image on top
-  ctx.drawImage(img, offsetX, offsetY);
-  ctx.restore();
+  // Parse stroke color to RGB
+  const cleanHex = strokeColor.replace('#', '').trim();
+  let sR = 255, sG = 255, sB = 255;
+  if (cleanHex.length === 3) {
+    sR = parseInt(cleanHex[0] + cleanHex[0], 16) || 255;
+    sG = parseInt(cleanHex[1] + cleanHex[1], 16) || 255;
+    sB = parseInt(cleanHex[2] + cleanHex[2], 16) || 255;
+  } else if (cleanHex.length === 6) {
+    sR = parseInt(cleanHex.slice(0, 2), 16) || 255;
+    sG = parseInt(cleanHex.slice(2, 4), 16) || 255;
+    sB = parseInt(cleanHex.slice(4, 6), 16) || 255;
+  }
 
-  return canvas.toDataURL('image/png');
+  // Padding so outline is never clipped at canvas edges
+  const pad = Math.ceil(strokeWidth) + 4;
+  const outW = width + pad * 2;
+  const outH = height + pad * 2;
+  const totalPixels = outW * outH;
+
+  // Extract original image data
+  const srcCanvas = document.createElement('canvas');
+  srcCanvas.width = width;
+  srcCanvas.height = height;
+  const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
+  if (!srcCtx) return img.src;
+
+  srcCtx.drawImage(img, 0, 0);
+  const srcImgData = srcCtx.getImageData(0, 0, width, height);
+  const srcData = srcImgData.data;
+
+  // Destination canvas for the final outlined composite
+  const dstCanvas = document.createElement('canvas');
+  dstCanvas.width = outW;
+  dstCanvas.height = outH;
+  const dstCtx = dstCanvas.getContext('2d', { willReadFrequently: true });
+  if (!dstCtx) return img.src;
+
+  const dstImgData = dstCtx.createImageData(outW, outH);
+  const dstData = dstImgData.data;
+
+  // 1. Build padded artwork occupancy map (alpha threshold: > 15)
+  const isArtwork = new Uint8Array(totalPixels);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const srcIdx = (y * width + x) * 4;
+      if (srcData[srcIdx + 3] > 15) {
+        isArtwork[(y + pad) * outW + (x + pad)] = 1;
+      }
+    }
+  }
+
+  // 2. Flood-fill from borders to identify outer background (ignoring internal gaps)
+  const isOuterBg = new Uint8Array(totalPixels);
+  const queue = new Int32Array(totalPixels);
+  let qHead = 0;
+  let qTail = 0;
+
+  for (let x = 0; x < outW; x++) {
+    if (!isArtwork[x] && !isOuterBg[x]) {
+      isOuterBg[x] = 1;
+      queue[qTail++] = x;
+    }
+    const bIdx = (outH - 1) * outW + x;
+    if (!isArtwork[bIdx] && !isOuterBg[bIdx]) {
+      isOuterBg[bIdx] = 1;
+      queue[qTail++] = bIdx;
+    }
+  }
+
+  for (let y = 0; y < outH; y++) {
+    const lIdx = y * outW;
+    if (!isArtwork[lIdx] && !isOuterBg[lIdx]) {
+      isOuterBg[lIdx] = 1;
+      queue[qTail++] = lIdx;
+    }
+    const rIdx = y * outW + (outW - 1);
+    if (!isArtwork[rIdx] && !isOuterBg[rIdx]) {
+      isOuterBg[rIdx] = 1;
+      queue[qTail++] = rIdx;
+    }
+  }
+
+  while (qHead < qTail) {
+    const curr = queue[qHead++];
+    const cx = curr % outW;
+    const cy = Math.floor(curr / outW);
+
+    if (cx > 0) {
+      const n = curr - 1;
+      if (!isArtwork[n] && !isOuterBg[n]) {
+        isOuterBg[n] = 1;
+        queue[qTail++] = n;
+      }
+    }
+    if (cx < outW - 1) {
+      const n = curr + 1;
+      if (!isArtwork[n] && !isOuterBg[n]) {
+        isOuterBg[n] = 1;
+        queue[qTail++] = n;
+      }
+    }
+    if (cy > 0) {
+      const n = curr - outW;
+      if (!isArtwork[n] && !isOuterBg[n]) {
+        isOuterBg[n] = 1;
+        queue[qTail++] = n;
+      }
+    }
+    if (cy < outH - 1) {
+      const n = curr + outW;
+      if (!isArtwork[n] && !isOuterBg[n]) {
+        isOuterBg[n] = 1;
+        queue[qTail++] = n;
+      }
+    }
+  }
+
+  // 3. Meijster Euclidean Distance Transform from artwork boundary
+  const INF = 1e9;
+  const g = new Float64Array(totalPixels);
+
+  for (let x = 0; x < outW; x++) {
+    g[x] = isArtwork[x] ? 0 : INF;
+    for (let y = 1; y < outH; y++) {
+      const idx = y * outW + x;
+      g[idx] = isArtwork[idx] ? 0 : 1 + g[(y - 1) * outW + x];
+    }
+    for (let y = outH - 2; y >= 0; y--) {
+      const idx = y * outW + x;
+      if (g[(y + 1) * outW + x] < g[idx]) {
+        g[idx] = 1 + g[(y + 1) * outW + x];
+      }
+    }
+  }
+
+  const dt = new Float32Array(totalPixels);
+  const s = new Int32Array(outW);
+  const t = new Int32Array(outW);
+
+  const f = (x: number, i: number, y: number) => {
+    const gi = g[y * outW + i];
+    return (x - i) * (x - i) + gi * gi;
+  };
+
+  const sep = (i: number, u: number, y: number) => {
+    const gi = g[y * outW + i];
+    const gu = g[y * outW + u];
+    return Math.floor((u * u - i * i + gu * gu - gi * gi) / (2 * (u - i)));
+  };
+
+  for (let y = 0; y < outH; y++) {
+    let q = 0;
+    s[0] = 0;
+    t[0] = 0;
+
+    for (let u = 1; u < outW; u++) {
+      while (q >= 0 && f(t[q], s[q], y) > f(t[q], u, y)) {
+        q--;
+      }
+      if (q < 0) {
+        q = 0;
+        s[0] = u;
+      } else {
+        const w = 1 + sep(s[q], u, y);
+        if (w < outW) {
+          q++;
+          s[q] = u;
+          t[q] = w;
+        }
+      }
+    }
+
+    for (let u = outW - 1; u >= 0; u--) {
+      const d2 = f(u, s[q], y);
+      dt[y * outW + u] = Math.sqrt(d2);
+      if (u === t[q]) {
+        q--;
+      }
+    }
+  }
+
+  // 4. Fill outer stroke in destination buffer
+  for (let idx = 0; idx < totalPixels; idx++) {
+    if (isOuterBg[idx]) {
+      const dist = dt[idx];
+      if (dist <= strokeWidth) {
+        const pIdx = idx * 4;
+        dstData[pIdx] = sR;
+        dstData[pIdx + 1] = sG;
+        dstData[pIdx + 2] = sB;
+
+        // Smooth anti-aliased edge falloff
+        const edge = strokeWidth - dist;
+        const alpha = edge < 1.0 ? Math.max(0, Math.min(1, edge)) : 1.0;
+        dstData[pIdx + 3] = Math.round(alpha * 255);
+      }
+    }
+  }
+
+  // Put stroke layer on destination canvas
+  dstCtx.putImageData(dstImgData, 0, 0);
+
+  // 5. Composite original artwork on top at offset (pad, pad)
+  dstCtx.drawImage(img, pad, pad);
+
+  return dstCanvas.toDataURL('image/png');
 }
 
 
 
+export interface UpscaleResult {
+  dataUrl: string;
+  originalWidth: number;
+  originalHeight: number;
+  width: number;
+  height: number;
+  factor: number;
+  sharpness: number;
+}
+
 /**
- * AI Super-Resolution & Sharpen Upscaler (2x / 4x)
+ * AI Super-Resolution & Sharpen Upscaler (2× Super-Resolution / 4× Ultra-Resolution)
+ * Uses deep learning super-resolution backend (FSRCNN / EDSR) with client-side
+ * high-precision fallback, full transparency preservation, and controlled unsharp masking.
  */
 export async function upscaleImageAi(
-  img: HTMLImageElement,
+  source: HTMLImageElement | string,
   factor: number = 2,
-  sharpness: number = 50
-): Promise<string> {
-  const canvas = document.createElement('canvas');
-  const targetW = img.naturalWidth * factor;
-  const targetH = img.naturalHeight * factor;
-  canvas.width = targetW;
-  canvas.height = targetH;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return img.src;
+  sharpness: number = 50,
+  model: string = 'fsrcnn'
+): Promise<UpscaleResult> {
+  const normFactor = factor === 4 ? 4 : 2;
+  const normSharpness = Math.max(0, Math.min(100, sharpness));
 
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, 0, 0, targetW, targetH);
+  // Resolve source image element and dimensions
+  let imgElem: HTMLImageElement;
+  let sourceDataUrl: string;
 
-  // Apply Unsharp Masking Kernel if sharpness > 0
-  if (sharpness > 0) {
-    const imageData = ctx.getImageData(0, 0, targetW, targetH);
-    const data = imageData.data;
-    const copy = new Uint8ClampedArray(data);
-    const w = targetW;
-    const h = targetH;
-    const amount = (sharpness / 100) * 0.7;
-
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const idx = (y * w + x) * 4;
-        if (copy[idx + 3] === 0) continue; // Skip fully transparent
-
-        for (let c = 0; c < 3; c++) {
-          const center = copy[idx + c];
-          const top = copy[((y - 1) * w + x) * 4 + c];
-          const bottom = copy[((y + 1) * w + x) * 4 + c];
-          const left = copy[(y * w + (x - 1)) * 4 + c];
-          const right = copy[(y * w + (x + 1)) * 4 + c];
-
-          const laplacian = 4 * center - (top + bottom + left + right);
-          data[idx + c] = Math.min(255, Math.max(0, center + laplacian * amount));
-        }
-      }
-    }
-    ctx.putImageData(imageData, 0, 0);
+  if (typeof source === 'string') {
+    imgElem = await loadImage(source);
+    sourceDataUrl = source;
+  } else {
+    imgElem = source;
+    sourceDataUrl = source.src;
   }
 
-  return canvas.toDataURL('image/png');
+  const origW = imgElem.naturalWidth || imgElem.width;
+  const origH = imgElem.naturalHeight || imgElem.height;
+  const targetW = origW * normFactor;
+  const targetH = origH * normFactor;
+
+  // 1. Attempt Backend AI Super-Resolution (OpenCV Deep Learning FSRCNN / EDSR)
+  try {
+    let blob: Blob;
+    if (sourceDataUrl.startsWith('data:')) {
+      const byteString = atob(sourceDataUrl.split(',')[1]);
+      const mimeString = sourceDataUrl.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      blob = new Blob([ab], { type: mimeString });
+    } else {
+      const resp = await fetch(sourceDataUrl);
+      blob = await resp.blob();
+    }
+
+    const formData = new FormData();
+    formData.append('file', blob, 'image.png');
+    formData.append('factor', normFactor.toString());
+    formData.append('sharpness', normSharpness.toString());
+    formData.append('model', model);
+
+    const apiResp = await fetch('/api/upscale', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (apiResp.ok) {
+      const json = await apiResp.json();
+      if (json.status === 'success' && json.dataUrl) {
+        return {
+          dataUrl: json.dataUrl,
+          originalWidth: json.originalWidth || origW,
+          originalHeight: json.originalHeight || origH,
+          width: json.width || targetW,
+          height: json.height || targetH,
+          factor: json.factor || normFactor,
+          sharpness: json.sharpness ?? normSharpness
+        };
+      }
+    }
+  } catch (backendErr) {
+    console.warn('Backend /api/upscale unavailable, running high-precision client super-resolution fallback', backendErr);
+  }
+
+  // 2. Client-Side High-Precision Super-Resolution & Unsharp Masking Fallback
+  const canvas = document.createElement('canvas');
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) {
+    return {
+      dataUrl: sourceDataUrl,
+      originalWidth: origW,
+      originalHeight: origH,
+      width: origW,
+      height: origH,
+      factor: 1,
+      sharpness: 0
+    };
+  }
+
+  // Multi-step progressive upsampling to eliminate jagged artifacts
+  if (normFactor === 4) {
+    const midCanvas = document.createElement('canvas');
+    midCanvas.width = origW * 2;
+    midCanvas.height = origH * 2;
+    const midCtx = midCanvas.getContext('2d');
+    if (midCtx) {
+      midCtx.imageSmoothingEnabled = true;
+      midCtx.imageSmoothingQuality = 'high';
+      midCtx.drawImage(imgElem, 0, 0, origW * 2, origH * 2);
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(midCanvas, 0, 0, targetW, targetH);
+    } else {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(imgElem, 0, 0, targetW, targetH);
+    }
+  } else {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(imgElem, 0, 0, targetW, targetH);
+  }
+
+  // Controlled Unsharp Masking on Luminance channel only (prevents color halos and artifacts)
+  if (normSharpness > 0) {
+    const imgData = ctx.getImageData(0, 0, targetW, targetH);
+    const d = imgData.data;
+    const copy = new Uint8ClampedArray(d);
+    const amount = (normSharpness / 100) * 1.2;
+
+    for (let y = 1; y < targetH - 1; y++) {
+      for (let x = 1; x < targetW - 1; x++) {
+        const idx = (y * targetW + x) * 4;
+        const a = copy[idx + 3];
+        if (a < 10) continue; // Skip transparent edges
+
+        // Convert center to Luminance
+        const cr = copy[idx];
+        const cg = copy[idx + 1];
+        const cb = copy[idx + 2];
+        const lumCenter = 0.299 * cr + 0.587 * cg + 0.114 * cb;
+
+        // Sample neighbors for Laplacian
+        const topIdx = ((y - 1) * targetW + x) * 4;
+        const botIdx = ((y + 1) * targetW + x) * 4;
+        const lftIdx = (y * targetW + (x - 1)) * 4;
+        const rgtIdx = (y * targetW + (x + 1)) * 4;
+
+        const lumTop = 0.299 * copy[topIdx] + 0.587 * copy[topIdx + 1] + 0.114 * copy[topIdx + 2];
+        const lumBot = 0.299 * copy[botIdx] + 0.587 * copy[botIdx + 1] + 0.114 * copy[botIdx + 2];
+        const lumLft = 0.299 * copy[lftIdx] + 0.587 * copy[lftIdx + 1] + 0.114 * copy[lftIdx + 2];
+        const lumRgt = 0.299 * copy[rgtIdx] + 0.587 * copy[rgtIdx + 1] + 0.114 * copy[rgtIdx + 2];
+
+        const laplacian = 4 * lumCenter - (lumTop + lumBot + lumLft + lumRgt);
+        const delta = laplacian * amount;
+
+        // Apply delta proportionally to RGB
+        d[idx] = Math.min(255, Math.max(0, Math.round(cr + delta)));
+        d[idx + 1] = Math.min(255, Math.max(0, Math.round(cg + delta)));
+        d[idx + 2] = Math.min(255, Math.max(0, Math.round(cb + delta)));
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    originalWidth: origW,
+    originalHeight: origH,
+    width: targetW,
+    height: targetH,
+    factor: normFactor,
+    sharpness: normSharpness
+  };
 }
 
 
@@ -904,16 +1230,29 @@ export async function applyTextureEffect(
 
 export type HalftoneStyle = 'color' | 'duotone' | 'bw';
 
+export interface HalftoneOptions {
+  style?: HalftoneStyle;
+  dotSize?: number;          // 2 - 25 px, default 8
+  density?: number;          // 20 - 100%, default 70
+  fadeSpread?: number;       // 0 - 100%, default 40
+  angle?: number;            // 0 - 90 deg, default 0
+  customColor?: string | null; // e.g. '#FF0000' if custom override
+  scale?: number;            // resolution scaling factor (default 1)
+}
+
 /**
- * 45-Degree Angled Halftone Screen Dot Effect for DTF & Screen Printing:
- * - Scales dot pitch & radius cleanly with image resolution so dots are always crisp and visible.
- * - Uses a 45° rotated screen grid and cell-averaged color sampling.
+ * Production-ready Halftone Screen Dot Effect for DTF & Screen Printing:
+ * - 3 Modes: Classic B&W ('bw'), Color Dots ('color'), and Dot Grid ('duotone').
+ * - Dynamic dot sizing and pitch based on density, fadeSpread, and dotSize.
+ * - Cell-averaged color sampling preserving rich original colors and fine details.
+ * - Strict silhouette clipping with original alpha mask to guarantee 100% transparent backgrounds
+ *   and prevent dots from bleeding outside the artwork contour.
  */
 export async function applyHalftoneFilter(
   img: HTMLImageElement,
-  dotSpacing: number = 8,
-  dotRadiusMax: number = 4,
-  style: HalftoneStyle = 'color'
+  optionsOrSpacing: HalftoneOptions | number = 8,
+  legacyRadiusMax: number = 4,
+  legacyStyle: HalftoneStyle = 'color'
 ): Promise<string> {
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;
@@ -921,22 +1260,48 @@ export async function applyHalftoneFilter(
   const ctx = canvas.getContext('2d');
   if (!ctx) return img.src;
 
-  ctx.drawImage(img, 0, 0);
-  const srcData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
   const w = canvas.width;
   const h = canvas.height;
-  const minDim = Math.min(w, h);
 
-  // Automatic resolution-aware halftone pitch matching classic print screens
-  const pitch = Math.max(6, Math.round(minDim / 90));
-  const maxR = pitch * 0.68;
+  // Extract source pixel data
+  ctx.drawImage(img, 0, 0);
+  const srcData = ctx.getImageData(0, 0, w, h).data;
 
-  // Clear canvas to rebuild in pure 45° halftone screen
+  // Clear canvas to draw pure halftone screen
   ctx.clearRect(0, 0, w, h);
 
-  const angle = Math.PI / 4; // 45-degree classic halftone screen
-  const cosA = Math.cos(angle);
-  const sinA = Math.sin(angle);
+  let style: HalftoneStyle = 'color';
+  let dotSize = 8;
+  let density = 70;
+  let fadeSpread = 40;
+  let angleDeg = 0;
+  let customColor: string | null = null;
+
+  if (typeof optionsOrSpacing === 'object' && optionsOrSpacing !== null) {
+    style = optionsOrSpacing.style || 'color';
+    dotSize = optionsOrSpacing.dotSize ?? 8;
+    density = optionsOrSpacing.density ?? 70;
+    fadeSpread = optionsOrSpacing.fadeSpread ?? 40;
+    angleDeg = optionsOrSpacing.angle ?? 0;
+    customColor = optionsOrSpacing.customColor || null;
+    if (optionsOrSpacing.scale && optionsOrSpacing.scale > 0) {
+      dotSize = Math.max(2, Math.round(dotSize * optionsOrSpacing.scale));
+    }
+  } else {
+    // Legacy positional arguments
+    dotSize = optionsOrSpacing;
+    style = legacyStyle;
+  }
+
+  // Pitch & max radius calculations
+  const clampedDensity = Math.max(0.2, Math.min(1.0, density / 100));
+  const pitch = Math.max(3, dotSize / clampedDensity);
+  const spreadMultiplier = 0.7 + (fadeSpread / 100) * 0.6;
+  const maxRadius = Math.max(1, (pitch * 0.48) * clampedDensity * spreadMultiplier);
+
+  const angleRad = (angleDeg * Math.PI) / 180;
+  const cosA = Math.cos(angleRad);
+  const sinA = Math.sin(angleRad);
 
   // Bounding box in rotated (u, v) screen space
   const corners = [
@@ -956,23 +1321,21 @@ export async function applyHalftoneFilter(
   }
 
   const sampleStep = Math.max(1, Math.floor(pitch / 3));
+  const half = Math.max(1, Math.floor(pitch * 0.45));
 
   for (let v = minV; v <= maxV; v += pitch) {
     for (let u = minU; u <= maxU; u += pitch) {
-      // Convert rotated grid center (u, v) back to image (x, y)
       const cx = Math.round(u * cosA - v * sinA);
       const cy = Math.round(u * sinA + v * cosA);
       if (cx < 0 || cx >= w || cy < 0 || cy >= h) continue;
 
-      // Average color & alpha over the dot cell for clean, noise-free sampling
       let sumR = 0, sumG = 0, sumB = 0, sumA = 0, count = 0;
-      const half = Math.max(1, Math.floor(pitch * 0.38));
       for (let sy = Math.max(0, cy - half); sy <= Math.min(h - 1, cy + half); sy += sampleStep) {
         const rowOff = sy * w;
         for (let sx = Math.max(0, cx - half); sx <= Math.min(w - 1, cx + half); sx += sampleStep) {
           const sIdx = (rowOff + sx) * 4;
           const a = srcData[sIdx + 3];
-          if (a >= 25) {
+          if (a >= 20) {
             sumR += srcData[sIdx];
             sumG += srcData[sIdx + 1];
             sumB += srcData[sIdx + 2];
@@ -988,32 +1351,52 @@ export async function applyHalftoneFilter(
       const g = Math.round(sumG / count);
       const b = Math.round(sumB / count);
       const avgAlpha = (sumA / count) / 255;
+      if (avgAlpha < 0.08) continue;
+
       const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
       let dotRadius = 0;
+      let fillStyle = '';
+
       if (style === 'bw') {
-        // Classic B&W halftone (Image 1 & 2): darks merge solid, midtones form 45° dots, highlights shrink
-        dotRadius = Math.pow(1 - luminance * 0.92, 0.85) * maxR * avgAlpha;
-      } else if (style === 'duotone') {
-        // Uniform perforated dot matrix (Image 3): crisp, even breathable DTF dot screen
-        dotRadius = pitch * 0.36 * avgAlpha;
+        const darkness = 1 - luminance;
+        if (darkness < 0.04) continue;
+        dotRadius = maxRadius * Math.pow(darkness, 0.75) * avgAlpha;
+        fillStyle = `rgba(12, 12, 16, ${avgAlpha.toFixed(3)})`;
+      } else if (style === 'color') {
+        const tonalFactor = 0.3 + 0.7 * Math.pow(1 - luminance * 0.8, 0.75);
+        dotRadius = maxRadius * tonalFactor * avgAlpha;
+        if (customColor) {
+          fillStyle = customColor;
+        } else {
+          fillStyle = `rgba(${r}, ${g}, ${b}, ${avgAlpha.toFixed(3)})`;
+        }
       } else {
-        // Color Dots: 45° tonal halftone preserving vivid artwork colors
-        dotRadius = (0.34 + (1 - luminance) * 0.66) * (pitch * 0.58) * avgAlpha;
+        // 'duotone' -> Dot Grid: Uniform grid as in reference image
+        dotRadius = maxRadius * 0.82 * avgAlpha;
+        if (customColor) {
+          fillStyle = customColor;
+        } else {
+          fillStyle = `rgba(${r}, ${g}, ${b}, ${avgAlpha.toFixed(3)})`;
+        }
       }
 
-      if (dotRadius > 0.6) {
+      if (dotRadius > 0.5) {
         ctx.beginPath();
-        if (style === 'bw') {
-          ctx.fillStyle = `rgba(12, 12, 16, ${avgAlpha.toFixed(3)})`;
-        } else {
-          ctx.fillStyle = `rgba(${r},${g},${b},${avgAlpha.toFixed(3)})`;
-        }
+        ctx.fillStyle = fillStyle;
         ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
         ctx.fill();
       }
     }
   }
+
+  // Alpha mask silhouette clipping:
+  // Guarantees zero dots bleed outside the original image's silhouette,
+  // and preserves the original transparent background and smooth anti-aliased contour.
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.drawImage(img, 0, 0);
+  ctx.restore();
 
   return canvas.toDataURL('image/png');
 }
@@ -1088,24 +1471,11 @@ export function drawImageProportional(
   boxH: number,
   aspectLocked: boolean = true
 ): void {
-  if (!aspectLocked || img.naturalWidth <= 0 || img.naturalHeight <= 0 || boxW <= 0 || boxH <= 0) {
-    ctx.drawImage(img, boxX, boxY, boxW, boxH);
+  // Always render artwork at the exact width and height set in the gangsheet
+  if (img.naturalWidth <= 0 || img.naturalHeight <= 0 || boxW <= 0 || boxH <= 0) {
     return;
   }
-  const imgRatio = img.naturalWidth / img.naturalHeight;
-  const boxRatio = boxW / boxH;
-  let drawW = boxW;
-  let drawH = boxH;
-  if (boxRatio > imgRatio) {
-    drawH = boxH;
-    drawW = boxH * imgRatio;
-  } else {
-    drawW = boxW;
-    drawH = boxW / imgRatio;
-  }
-  const drawX = boxX + (boxW - drawW) / 2;
-  const drawY = boxY + (boxH - drawH) / 2;
-  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+  ctx.drawImage(img, boxX, boxY, boxW, boxH);
 }
 
 

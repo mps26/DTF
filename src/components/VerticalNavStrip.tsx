@@ -32,7 +32,7 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
           className={`w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 font-black cursor-pointer hover:scale-105 transition-all ${
             activeTab === 'landing' ? 'ring-2 ring-indigo-400' : ''
           }`}
-          title="DTF Layout PRO Landing Page"
+          title="DTF Set Files Landing Page"
         >
           <Layers className="w-5 h-5 text-white" />
         </button>

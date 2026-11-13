@@ -207,19 +207,12 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       activeBg: 'bg-pink-600',
       tools: [
         {
-          id: 'special-effects',
-          name: 'Special Effects',
-          desc: 'AI style rendering & filters',
-          icon: Wand2,
-          badge: 'AI',
-          badgeBg: 'bg-fuchsia-600',
-          iconColor: 'text-pink-400'
-        },
-        {
           id: 'texture',
           name: 'Texture Effects',
-          desc: 'Distressed, vintage & grunge overlay',
+          desc: '11 creative color & texture filters',
           icon: Layers,
+          badge: '11',
+          badgeBg: 'bg-purple-600',
           iconColor: 'text-purple-400'
         },
         {
@@ -312,10 +305,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           <div className="flex flex-col justify-center">
             <div className="flex items-center space-x-1.5 leading-none">
               <span className="font-black text-sm tracking-tight text-white whitespace-nowrap">
-                DTF Layout
-              </span>
-              <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.5 rounded shadow-2xs">
-                PRO
+                DTF Set Files
               </span>
             </div>
             <div className="text-[11px] text-slate-300 font-medium whitespace-nowrap mt-1 leading-none">

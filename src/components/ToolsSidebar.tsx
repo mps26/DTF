@@ -321,24 +321,16 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
           {openCategories.style && (
             <div className="p-2.5 pt-0 space-y-1 text-xs border-t border-[#1a233d] mt-1 animate-in fade-in duration-150">
               <button
-                onClick={() => onSelectTool('special-effects')}
+                onClick={() => onSelectTool('texture')}
                 className="w-full py-2 px-2.5 rounded-xl hover:bg-[#19223e] text-left flex items-center justify-between text-slate-200 transition-colors"
               >
                 <div className="flex items-center space-x-2">
-                  <Wand2 className="w-3.5 h-3.5 text-pink-400" />
-                  <span className="font-semibold">Special Effects</span>
+                  <Layers className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="font-semibold">Texture Effects</span>
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-fuchsia-600 text-white px-1.5 py-0.2 rounded-full shadow-2xs">
-                  AI
+                <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.2 rounded-full shadow-2xs">
+                  11
                 </span>
-              </button>
-
-              <button
-                onClick={() => onSelectTool('texture')}
-                className="w-full py-2 px-2.5 rounded-xl hover:bg-[#19223e] text-left flex items-center space-x-2 text-slate-200 transition-colors"
-              >
-                <Layers className="w-3.5 h-3.5 text-purple-400" />
-                <span className="font-semibold">Texture Effects</span>
               </button>
 
               <button

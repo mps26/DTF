@@ -19,13 +19,15 @@ export interface CropBox {
 export interface ArtworkAsset {
   id: string;
   filename: string;
-  fileType: 'png' | 'jpg' | 'jpeg' | 'webp';
+  fileType: 'png' | 'jpg' | 'jpeg' | 'webp' | 'svg';
   fileSize: number;
   originalWidth: number;
   originalHeight: number;
   hasAlpha: boolean;
   originalUrl: string;
   processedUrl: string;
+  svgContent?: string;
+  isVector?: boolean;
   trimmedWidth: number;
   trimmedHeight: number;
   cropBox: CropBox | null;

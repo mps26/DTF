@@ -53,12 +53,7 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
   };
 
   const handleToggleAspect = () => {
-    if (!asset.aspectLocked) {
-      const currentRatio = (asset.targetWidth > 0 && asset.targetHeight > 0)
-        ? (asset.targetWidth / asset.targetHeight)
-        : ((asset.trimmedWidth || asset.originalWidth || 1) / (asset.trimmedHeight || asset.originalHeight || 1));
-      onUpdate(asset.id, { aspectLocked: true, lockedRatio: currentRatio });
-    }
+    // Aspect ratio is permanently locked
   };
 
   const handleToggleRotation = () => {
@@ -193,30 +188,18 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
 
         {/* Lock Aspect Ratio Pill Switch */}
         <div className="flex items-center justify-between py-1 mb-3">
-          <label
-            onClick={handleToggleAspect}
-            className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-600 select-none"
+          <div
+            className="flex items-center space-x-2 text-xs font-medium text-slate-600 select-none cursor-default"
+            title="Lock Aspect Ratio is permanently enabled"
           >
-            <div
-              className={`w-8 h-4 rounded-full transition-colors relative p-0.5 ${
-                asset.aspectLocked ? 'bg-indigo-600' : 'bg-slate-300'
-              }`}
-            >
-              <div
-                className={`w-3 h-3 rounded-full bg-white transition-transform ${
-                  asset.aspectLocked ? 'translate-x-4' : 'translate-x-0'
-                }`}
-              />
+            <div className="w-8 h-4 rounded-full relative p-0.5 bg-indigo-600">
+              <div className="w-3 h-3 rounded-full bg-white transition-transform translate-x-4" />
             </div>
             <span className="flex items-center space-x-1">
-              {asset.aspectLocked ? (
-                <Lock className="w-3 h-3 text-indigo-600" />
-              ) : (
-                <Unlock className="w-3 h-3 text-slate-400" />
-              )}
+              <Lock className="w-3 h-3 text-indigo-600" />
               <span className="text-xs font-semibold">Lock Aspect Ratio</span>
             </span>
-          </label>
+          </div>
 
           <button
             onClick={handleToggleRotation}

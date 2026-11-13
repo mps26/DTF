@@ -87,7 +87,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const unoptimizedFeet = Math.ceil(unoptimizedLengthInches / 12);
     const unoptimizedCost = unoptimizedFeet * calcCostPerFoot;
 
-    // DTF Layout PRO True-Shape Nesting (approx 94% efficiency)
+    // DTF Set Files True-Shape Nesting (approx 94% efficiency)
     const optimizedArea = totalDesignArea / 0.94;
     const optimizedLengthInches = optimizedArea / filmWidth;
     const optimizedFeet = Math.ceil(optimizedLengthInches / 12);
@@ -111,7 +111,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const faqs = [
     {
       q: 'How does the Multi-Channel TIFF RIP Export work?',
-      a: 'DTF Layout PRO automatically analyzes the transparency mask of every design on your gang roll and compiles native 300 DPI Photometric 5 multi-channel TIFFs. It auto-generates a dedicated W1 White Underbase spot channel with an automated 1-pixel circular choke to eliminate white border bleed on dark textiles. In UVDTF mode, it also embeds a dedicated W2 Varnish gloss pass.'
+      a: 'DTF Set Files automatically analyzes the transparency mask of every design on your gang roll and compiles native 300 DPI Photometric 5 multi-channel TIFFs. It auto-generates a dedicated W1 White Underbase spot channel with an automated 1-pixel circular choke to eliminate white border bleed on dark textiles. In UVDTF mode, it also embeds a dedicated W2 Varnish gloss pass.'
     },
     {
       q: 'Which RIP software packages and printers are officially verified?',
@@ -147,7 +147,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <span className="font-black text-lg tracking-tight text-slate-900 uppercase">
-                DTF Layout <span className="text-indigo-600">PRO</span>
+                DTF Set Files
               </span>
               <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
                 RIP 2.0
@@ -992,7 +992,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold">
                 <Layers className="w-4 h-4" />
               </div>
-              <span className="font-black text-slate-900 uppercase text-sm">DTF Layout PRO</span>
+              <span className="font-black text-slate-900 uppercase text-sm">DTF Set Files</span>
             </div>
             <p className="text-xs leading-relaxed text-slate-500">
               Industrial gang sheet nesting and multi-channel RIP TIFF engine for direct-to-film and UV-DTF roll printers.
@@ -1035,7 +1035,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         <div className="max-w-7xl mx-auto px-6 pt-8 mt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500">
-          <div>© {new Date().getFullYear()} DTF Layout PRO. Industrial Prepress Automation. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} DTF Set Files. Industrial Prepress Automation. All rights reserved.</div>
           <div className="flex space-x-4 mt-2 sm:mt-0">
             <span>Privacy Policy</span>
             <span>Terms of Service</span>

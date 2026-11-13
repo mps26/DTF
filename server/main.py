@@ -6,6 +6,7 @@ import struct
 import sqlite3
 import hashlib
 import secrets
+import base64
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -15,6 +16,12 @@ from pydantic import BaseModel
 from PIL import Image, ImageOps
 import numpy as np
 import cv2
+
+try:
+    import vtracer
+    VTRACER_AVAILABLE = True
+except ImportError:
+    VTRACER_AVAILABLE = False
 
 app = FastAPI(title="DTF Gang Sheet Automation API", version="1.0.0")
 
@@ -427,6 +434,154 @@ async def remove_background(
 
     return Response(content=buffer.getvalue(), media_type="image/png")
 
+MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
+_sr_models_cache = {}
+
+def get_super_res_model(model_name: str, scale: int):
+    key = (model_name.lower(), scale)
+    if key in _sr_models_cache:
+        return _sr_models_cache[key]
+    
+    path = os.path.join(MODELS_DIR, f"{model_name.upper()}_x{scale}.pb")
+    if not os.path.exists(path):
+        path = os.path.join(MODELS_DIR, f"{model_name.lower()}_x{scale}.pb")
+    if not os.path.exists(path):
+        path = os.path.join(MODELS_DIR, f"FSRCNN_x{scale}.pb")
+        model_name = "fsrcnn"
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Super-resolution model file not found: {path}")
+
+    sr = cv2.dnn_superres.DnnSuperResImpl_create()
+    sr.readModel(path)
+    sr.setModel(model_name.lower(), scale)
+    _sr_models_cache[key] = sr
+    return sr
+
+
+def perform_ai_superres(img_np: np.ndarray, factor: int = 2, sharpness: int = 50, model_name: str = "fsrcnn") -> Image.Image:
+    h, w = img_np.shape[:2]
+    target_w = w * factor
+    target_h = h * factor
+
+    has_alpha = (img_np.shape[2] == 4) if len(img_np.shape) > 2 else False
+    if has_alpha:
+        bgr = cv2.cvtColor(img_np, cv2.COLOR_RGBA2BGR)
+        alpha = img_np[:, :, 3]
+        # Inpaint background to prevent edge halos / color fringing on transparent PNGs
+        mask = (alpha == 0).astype(np.uint8) * 255
+        if np.any(mask) and not np.all(mask):
+            bgr_clean = cv2.inpaint(bgr, mask, 3, cv2.INPAINT_TELEA)
+        else:
+            bgr_clean = bgr
+    else:
+        bgr_clean = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR) if len(img_np.shape) > 2 else cv2.cvtColor(img_np, cv2.COLOR_GRAY2BGR)
+        alpha = None
+
+    sr = get_super_res_model(model_name, factor)
+
+    # Super-resolve BGR using tiled windowed inference for large dimensions
+    if h > 500 or w > 500:
+        tile_size = 400
+        overlap = 32
+        out_bgr = np.zeros((target_h, target_w, 3), dtype=np.float32)
+        weight_map = np.zeros((target_h, target_w, 1), dtype=np.float32)
+
+        for y in range(0, h, tile_size - overlap):
+            y_end = min(y + tile_size, h)
+            y_start = max(0, y_end - tile_size)
+            for x in range(0, w, tile_size - overlap):
+                x_end = min(x + tile_size, w)
+                x_start = max(0, x_end - tile_size)
+
+                tile = bgr_clean[y_start:y_end, x_start:x_end]
+                tile_up = sr.upsample(tile).astype(np.float32)
+
+                th, tw = tile_up.shape[:2]
+                wy = np.sin(np.linspace(0, np.pi, th)) ** 2
+                wx = np.sin(np.linspace(0, np.pi, tw)) ** 2
+                w_tile = (wy[:, None] * wx[None, :])[:, :, None] + 1e-4
+
+                out_y1 = y_start * factor
+                out_y2 = out_y1 + th
+                out_x1 = x_start * factor
+                out_x2 = out_x1 + tw
+
+                out_bgr[out_y1:out_y2, out_x1:out_x2] += tile_up * w_tile
+                weight_map[out_y1:out_y2, out_x1:out_x2] += w_tile
+
+        bgr_up = np.clip(out_bgr / weight_map, 0, 255).astype(np.uint8)
+    else:
+        bgr_up = sr.upsample(bgr_clean)
+
+    # Apply controlled unsharp masking on Luminance channel (LAB color space)
+    if sharpness > 0:
+        lab = cv2.cvtColor(bgr_up, cv2.COLOR_BGR2LAB)
+        l, a_ch, b_ch = cv2.split(lab)
+        amount = (sharpness / 100.0) * 1.5
+        blurred = cv2.GaussianBlur(l, (0, 0), sigmaX=1.5)
+        l_sharp = cv2.addWeighted(l, 1.0 + amount, blurred, -amount, 0)
+        lab_sharp = cv2.merge([l_sharp, a_ch, b_ch])
+        bgr_up = cv2.cvtColor(lab_sharp, cv2.COLOR_LAB2BGR)
+
+    if has_alpha:
+        alpha_up = cv2.resize(alpha, (target_w, target_h), interpolation=cv2.INTER_LANCZOS4)
+        final_rgba = cv2.merge([bgr_up[:, :, 0], bgr_up[:, :, 1], bgr_up[:, :, 2], alpha_up])
+        out_img = Image.fromarray(cv2.cvtColor(final_rgba, cv2.COLOR_BGRA2RGBA))
+    else:
+        out_img = Image.fromarray(cv2.cvtColor(bgr_up, cv2.COLOR_BGR2RGB))
+
+    return out_img
+
+
+@app.post("/api/upscale")
+async def upscale_image(
+    file: UploadFile = File(...),
+    factor: int = Form(2),
+    sharpness: int = Form(50),
+    model: str = Form("fsrcnn")
+):
+    """
+    Genuine AI Super-Resolution (2x Super-Resolution & 4x Ultra-Resolution)
+    using deep residual super-resolution models (FSRCNN / EDSR).
+    Preserves transparent backgrounds, fine contours, and color balance.
+    """
+    if factor not in (2, 4):
+        raise HTTPException(status_code=400, detail="Factor must be 2 or 4")
+
+    sharpness = max(0, min(100, sharpness))
+    contents = await file.read()
+    try:
+        image = Image.open(io.BytesIO(contents))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid image format: {str(e)}")
+
+    orig_w, orig_h = image.size
+    rgba = image.convert('RGBA') if 'A' in image.getbands() or image.mode in ('RGBA', 'LA') else image.convert('RGB')
+    img_np = np.array(rgba)
+
+    try:
+        upscaled_img = perform_ai_superres(img_np, factor=factor, sharpness=sharpness, model_name=model)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI upscaling error: {str(e)}")
+
+    buffer = io.BytesIO()
+    upscaled_img.save(buffer, format="PNG")
+    png_bytes = buffer.getvalue()
+    b64_str = base64.b64encode(png_bytes).decode('ascii')
+
+    return JSONResponse({
+        "status": "success",
+        "factor": factor,
+        "sharpness": sharpness,
+        "originalWidth": orig_w,
+        "originalHeight": orig_h,
+        "width": upscaled_img.width,
+        "height": upscaled_img.height,
+        "dataUrl": f"data:image/png;base64,{b64_str}"
+    })
+
+
 @app.post("/api/trim")
 async def trim_image(
     file: UploadFile = File(...),
@@ -455,6 +610,159 @@ async def trim_image(
     buffer.seek(0)
 
     return Response(content=buffer.getvalue(), media_type="image/png")
+
+def generate_contour_svg(img_np: np.ndarray, colormode: str, smoothness: int, precision: int = 2) -> str:
+    h, w = img_np.shape[:2]
+    fmt = f"{{:.{precision}f}}"
+    paths = []
+    if colormode == "binary":
+        gray = cv2.cvtColor(img_np, cv2.COLOR_RGBA2GRAY) if img_np.shape[2] == 4 else img_np
+        _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY_INV)
+        if img_np.shape[2] == 4:
+            thresh[img_np[:, :, 3] < 128] = 0
+        epsilon = max(0.5, (100 - smoothness) * 0.05 + 0.5)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS)
+        for cnt in contours:
+            if cv2.contourArea(cnt) < 4:
+                continue
+            approx = cv2.approxPolyDP(cnt, epsilon, True)
+            if len(approx) < 3:
+                continue
+            d_parts = []
+            for i, pt in enumerate(approx):
+                px, py = pt[0][0], pt[0][1]
+                cmd = "M" if i == 0 else "L"
+                d_parts.append(f"{cmd} {fmt.format(px)} {fmt.format(py)}")
+            d_parts.append("Z")
+            paths.append(f'<path d="{" ".join(d_parts)}" fill="#000000"/>')
+    else:
+        rgb = cv2.cvtColor(img_np, cv2.COLOR_RGBA2RGB)
+        pixels = rgb.reshape((-1, 3)).astype(np.float32)
+        k = 16
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+        _, labels, centers = cv2.kmeans(pixels, k, None, criteria, 3, cv2.KMEANS_PP_CENTERS)
+        centers = np.uint8(centers)
+        segmented = centers[labels.flatten()].reshape(rgb.shape)
+        alpha_mask = img_np[:, :, 3] > 64 if img_np.shape[2] == 4 else np.ones((h, w), dtype=bool)
+        epsilon = max(0.8, (100 - smoothness) * 0.06 + 0.5)
+        for color in centers:
+            mask = np.all(segmented == color, axis=2) & alpha_mask
+            mask_uint8 = (mask * 255).astype(np.uint8)
+            contours, _ = cv2.findContours(mask_uint8, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            hex_color = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+            for cnt in contours:
+                if cv2.contourArea(cnt) < 6:
+                    continue
+                approx = cv2.approxPolyDP(cnt, epsilon, True)
+                if len(approx) < 3:
+                    continue
+                d_parts = []
+                for i, pt in enumerate(approx):
+                    px, py = pt[0][0], pt[0][1]
+                    cmd = "M" if i == 0 else "L"
+                    d_parts.append(f"{cmd} {fmt.format(px)} {fmt.format(py)}")
+                d_parts.append("Z")
+                paths.append(f'<path d="{" ".join(d_parts)}" fill="{hex_color}"/>')
+
+    return f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">
+{''.join(paths)}
+</svg>'''
+
+@app.post("/api/vectorize")
+async def vectorize_image(
+    file: UploadFile = File(...),
+    colormode: str = Form("color"),
+    detail_level: str = Form("medium"),
+    smoothness: int = Form(70),
+    remove_background: bool = Form(True),
+    optimize_paths: bool = Form(True)
+):
+    """
+    Converts raster images (PNG, JPG, JPEG, WebP) into true SVG vector paths
+    using VTracer (Rust-backed Bézier curve vectorization engine).
+    Preserves fine colors, gradients, outlines, and details.
+    """
+    contents = await file.read()
+    try:
+        image = Image.open(io.BytesIO(contents))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid image format: {str(e)}")
+
+    rgba = image.convert('RGBA')
+    img_np = np.array(rgba)
+    h, w = img_np.shape[:2]
+
+    # Handle Remove Background if requested and image is solid or non-alpha
+    if remove_background:
+        has_alpha = bool(np.any(img_np[:, :, 3] < 250))
+        if not has_alpha and h > 2 and w > 2:
+            corners = [img_np[0, 0, :3], img_np[0, w-1, :3], img_np[h-1, 0, :3], img_np[h-1, w-1, :3]]
+            bg_color = np.mean(corners, axis=0).astype(int)
+            rgb = img_np[:, :, :3].astype(float)
+            dist = np.sqrt(np.sum((rgb - bg_color) ** 2, axis=2))
+            tolerance = 28
+            bg_candidate = (dist <= tolerance).astype(np.uint8)
+            cv_mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
+            cv2.floodFill(bg_candidate, cv_mask, (0, 0), 2, tolerance, tolerance)
+            cv2.floodFill(bg_candidate, cv_mask, (w - 1, 0), 2, tolerance, tolerance)
+            cv2.floodFill(bg_candidate, cv_mask, (0, h - 1), 2, tolerance, tolerance)
+            cv2.floodFill(bg_candidate, cv_mask, (w - 1, h - 1), 2, tolerance, tolerance)
+            outer_bg = (bg_candidate == 2)
+            img_np[outer_bg, 3] = 0
+            rgba = Image.fromarray(img_np, 'RGBA')
+
+    buf = io.BytesIO()
+    rgba.save(buf, format="PNG")
+    png_bytes = buf.getvalue()
+
+    detail_lower = detail_level.lower()
+    if detail_lower == "high":
+        filter_speckle = 1
+        color_precision = 8
+        layer_difference = 8
+    elif detail_lower == "low":
+        filter_speckle = 8
+        color_precision = 6
+        layer_difference = 28
+    else:
+        filter_speckle = 3
+        color_precision = 7
+        layer_difference = 16
+
+    smoothness_clamped = max(0, min(100, smoothness))
+    corner_th = int(30 + (smoothness_clamped / 100.0) * 60)
+    length_th = float(2.0 + (smoothness_clamped / 100.0) * 5.0)
+    splice_th = int(20 + (smoothness_clamped / 100.0) * 45)
+    path_prec = 2 if optimize_paths else 4
+
+    cm = "binary" if colormode.lower() in ("binary", "bw", "black-white", "monochrome") else "color"
+
+    if VTRACER_AVAILABLE:
+        try:
+            svg_str = vtracer.convert_raw_image_to_svg(
+                png_bytes,
+                img_format="png",
+                colormode=cm,
+                filter_speckle=filter_speckle,
+                color_precision=color_precision,
+                layer_difference=layer_difference,
+                mode="spline",
+                corner_threshold=corner_th,
+                length_threshold=length_th,
+                splice_threshold=splice_th,
+                path_precision=path_prec
+            )
+            if "<svg" in svg_str and "viewBox" not in svg_str:
+                svg_str = re.sub(r'<svg([^>]*)width="([0-9.]+)"\s+height="([0-9.]+)"', rf'<svg\1width="\2" height="\3" viewBox="0 0 \2 \3"', svg_str)
+            return Response(content=svg_str, media_type="image/svg+xml")
+        except Exception as e:
+            print(f"VTracer error: {e}")
+
+    svg_str = generate_contour_svg(img_np, cm, smoothness_clamped, path_prec)
+    if "<svg" in svg_str and "viewBox" not in svg_str:
+        svg_str = re.sub(r'<svg([^>]*)width="([0-9.]+)"\s+height="([0-9.]+)"', rf'<svg\1width="\2" height="\3" viewBox="0 0 \2 \3"', svg_str)
+    return Response(content=svg_str, media_type="image/svg+xml")
 
 @app.post("/api/pack")
 def calculate_packing(req: PackRequest):
