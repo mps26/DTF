@@ -430,8 +430,8 @@ export const App: React.FC = () => {
           cropBox,
           isTrimmed: false,
           isBgRemoved,
-          targetWidth: mmToUnit(targetWMm, settings.unit),
-          targetHeight: mmToUnit(targetHMm, settings.unit),
+          targetWidth: Math.round(mmToUnit(targetWMm, settings.unit) * 100) / 100,
+          targetHeight: Math.round(mmToUnit(targetHMm, settings.unit) * 100) / 100,
           targetWidthMm: targetWMm,
           targetHeightMm: targetHMm,
           aspectLocked: true,
@@ -677,7 +677,7 @@ export const App: React.FC = () => {
       <VerticalNavStrip activeTab={navTab} onTabChange={setNavTab} currentUser={currentUser} />
 
       {/* 2. Main Center Work Area (Expanded to full width) */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#eff2fc] relative">
+      <div className="flex-1 flex flex-col h-full overflow-y-auto lg:overflow-hidden overflow-x-hidden bg-[#eff2fc] relative">
         {/* Top Navigation Bar with the 4 Tool Categories */}
         <TopNavBar
           onSelectTool={handleSelectTool}
@@ -779,8 +779,8 @@ export const App: React.FC = () => {
           />
         ) : (
           <>
-            {/* Center Content Container: Viewport-constrained with fixed preview & independent left scrolling */}
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 sm:px-6 pt-2 pb-3">
+            {/* Center Content Container: Viewport-constrained on desktop, fluid on mobile */}
+            <div className="flex-1 flex flex-col min-h-0 overflow-visible lg:overflow-hidden px-3 sm:px-6 pt-2 pb-28 lg:pb-3">
               <div className="max-w-[1720px] w-full mx-auto flex-1 flex flex-col min-h-0 space-y-2">
                 {/* Control Toolbar: Represented at TOP above "Create Your Gang Sheet" */}
                 <div className="w-full flex-shrink-0 relative z-30">
@@ -841,8 +841,8 @@ export const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Main Layout Section: Fixed height within viewport */}
-                <div className="flex-1 min-h-0 w-full">
+                {/* Main Layout Section: Fixed height within viewport on desktop, fluid on mobile */}
+                <div className="flex-1 min-h-0 w-full h-auto lg:h-full">
                   <LayoutSection
                     assets={assets}
                     settings={settings}

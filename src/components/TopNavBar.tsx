@@ -28,7 +28,8 @@ import {
   Globe,
   Building2,
   Printer,
-  LogIn
+  LogIn,
+  X
 } from 'lucide-react';
 import { UserProfile } from '../types/auth';
 
@@ -296,272 +297,531 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   return (
     <header
       ref={navRef}
-      className="h-16 bg-[#090d19] border-b border-[#1b2238] text-slate-200 px-4 sm:px-6 flex items-center justify-between select-none z-50 flex-shrink-0 relative shadow-sm"
+      className="bg-[#090d19] border-b border-[#1b2238] text-slate-200 select-none z-50 flex-shrink-0 relative shadow-sm"
     >
-      {/* ================= LEFT SECTION: BRAND & CREATE BUTTON ================= */}
-      <div className="flex items-center space-x-3.5 flex-shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30 flex-shrink-0">
-            <Layers className="w-4.5 h-4.5 text-white" />
+      {/* ================= DESKTOP VIEW (lg and up) ================= */}
+      <div className="hidden lg:flex h-16 w-full items-center justify-between px-4 sm:px-6">
+        {/* ================= LEFT SECTION: BRAND & CREATE BUTTON ================= */}
+        <div className="flex items-center space-x-3.5 flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30 flex-shrink-0">
+              <Layers className="w-4.5 h-4.5 text-white" />
+            </div>
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center space-x-1.5 leading-none">
+                <span className="font-black text-sm tracking-tight text-white whitespace-nowrap">
+                  DTF Set Files
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-300 font-medium whitespace-nowrap mt-1 leading-none">
+                DTF Gang Sheet Builder
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col justify-center">
-            <div className="flex items-center space-x-1.5 leading-none">
-              <span className="font-black text-sm tracking-tight text-white whitespace-nowrap">
-                DTF Set Files
-              </span>
-            </div>
-            <div className="text-[11px] text-slate-300 font-medium whitespace-nowrap mt-1 leading-none">
-              DTF Gang Sheet Builder
-            </div>
+        </div>
+
+        {/* ================= CENTER SECTION: THE 4 PREP OPTIONS ================= */}
+        <div className="flex items-center space-x-1 bg-[#101426] p-1 rounded-2xl border border-slate-800/90 text-xs shadow-inner shadow-black/30 mx-2 flex-shrink-0">
+          {categories.map((cat) => {
+            const isOpen = activeDropdown === cat.id;
+            const Icon = cat.icon;
+
+            return (
+              <div
+                key={cat.id}
+                className="relative"
+                onMouseEnter={() => handleMouseEnterCategory(cat.id)}
+                onMouseLeave={handleMouseLeaveCategory}
+              >
+                <button
+                  onClick={() => {
+                    setDemoMenuOpen(false);
+                    setActiveDropdown(isOpen ? null : cat.id);
+                  }}
+                  className={`h-8.5 px-3.5 rounded-xl font-bold text-xs flex items-center space-x-2 whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                    isOpen
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/35'
+                      : 'text-slate-300 hover:text-white hover:bg-[#181f38]'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isOpen ? 'text-white' : cat.accentColor}`} />
+                  <span className="leading-none">{cat.name}</span>
+                  <ChevronDown
+                    className={`w-3 h-3 text-slate-400 flex-shrink-0 transition-transform duration-200 ${
+                      isOpen ? 'rotate-180 text-white' : ''
+                    }`}
+                  />
+                </button>
+
+                {/* Floating Dropdown Menu (Opens on hover or click) */}
+                {isOpen && (
+                  <div
+                    className="absolute top-full left-0 pt-2 w-84 z-50 text-left animate-in fade-in slide-in-from-top-1 duration-150"
+                    onMouseEnter={() => {
+                      if (leaveTimerRef.current) {
+                        clearTimeout(leaveTimerRef.current);
+                        leaveTimerRef.current = null;
+                      }
+                    }}
+                    onMouseLeave={handleMouseLeaveCategory}
+                  >
+                    <div className="bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2.5">
+                      {/* Category Header */}
+                      <div className="px-3 py-2 border-b border-slate-800/80 mb-1.5 flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <Icon className={`w-4 h-4 ${cat.accentColor}`} />
+                            <span className="font-extrabold text-xs text-white">
+                              {cat.name}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                            {cat.subtitle}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Tool Items Grid */}
+                      <div className="space-y-1">
+                        {cat.tools.map((tool) => {
+                          const ToolIcon = tool.icon;
+                          return (
+                            <button
+                              key={tool.id}
+                              onClick={() => handleToolClick(tool.id)}
+                              className="w-full p-2 rounded-xl hover:bg-[#161d36] transition-colors flex items-start space-x-3 text-left group cursor-pointer"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-[#19223c] border border-slate-800 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform mt-0.5 shadow-xs">
+                                <ToolIcon className={`w-4 h-4 ${tool.iconColor}`} />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-xs text-slate-200 group-hover:text-white leading-snug">
+                                    {tool.name}
+                                  </span>
+                                  {tool.badge && (
+                                    <span
+                                      className={`text-[9px] font-black uppercase tracking-wider text-white px-1.5 py-0.2 rounded-full ${
+                                        tool.badgeBg || 'bg-purple-600'
+                                      }`}
+                                    >
+                                      {tool.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-400 truncate mt-0.5 font-medium leading-snug">
+                                  {tool.desc}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ================= RIGHT SECTION: DEMOS, AUDIT, GUIDE, AVATAR ================= */}
+        <div className="flex items-center space-x-2 sm:space-x-2.5 flex-shrink-0">
+          {/* Compact Demos Button Group or Pills */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setActiveDropdown(null);
+                setDemoMenuOpen(!demoMenuOpen);
+              }}
+              className="h-8.5 px-3 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-xl text-xs font-bold text-slate-200 hover:text-white flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
+              title="Load demo samples"
+            >
+              <Play className="w-3 h-3 text-indigo-400 fill-indigo-400" />
+              <span>Demos</span>
+              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${demoMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Demos Dropdown */}
+            {demoMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-64 bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <button
+                  onClick={() => {
+                    setDemoMenuOpen(false);
+                    onLoadMultiDemo();
+                  }}
+                  className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col cursor-pointer"
+                >
+                  <div className="font-bold text-xs text-white">Multi-Design Demo</div>
+                  <div className="text-[11px] text-slate-400">Load 4 mixed artwork samples</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setDemoMenuOpen(false);
+                    onLoadRepeatDemo();
+                  }}
+                  className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col cursor-pointer"
+                >
+                  <div className="font-bold text-xs text-white">Repeat 10× Demo</div>
+                  <div className="text-[11px] text-slate-400">Load repeated pattern on roll</div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Print Audit Pill */}
+          <button
+            onClick={onOpenAudit}
+            className="h-8.5 px-3 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-700/60 rounded-xl text-xs font-bold text-emerald-300 flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+            <span>Print Audit</span>
+          </button>
+
+          {/* How to use */}
+          <button
+            onClick={onOpenGuide}
+            className="h-8.5 px-2.5 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
+            title="DTF Gang Sheet Production Guide"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+            <span className="hidden xl:inline">How to use</span>
+          </button>
+
+          {/* User Profile Avatar & Menu Popover */}
+          <div className="relative">
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className={`w-8.5 h-8.5 rounded-full bg-gradient-to-tr ${currentUser.avatarColor || 'from-purple-500 to-indigo-600'} text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-indigo-400/40 hover:scale-105 transition-all cursor-pointer flex-shrink-0`}
+                title={`${currentUser.name} (${currentUser.companyName})`}
+              >
+                {currentUser.initials}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onOpenAuth?.('login')}
+                className="h-8.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+            )}
+
+            {/* User Popover Menu */}
+            {userMenuOpen && currentUser && (
+              <div className="absolute right-0 top-11 w-64 bg-[#0d1326] border border-[#222c4d] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2 py-2 border-b border-slate-800">
+                  <div className="font-black text-xs text-white leading-tight">{currentUser.name}</div>
+                  <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
+                  <div className="mt-1 flex items-center space-x-1.5">
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      {currentUser.plan}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="py-1 text-xs text-slate-300 space-y-0.5">
+                  <div className="px-2 py-1.5 flex items-center space-x-2 text-[11px] text-slate-400">
+                    <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="truncate">{currentUser.companyName}</span>
+                  </div>
+
+                  <div className="px-2 py-1.5 flex items-center space-x-2 text-[11px] text-slate-400">
+                    <Printer className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="truncate">{currentUser.printerModel}</span>
+                  </div>
+
+                  <div className="h-px bg-slate-800/80 my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      onOpenProfile?.();
+                    }}
+                    className="w-full px-2 py-1.5 hover:bg-indigo-600/20 text-indigo-300 hover:text-white rounded-xl text-left transition-colors flex items-center space-x-2 cursor-pointer font-medium"
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    <span>Operator Profile & Settings</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      onLogout?.();
+                    }}
+                    className="w-full px-2 py-1.5 hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 rounded-xl text-left transition-colors flex items-center space-x-2 cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ================= CENTER SECTION: THE 4 PREP OPTIONS ================= */}
-      <div className="flex items-center space-x-1 bg-[#101426] p-1 rounded-2xl border border-slate-800/90 text-xs shadow-inner shadow-black/30 mx-2 flex-shrink-0">
-        {categories.map((cat) => {
-          const isOpen = activeDropdown === cat.id;
-          const Icon = cat.icon;
+      {/* ================= MOBILE VIEW (< lg) ================= */}
+      <div className="lg:hidden flex flex-col w-full">
+        {/* Mobile Top Row: Brand & Quick Actions */}
+        <div className="h-14 px-3 flex items-center justify-between border-b border-[#182035]">
+          {/* Brand */}
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
+              <Layers className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-black text-xs sm:text-sm tracking-tight text-white leading-tight">
+                DTF Set Files
+              </span>
+              <span className="text-[10px] text-indigo-300 font-medium leading-none">
+                Gang Sheet Builder
+              </span>
+            </div>
+          </div>
 
-          return (
-            <div
-              key={cat.id}
-              className="relative"
-              onMouseEnter={() => handleMouseEnterCategory(cat.id)}
-              onMouseLeave={handleMouseLeaveCategory}
-            >
+          {/* Right Action Icons */}
+          <div className="flex items-center space-x-2">
+            {/* Demos Button */}
+            <div className="relative">
               <button
+                type="button"
                 onClick={() => {
-                  setDemoMenuOpen(false);
-                  setActiveDropdown(isOpen ? null : cat.id);
+                  setActiveDropdown(null);
+                  setDemoMenuOpen(!demoMenuOpen);
                 }}
-                className={`h-8.5 px-3.5 rounded-xl font-bold text-xs flex items-center space-x-2 whitespace-nowrap transition-all duration-150 cursor-pointer ${
-                  isOpen
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/35'
-                    : 'text-slate-300 hover:text-white hover:bg-[#181f38]'
-                }`}
+                className="h-8 px-2.5 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-xl text-xs font-bold text-slate-200 flex items-center space-x-1"
               >
-                <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isOpen ? 'text-white' : cat.accentColor}`} />
-                <span className="leading-none">{cat.name}</span>
-                <ChevronDown
-                  className={`w-3 h-3 text-slate-400 flex-shrink-0 transition-transform duration-200 ${
-                    isOpen ? 'rotate-180 text-white' : ''
-                  }`}
-                />
+                <Play className="w-3 h-3 text-indigo-400 fill-indigo-400" />
+                <span className="text-[11px]">Demos</span>
+                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${demoMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Floating Dropdown Menu (Opens on hover or click) */}
-              {isOpen && (
-                <div
-                  className="absolute top-full left-0 pt-2 w-84 z-50 text-left animate-in fade-in slide-in-from-top-1 duration-150"
-                  onMouseEnter={() => {
-                    if (leaveTimerRef.current) {
-                      clearTimeout(leaveTimerRef.current);
-                      leaveTimerRef.current = null;
-                    }
-                  }}
-                  onMouseLeave={handleMouseLeaveCategory}
+              {demoMenuOpen && (
+                <div className="fixed inset-x-4 top-20 max-w-xs mx-auto bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="p-2 border-b border-slate-800 text-[11px] font-bold text-indigo-300">
+                    Sample Datasets
+                  </div>
+                  <button
+                    onClick={() => {
+                      setDemoMenuOpen(false);
+                      onLoadMultiDemo();
+                    }}
+                    className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col"
+                  >
+                    <div className="font-bold text-xs text-white">Multi-Design Demo</div>
+                    <div className="text-[10px] text-slate-400">Load 4 mixed artwork samples</div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setDemoMenuOpen(false);
+                      onLoadRepeatDemo();
+                    }}
+                    className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col"
+                  >
+                    <div className="font-bold text-xs text-white">Repeat 10× Demo</div>
+                    <div className="text-[10px] text-slate-400">Load repeated pattern on roll</div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Print Audit Button */}
+            <button
+              type="button"
+              onClick={onOpenAudit}
+              className="h-8 px-2.5 bg-emerald-950/60 border border-emerald-700/60 rounded-xl text-xs font-bold text-emerald-300 flex items-center space-x-1"
+              title="Preflight & DPI Audit"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[11px] hidden sm:inline">Audit</span>
+            </button>
+
+            {/* User Profile Avatar / Sign In */}
+            <div className="relative">
+              {currentUser ? (
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className={`w-8 h-8 rounded-full bg-gradient-to-tr ${
+                    currentUser.avatarColor || 'from-purple-500 to-indigo-600'
+                  } text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-indigo-400/40`}
                 >
-                  <div className="bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2.5">
-                    {/* Category Header */}
-                    <div className="px-3 py-2 border-b border-slate-800/80 mb-1.5 flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <Icon className={`w-4 h-4 ${cat.accentColor}`} />
-                          <span className="font-extrabold text-xs text-white">
-                            {cat.name}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                          {cat.subtitle}
-                        </p>
-                      </div>
-                    </div>
+                  {currentUser.initials}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onOpenAuth?.('login')}
+                  className="h-8 px-3 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center space-x-1"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Sign In</span>
+                </button>
+              )}
 
-                    {/* Tool Items Grid */}
-                    <div className="space-y-1">
-                      {cat.tools.map((tool) => {
-                        const ToolIcon = tool.icon;
-                        return (
-                          <button
-                            key={tool.id}
-                            onClick={() => handleToolClick(tool.id)}
-                            className="w-full p-2 rounded-xl hover:bg-[#161d36] transition-colors flex items-start space-x-3 text-left group cursor-pointer"
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-[#19223c] border border-slate-800 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform mt-0.5 shadow-xs">
-                              <ToolIcon className={`w-4 h-4 ${tool.iconColor}`} />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-xs text-slate-200 group-hover:text-white leading-snug">
-                                  {tool.name}
-                                </span>
-                                {tool.badge && (
-                                  <span
-                                    className={`text-[9px] font-black uppercase tracking-wider text-white px-1.5 py-0.2 rounded-full ${
-                                      tool.badgeBg || 'bg-purple-600'
-                                    }`}
-                                  >
-                                    {tool.badge}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-slate-400 truncate mt-0.5 font-medium leading-snug">
-                                {tool.desc}
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })}
+              {userMenuOpen && currentUser && (
+                <div className="fixed inset-x-4 top-20 max-w-xs mx-auto bg-[#0d1326] border border-[#222c4d] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-2 py-2 border-b border-slate-800">
+                    <div className="font-black text-xs text-white leading-tight">{currentUser.name}</div>
+                    <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
+                    <div className="mt-1 flex items-center space-x-1.5">
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        {currentUser.plan}
+                      </span>
                     </div>
+                  </div>
+
+                  <div className="py-1 text-xs text-slate-300 space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        onOpenProfile?.();
+                      }}
+                      className="w-full px-2 py-2 hover:bg-indigo-600/20 text-indigo-300 hover:text-white rounded-xl text-left transition-colors flex items-center space-x-2"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Operator Profile & Settings</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        onLogout?.();
+                      }}
+                      className="w-full px-2 py-2 hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 rounded-xl text-left transition-colors flex items-center space-x-2"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
                   </div>
                 </div>
               )}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        </div>
 
-      {/* ================= RIGHT SECTION: DEMOS, AUDIT, GUIDE, AVATAR ================= */}
-      <div className="flex items-center space-x-2 sm:space-x-2.5 flex-shrink-0">
-        {/* Compact Demos Button Group or Pills (Never Wrapping) */}
-        <div className="relative">
+        {/* Mobile Second Row: Horizontal Scrollable Category Toolbar */}
+        <div className="h-10 px-2 flex items-center space-x-1.5 overflow-x-auto no-scrollbar scroll-smooth bg-[#060913]">
+          {categories.map((cat) => {
+            const isOpen = activeDropdown === cat.id;
+            const Icon = cat.icon;
+
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setDemoMenuOpen(false);
+                  setUserMenuOpen(false);
+                  setActiveDropdown(isOpen ? null : cat.id);
+                }}
+                className={`h-7 px-2.5 rounded-lg font-bold text-[11px] flex items-center space-x-1.5 whitespace-nowrap flex-shrink-0 transition-all ${
+                  isOpen
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-300 bg-[#101426] border border-slate-800 hover:text-white'
+                }`}
+              >
+                <Icon className={`w-3 h-3 ${isOpen ? 'text-white' : cat.accentColor}`} />
+                <span>{cat.name}</span>
+                <ChevronDown className={`w-2.5 h-2.5 transition-transform ${isOpen ? 'rotate-180 text-white' : 'text-slate-500'}`} />
+              </button>
+            );
+          })}
+
+          {/* Guide Shortcut */}
           <button
-            onClick={() => {
-              setActiveDropdown(null);
-              setDemoMenuOpen(!demoMenuOpen);
-            }}
-            className="h-8.5 px-3 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-xl text-xs font-bold text-slate-200 hover:text-white flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
-            title="Load demo samples"
+            type="button"
+            onClick={onOpenGuide}
+            className="h-7 px-2.5 rounded-lg font-bold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 text-slate-300 bg-[#101426] border border-slate-800 hover:text-white"
           >
-            <Play className="w-3 h-3 text-indigo-400 fill-indigo-400" />
-            <span>Demos</span>
-            <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${demoMenuOpen ? 'rotate-180' : ''}`} />
+            <HelpCircle className="w-3 h-3 text-indigo-400" />
+            <span>Guide</span>
           </button>
-
-          {/* Demos Dropdown */}
-          {demoMenuOpen && (
-            <div className="absolute top-full right-0 mt-2 w-64 bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-              <button
-                onClick={() => {
-                  setDemoMenuOpen(false);
-                  onLoadMultiDemo();
-                }}
-                className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col cursor-pointer"
-              >
-                <div className="font-bold text-xs text-white">Multi-Design Demo</div>
-                <div className="text-[11px] text-slate-400">Load 4 mixed artwork samples</div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setDemoMenuOpen(false);
-                  onLoadRepeatDemo();
-                }}
-                className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col cursor-pointer"
-              >
-                <div className="font-bold text-xs text-white">Repeat 10× Demo</div>
-                <div className="text-[11px] text-slate-400">Load repeated pattern on roll</div>
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Print Audit Pill */}
-        <button
-          onClick={onOpenAudit}
-          className="h-8.5 px-3 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-700/60 rounded-xl text-xs font-bold text-emerald-300 flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
-        >
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-          <span>Print Audit</span>
-        </button>
+        {/* Mobile Dropdown Dialog & Backdrop */}
+        {activeDropdown && (
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 select-none">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs"
+              onClick={() => setActiveDropdown(null)}
+            />
 
-        {/* How to use */}
-        <button
-          onClick={onOpenGuide}
-          className="h-8.5 px-2.5 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
-          title="DTF Gang Sheet Production Guide"
-        >
-          <HelpCircle className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
-          <span className="hidden xl:inline">How to use</span>
-        </button>
+            {/* Modal Dialog for Category Tools */}
+            {(() => {
+              const activeCat = categories.find((c) => c.id === activeDropdown);
+              if (!activeCat) return null;
+              const Icon = activeCat.icon;
 
-        {/* User Profile Avatar & Menu Popover */}
-        <div className="relative">
-          {currentUser ? (
-            <button
-              type="button"
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className={`w-8.5 h-8.5 rounded-full bg-gradient-to-tr ${currentUser.avatarColor || 'from-purple-500 to-indigo-600'} text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-indigo-400/40 hover:scale-105 transition-all cursor-pointer flex-shrink-0`}
-              title={`${currentUser.name} (${currentUser.companyName})`}
-            >
-              {currentUser.initials}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onOpenAuth?.('login')}
-              className="h-8.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
-            </button>
-          )}
+              return (
+                <div className="relative bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-3 z-10 w-full max-w-sm animate-in fade-in zoom-in-95 duration-150 max-h-[75vh] overflow-y-auto">
+                  {/* Category Header */}
+                  <div className="px-2 py-2 border-b border-slate-800 mb-2 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <Icon className={`w-4 h-4 ${activeCat.accentColor}`} />
+                        <span className="font-extrabold text-xs text-white">{activeCat.name}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{activeCat.subtitle}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveDropdown(null)}
+                      className="w-6 h-6 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center hover:bg-slate-700"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
-          {/* User Popover Menu */}
-          {userMenuOpen && currentUser && (
-            <div className="absolute right-0 top-11 w-64 bg-[#0d1326] border border-[#222c4d] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-2 py-2 border-b border-slate-800">
-                <div className="font-black text-xs text-white leading-tight">{currentUser.name}</div>
-                <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
-                <div className="mt-1 flex items-center space-x-1.5">
-                  <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    {currentUser.plan}
-                  </span>
+                  {/* Tools List */}
+                  <div className="space-y-1">
+                    {activeCat.tools.map((tool) => {
+                      const ToolIcon = tool.icon;
+                      return (
+                        <button
+                          key={tool.id}
+                          onClick={() => handleToolClick(tool.id)}
+                          className="w-full p-2.5 rounded-xl hover:bg-[#161d36] active:bg-indigo-600/30 transition-colors flex items-start space-x-3 text-left group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-[#19223c] border border-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <ToolIcon className={`w-4 h-4 ${tool.iconColor}`} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-slate-200 group-hover:text-white">
+                                {tool.name}
+                              </span>
+                              {tool.badge && (
+                                <span className="text-[9px] font-black uppercase tracking-wider text-white px-1.5 py-0.2 rounded-full bg-purple-600">
+                                  {tool.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">
+                              {tool.desc}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-
-              <div className="py-1 text-xs text-slate-300 space-y-0.5">
-                <div className="px-2 py-1.5 flex items-center space-x-2 text-[11px] text-slate-400">
-                  <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="truncate">{currentUser.companyName}</span>
-                </div>
-
-                <div className="px-2 py-1.5 flex items-center space-x-2 text-[11px] text-slate-400">
-                  <Printer className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="truncate">{currentUser.printerModel}</span>
-                </div>
-
-                <div className="h-px bg-slate-800/80 my-1" />
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    onOpenProfile?.();
-                  }}
-                  className="w-full px-2 py-1.5 hover:bg-indigo-600/20 text-indigo-300 hover:text-white rounded-xl text-left transition-colors flex items-center space-x-2 cursor-pointer font-medium"
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Operator Profile & Settings</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    onLogout?.();
-                  }}
-                  className="w-full px-2 py-1.5 hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 rounded-xl text-left transition-colors flex items-center space-x-2 cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
     </header>
   );

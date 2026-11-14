@@ -22,7 +22,9 @@ import {
   List,
   ExternalLink,
   Copy,
-  Download
+  Download,
+  X,
+  Eye
 } from 'lucide-react';
 import { ArtworkAsset, SheetSettings, Unit, LayoutResult } from '../types';
 import { formatUnit, mmToUnit, unitToMm } from '../utils/units';
@@ -111,6 +113,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const [sheetWidthInput, setSheetWidthInput] = useState<string | null>(null);
   const [spacingInput, setSpacingInput] = useState<string | null>(null);
   const [collapsedCardIds, setCollapsedCardIds] = useState<Record<string, boolean>>({});
+  const [showStickyPreviewBar, setShowStickyPreviewBar] = useState<boolean>(true);
 
   const toggleCardCollapse = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -170,10 +173,11 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       const sheetZoom = sheetZooms[sheet.sheetIndex] || 1;
 
       // Anchor roll display width & height within fixed container
-      const availableHeightPx = Math.max(220, containerHeight - 130);
+      const isMobile = containerWidth < 640;
+      const availableHeightPx = isMobile ? Math.max(240, containerHeight - 80) : Math.max(220, containerHeight - 130);
       const targetRollWidthPx = sheetsToDraw.length > 1
-        ? Math.min(230, Math.max(140, Math.floor((containerWidth - 100) / sheetsToDraw.length)))
-        : Math.min(260, Math.max(160, containerWidth - 200));
+        ? Math.min(isMobile ? 200 : 230, Math.max(120, Math.floor((containerWidth - (isMobile ? 60 : 100)) / sheetsToDraw.length)))
+        : Math.min(isMobile ? 280 : 320, Math.max(160, containerWidth - (isMobile ? 80 : 180)));
 
       const scaleX = targetRollWidthPx / filmWidthMm;
       const scaleY = availableHeightPx / usedLengthMm;
@@ -274,7 +278,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
     const val = parseFloat(valStr);
     if (isNaN(val) || val <= 0) return;
     const maxW = mmToUnit(22 * 25.4, settings.unit);
-    const clampedVal = Math.min(maxW, val);
+    const clampedVal = Math.round(Math.min(maxW, val) * 100) / 100;
 
     if (clampedVal > settings.filmWidth) {
       onUpdateSettings({
@@ -291,7 +295,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
     const val = parseFloat(valStr);
     if (isNaN(val) || val <= 0) return;
     const maxH = mmToUnit(100 * 25.4, settings.unit);
-    const clampedVal = Math.min(maxH, val);
+    const clampedVal = Math.round(Math.min(maxH, val) * 100) / 100;
 
     if (settings.lengthMode === 'fixed' && clampedVal > settings.fixedLength) {
       onUpdateSettings({
@@ -307,11 +311,11 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const totalCopies = layout.totalCopies;
 
   return (
-    <div className="w-full h-full min-h-0">
-      {/* 2-Column Responsive Layout: Fixed Viewport Height */}
-      <div className="flex flex-col lg:flex-row gap-5 items-start h-full min-h-0">
+    <div className="w-full h-auto lg:h-full min-h-0">
+      {/* 2-Column Responsive Layout: Fixed Viewport Height on desktop, natural scroll on mobile */}
+      <div className="flex flex-col lg:flex-row gap-5 items-start h-auto lg:h-full min-h-0">
         {/* ================= LEFT COLUMN: INDEPENDENT VERTICAL SCROLLING ================= */}
-        <div className="w-full lg:w-[460px] h-full min-h-0 flex-shrink-0 overflow-y-auto overflow-x-hidden lg:pr-2 space-y-4 pb-10 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent">
+        <div className="w-full lg:w-[460px] lg:h-full lg:min-h-0 flex-shrink-0 lg:overflow-y-auto overflow-visible lg:pr-2 space-y-4 pb-4 lg:pb-10 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent">
           {/* Card 1: Uploaded Designs */}
           <div className="bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 sm:p-5 flex flex-col space-y-3.5">
             {/* Header */}
@@ -384,11 +388,11 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
 
                 const currentWidthVal = widthInputs[asset.id] !== undefined
                   ? widthInputs[asset.id]
-                  : asset.targetWidth.toString();
+                  : (Math.round(asset.targetWidth * 100) / 100).toString();
 
                 const currentHeightVal = heightInputs[asset.id] !== undefined
                   ? heightInputs[asset.id]
-                  : asset.targetHeight.toString();
+                  : (Math.round(asset.targetHeight * 100) / 100).toString();
 
                 const currentCopiesVal = copiesInputs[asset.id] !== undefined
                   ? copiesInputs[asset.id]
@@ -476,7 +480,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                     {!isCollapsed && (
                       <div className="bg-white p-4 pt-3.5 flex flex-col">
                         {/* Dimensions Section: WIDTH and HEIGHT (Clean manual number input with 'inches' inside, no buttons!) */}
-                        <div className="grid grid-cols-2 gap-3 mb-1.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-1.5">
                           {/* WIDTH */}
                           <div>
                             <label className="block text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">
@@ -490,7 +494,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 onClick={(e) => e.stopPropagation()}
                                 onFocus={(e) => {
                                   e.stopPropagation();
-                                  setWidthInputs((prev) => ({ ...prev, [asset.id]: asset.targetWidth.toString() }));
+                                  setWidthInputs((prev) => ({ ...prev, [asset.id]: (Math.round(asset.targetWidth * 100) / 100).toString() }));
                                 }}
                                 onChange={(e) => {
                                   e.stopPropagation();
@@ -499,7 +503,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   const val = parseFloat(text);
                                   if (!isNaN(val) && val > 0) {
                                     const maxW = mmToUnit(22 * 25.4, settings.unit);
-                                    const clampedVal = Math.min(maxW, val);
+                                    const clampedVal = Math.round(Math.min(maxW, val) * 100) / 100;
                                     onUpdateAsset(asset.id, { targetWidth: clampedVal });
                                   }
                                 }}
@@ -534,7 +538,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 onClick={(e) => e.stopPropagation()}
                                 onFocus={(e) => {
                                   e.stopPropagation();
-                                  setHeightInputs((prev) => ({ ...prev, [asset.id]: asset.targetHeight.toString() }));
+                                  setHeightInputs((prev) => ({ ...prev, [asset.id]: (Math.round(asset.targetHeight * 100) / 100).toString() }));
                                 }}
                                 onChange={(e) => {
                                   e.stopPropagation();
@@ -543,7 +547,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   const val = parseFloat(text);
                                   if (!isNaN(val) && val > 0) {
                                     const maxH = mmToUnit(100 * 25.4, settings.unit);
-                                    const clampedVal = Math.min(maxH, val);
+                                    const clampedVal = Math.round(Math.min(maxH, val) * 100) / 100;
                                     onUpdateAsset(asset.id, { targetHeight: clampedVal });
                                   }
                                 }}
@@ -999,7 +1003,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
         </div>
 
         {/* ================= RIGHT COLUMN: FIXED SHEET PREVIEW ================= */}
-        <div className="flex-1 w-full h-full min-h-0 bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 sm:p-5 flex flex-col space-y-3 overflow-hidden">
+        <div id="sheet-preview-section" className="w-full lg:flex-1 lg:h-full min-h-[380px] lg:min-h-0 bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 sm:p-5 flex flex-col space-y-3 overflow-hidden mt-4 lg:mt-0">
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-2.5 border-b border-slate-100 gap-3 flex-shrink-0">
             <div>
@@ -1063,7 +1067,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           {/* Vertical Canvas Container with Dynamic Framing & Blueprint Grid */}
           <div
             ref={canvasContainerRef}
-            className="flex-1 min-h-0 w-full bg-slate-50/80 border border-slate-200 rounded-3xl p-4 sm:p-6 flex flex-col items-start justify-start overflow-y-auto overflow-x-auto shadow-inner relative select-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent"
+            className="flex-1 min-h-[240px] sm:min-h-[280px] w-full bg-slate-50/80 border border-slate-200 rounded-3xl p-4 sm:p-6 flex flex-col items-start justify-start overflow-y-auto overflow-x-auto shadow-inner relative select-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent"
             style={{
               backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
               backgroundSize: '16px 16px'
@@ -1275,6 +1279,49 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Mobile Sticky Preview Access Floating Bar */}
+      {showStickyPreviewBar && (
+        <div className="lg:hidden fixed bottom-16 inset-x-3 z-30 bg-[#0d1326]/95 backdrop-blur-md border border-indigo-500/30 rounded-2xl p-2.5 shadow-2xl flex items-center justify-between animate-in fade-in slide-in-from-bottom-2">
+          <div
+            className="flex items-center space-x-2.5 cursor-pointer flex-1 min-w-0"
+            onClick={() => {
+              const el = document.getElementById('sheet-preview-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            <div className="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-400 flex-shrink-0">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center space-x-1.5 text-xs text-white font-black truncate">
+                <span>Roll: {formatUnit(displayLength, settings.unit, 2)} {settings.unit === 'meter' ? 'm' : settings.unit === 'inch' ? 'in' : settings.unit}</span>
+                <span className="text-slate-400">•</span>
+                <span className="text-emerald-400 font-extrabold">{layout.wastePercent}% waste</span>
+              </div>
+              <p className="text-[10px] text-indigo-200/70 truncate">Tap to jump to Sheet Preview</p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-1.5 flex-shrink-0 pl-2">
+            <button
+              type="button"
+              onClick={onOpenPreviewModal}
+              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-[11px] font-black rounded-xl shadow-xs transition-transform"
+            >
+              Expand
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowStickyPreviewBar(false)}
+              className="p-1 text-slate-400 hover:text-white transition-colors"
+              title="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
