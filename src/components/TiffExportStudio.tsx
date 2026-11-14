@@ -648,7 +648,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
       <div className="flex-1 flex overflow-hidden">
         
         {/* ---------------- 1. LEFT CONTROLS: THE 5 TIFF OPTIONS IN EXACT USER FORMAT ---------------- */}
-        <div className="w-[390px] xl:w-[420px] bg-[#f8fafc] border-r border-slate-200 p-4 space-y-2.5 overflow-y-auto flex-shrink-0 text-slate-800">
+        <div className="w-[390px] xl:w-[420px] bg-[#f8fafc] border-r border-slate-200 p-4 pb-36 lg:pb-4 space-y-2.5 overflow-y-auto flex-shrink-0 text-slate-800">
           
           {/* PRINT TECHNOLOGY SELECTOR: DTF vs UVDTF */}
           <div className="rounded-[22px] bg-white border border-slate-200/90 p-3 shadow-xs">

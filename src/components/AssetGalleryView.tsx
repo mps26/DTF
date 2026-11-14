@@ -153,7 +153,7 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-36 sm:pb-6 space-y-6">
         
         {/* Search & Upload Controls Bar */}
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">

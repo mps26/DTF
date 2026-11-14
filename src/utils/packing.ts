@@ -68,7 +68,7 @@ export function packGangSheet(
   });
 
   if (items.length === 0) {
-    const emptyLengthMm = Math.max(0, settings.fixedLengthMm || 0);
+    const emptyLengthMm = settings.lengthMode === 'fixed' ? Math.max(0, settings.fixedLengthMm || 0) : 0;
     const emptyLengthInches = Math.round((emptyLengthMm / MM_PER_INCH) * 100) / 100;
     const emptyLengthMeters = Math.round((emptyLengthMm / 1000) * 100) / 100;
     const emptyFilmAreaMm2 = filmWidthMm * emptyLengthMm;

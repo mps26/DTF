@@ -318,7 +318,7 @@ export const PrinterSettingsView: React.FC<PrinterSettingsViewProps> = ({
 
       {/* ================= TAB 1: USER & SHOP PROFILE ================= */}
       {activeTab === 'profile' && (
-        <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-36 sm:pb-6 max-w-4xl mx-auto w-full space-y-6">
           {/* Guest Warning if not logged in */}
           {!currentUser ? (
             <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 flex items-center justify-between">
@@ -691,7 +691,7 @@ export const PrinterSettingsView: React.FC<PrinterSettingsViewProps> = ({
 
       {/* ================= TAB 2: PRINTER & RIP HARDWARE ================= */}
       {activeTab === 'hardware' && (
-        <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-36 sm:pb-6 max-w-4xl mx-auto w-full space-y-6">
           {/* Section 1: Film Roll & Hardware Geometry */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
             <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-100">

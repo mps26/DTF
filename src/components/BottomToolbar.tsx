@@ -607,6 +607,27 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
               >
                 Fixed
               </button>
+              {settings.lengthMode === 'fixed' && (
+                <div className="flex items-center bg-[#0d1222] border border-indigo-700/60 rounded-md px-1 py-0.5 ml-0.5">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={isLengthFocused ? lengthInput : (settings.fixedLength || currentMinLen).toString()}
+                    onFocus={() => {
+                      setIsLengthFocused(true);
+                      setLengthInput((settings.fixedLength || currentMinLen).toString());
+                    }}
+                    onChange={(e) => handleLengthChange(e.target.value)}
+                    onBlur={handleLengthBlur}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    }}
+                    className="w-7 bg-transparent text-[11px] font-bold text-white focus:outline-none font-mono text-center"
+                    placeholder={currentMinLen.toString()}
+                  />
+                  <span className="text-slate-400 text-[8px] uppercase font-bold">in</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

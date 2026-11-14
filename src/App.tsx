@@ -201,20 +201,27 @@ export const App: React.FC = () => {
     // Evaluate height constraints from active preset or width
     const effPresetId = updates.filmWidthPreset ?? settings.filmWidthPreset;
     const effPreset = findPresetById(effPresetId);
-    const effWidth = updates.filmWidth ?? settings.filmWidth;
-    let minLen = effPreset ? effPreset.minLengthIn : (effWidth <= 11.1 ? 8 : (effWidth >= 21.9 ? 39 : 1));
-    let maxLen = effPreset ? effPreset.maxLengthIn : (effWidth <= 11.1 ? 17 : 100);
+    const isFixedPreset = Boolean(effPreset?.isFixedLength);
+    const minLen = isFixedPreset && effPreset ? effPreset.minLengthIn : 1;
+    const maxLen = isFixedPreset && effPreset ? effPreset.maxLengthIn : (effPreset?.maxLengthIn || 100);
 
     // If preset is fixed-length (e.g. UVDTF A4 11x8, A3 11x17, Meter 22x39), keep length fixed
-    if (effPreset?.isFixedLength) {
+    if (isFixedPreset && effPreset) {
       updates.lengthMode = 'fixed';
       updates.fixedLength = effPreset.defaultLengthIn;
       updates.fixedLengthMm = effPreset.defaultLengthIn * 25.4;
     }
 
+    // If switching to fixed mode and no fixedLength set yet, default to preset or 24"
+    if (updates.lengthMode === 'fixed' && !settings.fixedLength && updates.fixedLength === undefined) {
+      const defaultLen = effPreset ? effPreset.defaultLengthIn : 24;
+      updates.fixedLength = defaultLen;
+      updates.fixedLengthMm = defaultLen * 25.4;
+    }
+
     // When filmWidth changes and fixedLength was not explicitly provided, clamp existing fixedLength
-    if (updates.filmWidth !== undefined && updates.fixedLength === undefined) {
-      const curLen = settings.fixedLength || minLen;
+    if (updates.filmWidth !== undefined && updates.fixedLength === undefined && settings.fixedLength) {
+      const curLen = settings.fixedLength;
       if (curLen < minLen) {
         updates.fixedLength = minLen;
         updates.fixedLengthMm = minLen * 25.4;
@@ -225,11 +232,16 @@ export const App: React.FC = () => {
     }
 
     if (updates.fixedLength !== undefined) {
-      updates.fixedLength = Math.min(maxLen, Math.max(minLen, updates.fixedLength));
-      updates.fixedLengthMm = updates.fixedLength * 25.4;
-    }
-    if (updates.fixedLengthMm !== undefined) {
-      updates.fixedLengthMm = Math.min(maxLen * 25.4, Math.max(minLen * 25.4, updates.fixedLengthMm));
+      const effUnit = updates.unit ?? settings.unit;
+      const lenInches = effUnit === 'inch' ? updates.fixedLength : mmToUnit(unitToMm(updates.fixedLength, effUnit), 'inch');
+      const clampedInches = Math.min(maxLen, Math.max(minLen, lenInches));
+      updates.fixedLengthMm = clampedInches * 25.4;
+      updates.fixedLength = parseFloat(mmToUnit(updates.fixedLengthMm, effUnit).toFixed(2));
+    } else if (updates.fixedLengthMm !== undefined) {
+      const effUnit = updates.unit ?? settings.unit;
+      const clampedMm = Math.min(maxLen * 25.4, Math.max(minLen * 25.4, updates.fixedLengthMm));
+      updates.fixedLengthMm = clampedMm;
+      updates.fixedLength = parseFloat(mmToUnit(clampedMm, effUnit).toFixed(2));
     }
 
     // Enforce minimum 5 mm spacing
@@ -266,7 +278,7 @@ export const App: React.FC = () => {
         // Changing Width NEVER alters Height; changing Height NEVER alters Width.
         if (updates.targetWidth !== undefined) {
           const rawW = Math.max(0.01, updates.targetWidth);
-          const clampedW = Math.round(rawW * factor) / factor;
+          const clampedW = parseFloat(rawW.toFixed(precision));
           updated.targetWidth = clampedW;
           updated.targetWidthMm = unitToMm(clampedW, settings.unit);
 
@@ -279,7 +291,7 @@ export const App: React.FC = () => {
 
         if (updates.targetHeight !== undefined) {
           const rawH = Math.max(0.01, updates.targetHeight);
-          const clampedH = Math.round(rawH * factor) / factor;
+          const clampedH = parseFloat(rawH.toFixed(precision));
           updated.targetHeight = clampedH;
           updated.targetHeightMm = unitToMm(clampedH, settings.unit);
 

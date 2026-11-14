@@ -180,7 +180,7 @@ export const ProductionHistoryView: React.FC<ProductionHistoryViewProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-36 sm:pb-6 space-y-6">
         {jobs.length === 0 ? (
           <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-md mx-auto my-12 shadow-xs">
             <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />

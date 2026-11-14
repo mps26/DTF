@@ -248,7 +248,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-36 sm:pb-6 space-y-6">
         
         {/* Category Pills Strip */}
         <div className="flex items-center justify-between flex-wrap gap-3">

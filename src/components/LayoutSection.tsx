@@ -24,7 +24,8 @@ import {
   Copy,
   Download,
   X,
-  Eye
+  Eye,
+  Sparkles
 } from 'lucide-react';
 import { ArtworkAsset, SheetSettings, Unit, LayoutResult } from '../types';
 import { formatUnit, mmToUnit, unitToMm } from '../utils/units';
@@ -112,6 +113,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const [copiesInputs, setCopiesInputs] = useState<Record<string, string>>({});
   const [sheetWidthInput, setSheetWidthInput] = useState<string | null>(null);
   const [spacingInput, setSpacingInput] = useState<string | null>(null);
+  const [fixedLengthInput, setFixedLengthInput] = useState<string | null>(null);
   const [collapsedCardIds, setCollapsedCardIds] = useState<Record<string, boolean>>({});
 
   const toggleCardCollapse = (id: string, e?: React.MouseEvent) => {
@@ -392,11 +394,11 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
 
                 const currentWidthVal = widthInputs[asset.id] !== undefined
                   ? widthInputs[asset.id]
-                  : (Math.round(asset.targetWidth * 100) / 100).toString();
+                  : parseFloat(Number(asset.targetWidth || 0).toFixed(2)).toString();
 
                 const currentHeightVal = heightInputs[asset.id] !== undefined
                   ? heightInputs[asset.id]
-                  : (Math.round(asset.targetHeight * 100) / 100).toString();
+                  : parseFloat(Number(asset.targetHeight || 0).toFixed(2)).toString();
 
                 const currentCopiesVal = copiesInputs[asset.id] !== undefined
                   ? copiesInputs[asset.id]
@@ -498,7 +500,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 onClick={(e) => e.stopPropagation()}
                                 onFocus={(e) => {
                                   e.stopPropagation();
-                                  setWidthInputs((prev) => ({ ...prev, [asset.id]: (Math.round(asset.targetWidth * 100) / 100).toString() }));
+                                  setWidthInputs((prev) => ({ ...prev, [asset.id]: parseFloat(Number(asset.targetWidth || 0).toFixed(2)).toString() }));
                                 }}
                                 onChange={(e) => {
                                   e.stopPropagation();
@@ -507,7 +509,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   const val = parseFloat(text);
                                   if (!isNaN(val) && val > 0) {
                                     const maxW = mmToUnit(22 * 25.4, settings.unit);
-                                    const clampedVal = Math.round(Math.min(maxW, val) * 100) / 100;
+                                    const clampedVal = parseFloat(Math.min(maxW, val).toFixed(2));
                                     onUpdateAsset(asset.id, { targetWidth: clampedVal });
                                   }
                                 }}
@@ -542,7 +544,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 onClick={(e) => e.stopPropagation()}
                                 onFocus={(e) => {
                                   e.stopPropagation();
-                                  setHeightInputs((prev) => ({ ...prev, [asset.id]: (Math.round(asset.targetHeight * 100) / 100).toString() }));
+                                  setHeightInputs((prev) => ({ ...prev, [asset.id]: parseFloat(Number(asset.targetHeight || 0).toFixed(2)).toString() }));
                                 }}
                                 onChange={(e) => {
                                   e.stopPropagation();
@@ -551,7 +553,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   const val = parseFloat(text);
                                   if (!isNaN(val) && val > 0) {
                                     const maxH = mmToUnit(100 * 25.4, settings.unit);
-                                    const clampedVal = Math.round(Math.min(maxH, val) * 100) / 100;
+                                    const clampedVal = parseFloat(Math.min(maxH, val).toFixed(2));
                                     onUpdateAsset(asset.id, { targetHeight: clampedVal });
                                   }
                                 }}
@@ -872,7 +874,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               </div>
             </div>
 
-            {/* Row 3: Sheet Length */}
+            {/* Row 3: Sheet Length Toggle */}
             <div className="flex items-center justify-between text-xs pt-0.5">
               <span className="font-bold text-slate-700">Sheet Length</span>
               <div className="h-8.5 flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-bold">
@@ -900,6 +902,96 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Row 3b: Dedicated Fixed Sheet Length Numeric Input or Auto Calculated Info */}
+            {settings.lengthMode === 'fixed' ? (
+              <div className="bg-indigo-50/70 border border-indigo-200/80 rounded-2xl p-3 space-y-2 transition-all">
+                <div className="flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-extrabold text-slate-800 block text-xs">Fixed Sheet Length</span>
+                    <span className="text-[10px] text-slate-500 font-medium">Desired sheet length</span>
+                  </div>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={
+                        fixedLengthInput !== null
+                          ? fixedLengthInput
+                          : parseFloat(Number(settings.fixedLength || 24).toFixed(2)).toString()
+                      }
+                      onFocus={() => {
+                        setFixedLengthInput(parseFloat(Number(settings.fixedLength || 24).toFixed(2)).toString());
+                      }}
+                      onChange={(e) => {
+                        const text = e.target.value;
+                        setFixedLengthInput(text);
+                        const val = parseFloat(text);
+                        if (!isNaN(val) && val > 0) {
+                          onUpdateSettings({ fixedLength: val });
+                        }
+                      }}
+                      onBlur={() => {
+                        if (fixedLengthInput !== null) {
+                          const val = parseFloat(fixedLengthInput);
+                          if (!isNaN(val) && val > 0) {
+                            const cleanVal = parseFloat(val.toFixed(2));
+                            onUpdateSettings({ fixedLength: cleanVal });
+                          }
+                          setFixedLengthInput(null);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      }}
+                      placeholder="24"
+                      className="w-24 sm:w-28 h-8 bg-white border border-indigo-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-10 font-mono shadow-2xs text-center"
+                    />
+                    <span className="absolute right-2 text-[10px] sm:text-[11px] text-slate-500 font-bold pointer-events-none uppercase">
+                      {settings.unit === 'inch' ? 'in' : settings.unit === 'meter' ? 'm' : settings.unit}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                  Enter your required sheet length (e.g. 24, 36, 48, 60).
+                </p>
+
+                {/* Multi-Sheet Warning if artwork exceeds fixed length */}
+                {layout.sheets.length > 1 && (
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-900 text-[11px] font-medium space-y-1">
+                    <div className="flex items-center space-x-1.5 font-bold text-amber-800">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                      <span>Exceeds {parseFloat(Number(settings.fixedLength || 24).toFixed(2))} {settings.unit === 'inch' ? 'in' : settings.unit}</span>
+                    </div>
+                    <p className="text-[10px] text-amber-700 leading-snug">
+                      Your artwork layout requires {parseFloat(mmToUnit(layout.usedLengthMm, settings.unit).toFixed(2))} {settings.unit === 'inch' ? 'in' : settings.unit} and is split across {layout.sheets.length} gang sheets.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const neededInUnit = parseFloat(mmToUnit(layout.usedLengthMm, settings.unit).toFixed(2));
+                        onUpdateSettings({ fixedLength: neededInUnit });
+                      }}
+                      className="inline-flex items-center text-[10px] font-bold text-indigo-700 hover:text-indigo-900 underline cursor-pointer"
+                    >
+                      Expand length to {parseFloat(mmToUnit(layout.usedLengthMm, settings.unit).toFixed(2))} {settings.unit === 'inch' ? 'in' : settings.unit} to fit on 1 sheet →
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between text-xs">
+                <div>
+                  <span className="font-extrabold text-slate-700 block text-xs">Calculated Sheet Length</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Automatic height based on designs</span>
+                </div>
+                <div className="flex items-baseline space-x-1 font-mono font-black text-indigo-600 text-xs sm:text-sm bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs">
+                  <span>{layout.usedLengthInches.toFixed(2)}</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">in</span>
+                </div>
+              </div>
+            )}
 
             {/* Row 4: Copies for all */}
             <div className="flex items-center justify-between text-xs pt-0.5">
