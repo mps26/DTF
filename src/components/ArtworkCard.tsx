@@ -38,13 +38,29 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
   const handleWidthChange = (valStr: string) => {
     const val = parseFloat(valStr);
     if (isNaN(val) || val <= 0) return;
-    onUpdate(asset.id, { targetWidth: val });
+    const precision = unit === 'meter' ? 4 : 2;
+    const clampedW = parseFloat(val.toFixed(precision));
+    if (asset.aspectLocked !== false) {
+      const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : 1);
+      const newH = parseFloat((clampedW / origRatio).toFixed(precision));
+      onUpdate(asset.id, { targetWidth: clampedW, targetHeight: newH });
+    } else {
+      onUpdate(asset.id, { targetWidth: clampedW });
+    }
   };
 
   const handleHeightChange = (valStr: string) => {
     const val = parseFloat(valStr);
     if (isNaN(val) || val <= 0) return;
-    onUpdate(asset.id, { targetHeight: val });
+    const precision = unit === 'meter' ? 4 : 2;
+    const clampedH = parseFloat(val.toFixed(precision));
+    if (asset.aspectLocked !== false) {
+      const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : 1);
+      const newW = parseFloat((clampedH * origRatio).toFixed(precision));
+      onUpdate(asset.id, { targetHeight: clampedH, targetWidth: newW });
+    } else {
+      onUpdate(asset.id, { targetHeight: clampedH });
+    }
   };
 
   const handleCopiesChange = (delta: number) => {
@@ -53,7 +69,7 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
   };
 
   const handleToggleAspect = () => {
-    // Aspect ratio is permanently locked
+    onUpdate(asset.id, { aspectLocked: asset.aspectLocked === false });
   };
 
   const handleToggleRotation = () => {
@@ -189,15 +205,20 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
         {/* Lock Aspect Ratio Pill Switch */}
         <div className="flex items-center justify-between py-1 mb-3">
           <div
-            className="flex items-center space-x-2 text-xs font-medium text-slate-600 select-none cursor-default"
-            title="Lock Aspect Ratio is permanently enabled"
+            onClick={handleToggleAspect}
+            className="flex items-center space-x-2 text-xs font-medium select-none cursor-pointer"
+            title={asset.aspectLocked !== false ? "Lock Aspect Ratio is ON (click to disable)" : "Lock Aspect Ratio is OFF (click to enable)"}
           >
-            <div className="w-8 h-4 rounded-full relative p-0.5 bg-[#204563]">
-              <div className="w-3 h-3 rounded-full bg-white transition-transform translate-x-4" />
+            <div className={`w-8 h-4 rounded-full relative p-0.5 transition-colors ${asset.aspectLocked !== false ? 'bg-[#204563]' : 'bg-slate-300'}`}>
+              <div className={`w-3 h-3 rounded-full bg-white transition-transform ${asset.aspectLocked !== false ? 'translate-x-4' : 'translate-x-0'}`} />
             </div>
             <span className="flex items-center space-x-1">
-              <Lock className="w-3 h-3 text-[#204563]" />
-              <span className="text-xs font-semibold">Lock Aspect Ratio</span>
+              {asset.aspectLocked !== false ? (
+                <Lock className="w-3 h-3 text-[#204563]" />
+              ) : (
+                <Unlock className="w-3 h-3 text-slate-400" />
+              )}
+              <span className={`text-xs font-semibold ${asset.aspectLocked !== false ? 'text-[#204563]' : 'text-slate-500'}`}>Lock Aspect Ratio</span>
             </span>
           </div>
 

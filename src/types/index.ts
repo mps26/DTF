@@ -23,6 +23,7 @@ export interface ArtworkAsset {
   fileSize: number;
   originalWidth: number;
   originalHeight: number;
+  originalAspectRatio?: number;
   hasAlpha: boolean;
   originalUrl: string;
   processedUrl: string;

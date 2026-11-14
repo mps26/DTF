@@ -161,7 +161,15 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
                     if (isNaN(val) || val <= 0) return;
-                    onUpdateAsset(selectedAsset.id, { targetWidth: val });
+                    const precision = settings.unit === 'meter' ? 4 : 2;
+                    const clampedW = parseFloat(val.toFixed(precision));
+                    if (selectedAsset.aspectLocked !== false) {
+                      const origRatio = selectedAsset.originalAspectRatio || (selectedAsset.originalWidth > 0 && selectedAsset.originalHeight > 0 ? (selectedAsset.originalWidth / selectedAsset.originalHeight) : 1);
+                      const newH = parseFloat((clampedW / origRatio).toFixed(precision));
+                      onUpdateAsset(selectedAsset.id, { targetWidth: clampedW, targetHeight: newH });
+                    } else {
+                      onUpdateAsset(selectedAsset.id, { targetWidth: clampedW });
+                    }
                   }}
                   className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-[#EF7F1A]"
                 />
@@ -178,7 +186,15 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
                     if (isNaN(val) || val <= 0) return;
-                    onUpdateAsset(selectedAsset.id, { targetHeight: val });
+                    const precision = settings.unit === 'meter' ? 4 : 2;
+                    const clampedH = parseFloat(val.toFixed(precision));
+                    if (selectedAsset.aspectLocked !== false) {
+                      const origRatio = selectedAsset.originalAspectRatio || (selectedAsset.originalWidth > 0 && selectedAsset.originalHeight > 0 ? (selectedAsset.originalWidth / selectedAsset.originalHeight) : 1);
+                      const newW = parseFloat((clampedH * origRatio).toFixed(precision));
+                      onUpdateAsset(selectedAsset.id, { targetHeight: clampedH, targetWidth: newW });
+                    } else {
+                      onUpdateAsset(selectedAsset.id, { targetHeight: clampedH });
+                    }
                   }}
                   className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-[#EF7F1A]"
                 />
@@ -189,20 +205,18 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
             <div className="flex items-center justify-between pt-1">
               <button
                 onClick={() => {
-                  if (!selectedAsset.aspectLocked) {
-                    const currentRatio = (selectedAsset.targetWidth > 0 && selectedAsset.targetHeight > 0)
-                      ? (selectedAsset.targetWidth / selectedAsset.targetHeight)
-                      : ((selectedAsset.trimmedWidth || selectedAsset.originalWidth || 1) / (selectedAsset.trimmedHeight || selectedAsset.originalHeight || 1));
-                    onUpdateAsset(selectedAsset.id, {
-                      aspectLocked: true,
-                      lockedRatio: currentRatio
-                    });
-                  }
+                  onUpdateAsset(selectedAsset.id, {
+                    aspectLocked: selectedAsset.aspectLocked === false
+                  });
                 }}
                 className="flex items-center space-x-1.5 text-xs text-slate-300 hover:text-white"
               >
-                <Lock className="w-3.5 h-3.5 text-[#EF7F1A]" />
-                <span>Lock Proportions</span>
+                {selectedAsset.aspectLocked !== false ? (
+                  <Lock className="w-3.5 h-3.5 text-[#EF7F1A]" />
+                ) : (
+                  <Unlock className="w-3.5 h-3.5 text-slate-500" />
+                )}
+                <span>{selectedAsset.aspectLocked !== false ? 'Lock Proportions' : 'Unlock Proportions'}</span>
               </button>
 
               <button

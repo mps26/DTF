@@ -294,7 +294,19 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       });
     }
 
-    onUpdateAsset(asset.id, { targetWidth: clampedVal });
+    if (asset.aspectLocked !== false) {
+      const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : 1);
+      const calcHeight = parseFloat((clampedVal / origRatio).toFixed(2));
+      setHeightInputs((prev) => {
+        if (prev[asset.id] === undefined) return prev;
+        const copy = { ...prev };
+        delete copy[asset.id];
+        return copy;
+      });
+      onUpdateAsset(asset.id, { targetWidth: clampedVal, targetHeight: calcHeight });
+    } else {
+      onUpdateAsset(asset.id, { targetWidth: clampedVal });
+    }
   };
 
   const handleHeightChange = (asset: ArtworkAsset, valStr: string) => {
@@ -310,7 +322,19 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       });
     }
 
-    onUpdateAsset(asset.id, { targetHeight: clampedVal });
+    if (asset.aspectLocked !== false) {
+      const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : 1);
+      const calcWidth = parseFloat((clampedVal * origRatio).toFixed(2));
+      setWidthInputs((prev) => {
+        if (prev[asset.id] === undefined) return prev;
+        const copy = { ...prev };
+        delete copy[asset.id];
+        return copy;
+      });
+      onUpdateAsset(asset.id, { targetHeight: clampedVal, targetWidth: calcWidth });
+    } else {
+      onUpdateAsset(asset.id, { targetHeight: clampedVal });
+    }
   };
 
   const displayLength = mmToUnit(layout.usedLengthMm, settings.unit);
@@ -510,7 +534,19 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   if (!isNaN(val) && val > 0) {
                                     const maxW = mmToUnit(22 * 25.4, settings.unit);
                                     const clampedVal = parseFloat(Math.min(maxW, val).toFixed(2));
-                                    onUpdateAsset(asset.id, { targetWidth: clampedVal });
+                                    if (asset.aspectLocked !== false) {
+                                      const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : 1);
+                                      const calcHeight = parseFloat((clampedVal / origRatio).toFixed(2));
+                                      setHeightInputs((prev) => {
+                                        if (prev[asset.id] === undefined) return prev;
+                                        const copy = { ...prev };
+                                        delete copy[asset.id];
+                                        return copy;
+                                      });
+                                      onUpdateAsset(asset.id, { targetWidth: clampedVal, targetHeight: calcHeight });
+                                    } else {
+                                      onUpdateAsset(asset.id, { targetWidth: clampedVal });
+                                    }
                                   }
                                 }}
                                 onBlur={() => {
@@ -554,7 +590,19 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   if (!isNaN(val) && val > 0) {
                                     const maxH = mmToUnit(100 * 25.4, settings.unit);
                                     const clampedVal = parseFloat(Math.min(maxH, val).toFixed(2));
-                                    onUpdateAsset(asset.id, { targetHeight: clampedVal });
+                                    if (asset.aspectLocked !== false) {
+                                      const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : 1);
+                                      const calcWidth = parseFloat((clampedVal * origRatio).toFixed(2));
+                                      setWidthInputs((prev) => {
+                                        if (prev[asset.id] === undefined) return prev;
+                                        const copy = { ...prev };
+                                        delete copy[asset.id];
+                                        return copy;
+                                      });
+                                      onUpdateAsset(asset.id, { targetHeight: clampedVal, targetWidth: calcWidth });
+                                    } else {
+                                      onUpdateAsset(asset.id, { targetHeight: clampedVal });
+                                    }
                                   }
                                 }}
                                 onBlur={() => {
@@ -586,18 +634,33 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
 
                         {/* Lock Aspect Ratio Toggle */}
                         <div
-                          className="flex items-center space-x-2 py-0.5 mb-2 select-none"
-                          title="Lock Aspect Ratio is permanently enabled"
+                          className="flex items-center space-x-2 py-0.5 mb-2 select-none cursor-pointer"
+                          title={asset.aspectLocked !== false ? "Lock Aspect Ratio is ON (click to disable)" : "Lock Aspect Ratio is OFF (click to enable)"}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateAsset(asset.id, { aspectLocked: asset.aspectLocked === false });
+                          }}
                         >
                           <button
                             type="button"
-                            aria-pressed={true}
-                            disabled
-                            className="w-8 h-4.5 rounded-full transition-colors relative p-0.5 bg-[#204563] cursor-default opacity-100"
+                            aria-pressed={asset.aspectLocked !== false}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUpdateAsset(asset.id, { aspectLocked: asset.aspectLocked === false });
+                            }}
+                            className={`w-8 h-4.5 rounded-full transition-colors relative p-0.5 cursor-pointer ${
+                              asset.aspectLocked !== false ? 'bg-[#204563]' : 'bg-slate-300'
+                            }`}
                           >
-                            <div className="w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform translate-x-3.5" />
+                            <div
+                              className={`w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform ${
+                                asset.aspectLocked !== false ? 'translate-x-3.5' : 'translate-x-0'
+                              }`}
+                            />
                           </button>
-                          <span className="text-[11px] sm:text-xs font-semibold text-[#204563]">
+                          <span className={`text-[11px] sm:text-xs font-semibold ${
+                            asset.aspectLocked !== false ? 'text-[#204563]' : 'text-slate-500'
+                          }`}>
                             Lock Aspect Ratio
                           </span>
                         </div>

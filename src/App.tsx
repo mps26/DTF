@@ -264,41 +264,57 @@ export const App: React.FC = () => {
         if (asset.id !== id) return asset;
         const updated = { ...asset, ...updates };
 
-        // Lock Aspect Ratio is permanently enabled across the application
-        updated.aspectLocked = true;
-        const origW = asset.trimmedWidth || asset.originalWidth || 1;
-        const origH = asset.trimmedHeight || asset.originalHeight || 1;
-        const naturalRatio = (origW > 0 && origH > 0) ? (origW / origH) : 1;
-        updated.lockedRatio = naturalRatio;
+        // Maintain independent aspectLocked state (defaults to true)
+        const isLocked = updates.aspectLocked !== undefined ? updates.aspectLocked : (asset.aspectLocked !== false);
+        updated.aspectLocked = isLocked;
+
+        // Use original aspect ratio calculated strictly from original uploaded image dimensions
+        const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : (asset.lockedRatio || 1));
+        updated.originalAspectRatio = origRatio;
+        updated.lockedRatio = origRatio;
 
         const precision = settings.unit === 'meter' ? 4 : 2;
-        const factor = Math.pow(10, precision);
 
-        // User enters exact desired numbers in Width and Height independently.
-        // Changing Width NEVER alters Height; changing Height NEVER alters Width.
-        if (updates.targetWidth !== undefined) {
+        // When both dimensions are explicitly provided (e.g. rotation or synchronous batch update)
+        if (updates.targetWidth !== undefined && updates.targetHeight !== undefined) {
           const rawW = Math.max(0.01, updates.targetWidth);
           const clampedW = parseFloat(rawW.toFixed(precision));
           updated.targetWidth = clampedW;
           updated.targetWidthMm = unitToMm(clampedW, settings.unit);
 
-          const targetWidthInches = updated.targetWidthMm / 25.4;
-          const currentFilmWidthInches = settings.filmWidthMm / 25.4;
-          if (targetWidthInches > currentFilmWidthInches) {
-            autoExpandWidth = Math.min(22, targetWidthInches);
+          const rawH = Math.max(0.01, updates.targetHeight);
+          const clampedH = parseFloat(rawH.toFixed(precision));
+          updated.targetHeight = clampedH;
+          updated.targetHeightMm = unitToMm(clampedH, settings.unit);
+        }
+        // Scenario A: User changes Width
+        else if (updates.targetWidth !== undefined) {
+          const rawW = Math.max(0.01, updates.targetWidth);
+          const clampedW = parseFloat(rawW.toFixed(precision));
+          updated.targetWidth = clampedW;
+          updated.targetWidthMm = unitToMm(clampedW, settings.unit);
+
+          if (isLocked) {
+            // newHeight = newWidth / originalAspectRatio
+            const rawH = clampedW / origRatio;
+            const clampedH = Math.max(0.01, parseFloat(rawH.toFixed(precision)));
+            updated.targetHeight = clampedH;
+            updated.targetHeightMm = unitToMm(clampedH, settings.unit);
           }
         }
-
-        if (updates.targetHeight !== undefined) {
+        // Scenario B: User changes Height
+        else if (updates.targetHeight !== undefined) {
           const rawH = Math.max(0.01, updates.targetHeight);
           const clampedH = parseFloat(rawH.toFixed(precision));
           updated.targetHeight = clampedH;
           updated.targetHeightMm = unitToMm(clampedH, settings.unit);
 
-          const targetHeightInches = updated.targetHeightMm / 25.4;
-          const currentFixedLengthInches = settings.fixedLengthMm / 25.4;
-          if (settings.lengthMode === 'fixed' && targetHeightInches > currentFixedLengthInches) {
-            autoExpandHeight = Math.min(100, targetHeightInches);
+          if (isLocked) {
+            // newWidth = newHeight * originalAspectRatio
+            const rawW = clampedH * origRatio;
+            const clampedW = Math.max(0.01, parseFloat(rawW.toFixed(precision)));
+            updated.targetWidth = clampedW;
+            updated.targetWidthMm = unitToMm(clampedW, settings.unit);
           }
         }
 
@@ -317,8 +333,8 @@ export const App: React.FC = () => {
         ...s,
         ...(autoExpandWidth !== null ? {
           filmWidth: autoExpandWidth,
-          filmWidthMm: autoExpandWidth * 25.4,
-          filmWidthPreset: autoExpandWidth === 22 ? '22' : autoExpandWidth.toString()
+          filmWidthMm: (autoExpandWidth as number) * 25.4,
+          filmWidthPreset: autoExpandWidth === 22 ? '22' : String(autoExpandWidth)
         } : {}),
         ...(autoExpandHeight !== null ? {
           fixedLength: autoExpandHeight,
@@ -417,6 +433,10 @@ export const App: React.FC = () => {
         const processedImg = await loadImage(processedUrl);
         const cropBox = await calculateAlphaBoundingBox(processedImg, 8, 2);
 
+        const originalWidth = img.naturalWidth;
+        const originalHeight = img.naturalHeight;
+        const originalAspectRatio = (originalWidth > 0 && originalHeight > 0) ? (originalWidth / originalHeight) : 1;
+
         const defaultWidthInches = 2.18;
         const aspect = img.naturalHeight / img.naturalWidth;
         const defaultHeightInches = Math.round(defaultWidthInches * aspect * 100) / 100;
@@ -432,8 +452,9 @@ export const App: React.FC = () => {
           filename: file.name,
           fileType,
           fileSize: file.size,
-          originalWidth: img.naturalWidth,
-          originalHeight: img.naturalHeight,
+          originalWidth,
+          originalHeight,
+          originalAspectRatio,
           hasAlpha: hasAlpha || isBgRemoved,
           originalUrl: dataUrl,
           processedUrl,
@@ -447,7 +468,7 @@ export const App: React.FC = () => {
           targetWidthMm: targetWMm,
           targetHeightMm: targetHMm,
           aspectLocked: true,
-          lockedRatio: (img.naturalWidth > 0 && img.naturalHeight > 0) ? (img.naturalWidth / img.naturalHeight) : 1,
+          lockedRatio: originalAspectRatio,
           copies: 1,
           allowRotation: false,
           effectiveDpi,
