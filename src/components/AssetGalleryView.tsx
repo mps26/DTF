@@ -102,35 +102,35 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#f8fafc] text-slate-800 overflow-hidden font-sans select-none">
+    <div className="flex-1 flex flex-col h-full bg-[#F3EBDD] text-[#204563] overflow-hidden font-sans select-none">
       {/* Top Console Header */}
-      <div className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between flex-shrink-0 z-20">
+      <div className="h-16 bg-white border-b border-[#E5D9C8] px-6 flex items-center justify-between flex-shrink-0 z-20">
         <div className="flex items-center space-x-4">
           <button
             type="button"
             onClick={onBackToStudio}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors border border-slate-200 shadow-2xs cursor-pointer"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-[#FAF7F1] hover:bg-[#E8DDCA] text-[#204563] text-xs font-bold transition-colors border border-[#E5D9C8] shadow-2xs cursor-pointer"
           >
             <span>← Back to Gang Sheet</span>
           </button>
 
-          <div className="h-5 w-px bg-slate-200" />
+          <div className="h-5 w-px bg-[#E5D9C8]" />
 
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/25">
-              <ImageIcon className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-[#204563] flex items-center justify-center text-[#EF7F1A] shadow-md shadow-[#204563]/25 border border-[#183750]">
+              <ImageIcon className="w-4 h-4 text-[#EF7F1A]" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-black text-sm text-slate-900 tracking-tight uppercase">
-                  Asset Gallery & Media Library
+                <span className="font-black text-sm text-[#204563] tracking-tight uppercase">
+                  Asset Gallery &amp; Media Library
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-[#FCE8D5] text-[#204563] border border-[#EF7F1A]/30 px-2 py-0.5 rounded-full">
                   {assets.length} Artwork Assets
                 </span>
               </div>
-              <div className="text-[11px] text-slate-500 font-medium">
-                High-resolution vector & raster artwork catalog for DTF gang sheet production
+              <div className="text-[11px] text-[#526A7B] font-medium">
+                High-resolution vector &amp; raster artwork catalog for DTF gang sheet production
               </div>
             </div>
           </div>
@@ -156,41 +156,41 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-36 sm:pb-6 space-y-6">
         
         {/* Search & Upload Controls Bar */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl border border-[#E5D9C8] p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
           
           {/* Search Box */}
           <div className="relative w-full md:w-80">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#526A7B]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search designs by filename..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-[#FAF7F1] border border-[#E5D9C8] rounded-xl text-xs font-semibold text-[#204563] placeholder-[#526A7B]/60 focus:outline-none focus:ring-2 focus:ring-[#EF7F1A]/20 focus:border-[#EF7F1A] transition-all"
             />
           </div>
 
-          {/* Center: Upload New Artwork Button (Image 3) */}
+          {/* Center: Upload New Artwork Button */}
           <div className="flex items-center justify-center">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-xs rounded-full shadow-md shadow-indigo-600/30 flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
+              className="px-6 py-2.5 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs rounded-full shadow-md shadow-orange-500/25 flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
             >
-              <UploadCloud className="w-4 h-4 text-white" />
+              <UploadCloud className="w-4 h-4 text-[#204563]" />
               <span>Upload New Artwork</span>
             </button>
           </div>
 
           {/* Quick Stats Pill */}
-          <div className="hidden lg:flex items-center space-x-3 text-xs font-bold text-slate-500">
+          <div className="hidden lg:flex items-center space-x-3 text-xs font-bold text-[#526A7B]">
             <span className="flex items-center space-x-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span>{highDpiCount} Optimal DPI</span>
             </span>
             <span>•</span>
             <span className="flex items-center space-x-1">
-              <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+              <span className="w-2 h-2 rounded-full bg-[#EF7F1A]"></span>
               <span>{totalCopiesOnSheet} Total Placements</span>
             </span>
           </div>
@@ -199,14 +199,14 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
 
         {/* Artwork Grid */}
         {filteredAssets.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-xl mx-auto my-12 shadow-xs">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-4 border border-indigo-100 shadow-inner">
+          <div className="bg-white rounded-3xl border border-[#E5D9C8] p-12 text-center max-w-xl mx-auto my-12 shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-[#FAF7F1] text-[#204563] flex items-center justify-center mx-auto mb-4 border border-[#E5D9C8] shadow-inner">
               <FileImage className="w-7 h-7" />
             </div>
-            <h3 className="font-extrabold text-base text-slate-900">
+            <h3 className="font-extrabold text-base text-[#204563]">
               {searchQuery ? 'No matching designs found' : 'No designs in gallery yet'}
             </h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            <p className="text-xs text-[#526A7B] mt-1 max-w-sm mx-auto">
               {searchQuery
                 ? `No files matching "${searchQuery}". Try a different search query.`
                 : 'Upload transparent PNGs or graphics to start organizing your DTF gang sheet assets.'}
@@ -214,9 +214,9 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="mt-5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/20 inline-flex items-center space-x-2 transition-all cursor-pointer"
+              className="mt-5 px-4 py-2 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs rounded-xl shadow-md shadow-orange-500/25 inline-flex items-center space-x-2 transition-all cursor-pointer"
             >
-              <UploadCloud className="w-4 h-4" />
+              <UploadCloud className="w-4 h-4 text-[#204563]" />
               <span>Browse Images to Upload</span>
             </button>
           </div>
@@ -229,7 +229,7 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
               return (
                 <div
                   key={asset.id}
-                  className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group"
+                  className="bg-white rounded-2xl border border-[#E5D9C8] overflow-hidden shadow-2xs hover:shadow-md hover:border-[#EF7F1A] transition-all flex flex-col justify-between group"
                 >
                   {/* Card Thumbnail Section */}
                   <div className="relative aspect-square w-full bg-slate-100 flex items-center justify-center p-4 overflow-hidden border-b border-slate-100">
@@ -335,7 +335,7 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
                         <button
                           type="button"
                           onClick={() => onEditAsset(asset)}
-                          className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-[#FAF7F1] hover:bg-[#FCE8D5] hover:text-[#204563] text-[#526A7B] flex items-center justify-center transition-colors cursor-pointer"
                           title="Edit in Image Tools Studio"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -344,7 +344,7 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDownloadAsset(asset)}
-                          className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-[#FAF7F1] hover:bg-emerald-50 hover:text-emerald-600 text-[#526A7B] flex items-center justify-center transition-colors cursor-pointer"
                           title="Download original image"
                         >
                           <Download className="w-3.5 h-3.5" />
@@ -353,7 +353,7 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
                         <button
                           type="button"
                           onClick={() => onDeleteAsset(asset.id)}
-                          className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-400 flex items-center justify-center transition-colors cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-[#FAF7F1] hover:bg-rose-50 hover:text-rose-600 text-[#526A7B] flex items-center justify-center transition-colors cursor-pointer"
                           title="Remove design"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -374,9 +374,9 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
                           onBackToStudio();
                         }
                       }}
-                      className="w-full mt-2.5 py-2 px-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200/90 hover:border-indigo-600 font-extrabold text-xs rounded-xl shadow-2xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer group/btn"
+                      className="w-full mt-2.5 py-2 px-3 bg-[#FAF7F1] hover:bg-[#EF7F1A] text-[#204563] border border-[#E5D9C8] hover:border-[#EF7F1A] font-black text-xs rounded-xl shadow-2xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer group/btn"
                     >
-                      <Layers className="w-3.5 h-3.5 text-indigo-600 group-hover/btn:text-white" />
+                      <Layers className="w-3.5 h-3.5 text-[#204563]" />
                       <span>Set File Sheet</span>
                     </button>
                   </div>
@@ -392,30 +392,30 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
       {previewAsset && (
         <div
           onClick={() => setPreviewAsset(null)}
-          className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-6 select-none animate-in fade-in"
+          className="fixed inset-0 z-50 bg-[#204563]/70 backdrop-blur-sm flex items-center justify-center p-6 select-none animate-in fade-in"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-slate-200 space-y-4"
+            className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-[#E5D9C8] space-y-4"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5D9C8]">
               <div>
-                <h4 className="font-black text-sm text-slate-900">{previewAsset.filename}</h4>
-                <div className="text-xs text-slate-500 font-mono mt-0.5">
+                <h4 className="font-black text-sm text-[#204563]">{previewAsset.filename}</h4>
+                <div className="text-xs text-[#526A7B] font-mono mt-0.5">
                   {previewAsset.originalWidth} × {previewAsset.originalHeight} px • {previewAsset.targetWidth}" × {previewAsset.targetHeight}"
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setPreviewAsset(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-full bg-[#FAF7F1] hover:bg-[#E8DDCA] text-[#526A7B] flex items-center justify-center cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <div
-              className="w-full h-80 rounded-2xl border border-slate-200 flex items-center justify-center p-4 relative overflow-hidden"
+              className="w-full h-80 rounded-2xl border border-[#E5D9C8] flex items-center justify-center p-4 relative overflow-hidden"
               style={{
                 backgroundImage: `
                   linear-gradient(45deg, #f1f5f9 25%, transparent 25%),
@@ -435,8 +435,8 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
             </div>
 
             <div className="flex items-center justify-between pt-2">
-              <div className="text-xs text-slate-500">
-                Copies on sheet: <span className="font-bold text-slate-900">{previewAsset.copies}</span>
+              <div className="text-xs text-[#526A7B]">
+                Copies on sheet: <span className="font-bold text-[#204563]">{previewAsset.copies}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <button
@@ -445,9 +445,9 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
                     onEditAsset(previewAsset);
                     setPreviewAsset(null);
                   }}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer flex items-center space-x-1.5"
+                  className="px-4 py-2 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs rounded-xl shadow-xs cursor-pointer flex items-center space-x-1.5"
                 >
-                  <Edit3 className="w-3.5 h-3.5" />
+                  <Edit3 className="w-3.5 h-3.5 text-[#204563]" />
                   <span>Open in Image Editor</span>
                 </button>
               </div>

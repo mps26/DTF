@@ -2,12 +2,103 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #204563;
+  --color-accent: #EF7F1A;
+  --color-background: #F3EBDD;
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #FAF7F1;
+  --color-border: #E5D9C8;
+  --color-text-primary: #204563;
+  --color-text-secondary: #526A7B;
+  --color-text-inverse: #FFFFFF;
+  --color-orange-light: #FCE8D5;
+  --color-beige-dark: #E8DDCA;
+}
+
 @layer base {
   body {
-    @apply antialiased font-sans text-slate-800 bg-[#edf3f8];
+    @apply antialiased font-sans;
+    background-color: #F3EBDD;
+    color: #204563;
     margin: 0;
     padding: 0;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #204563;
+  }
+}
+
+/* Button Hierarchy System */
+.btn-primary {
+  background-color: #EF7F1A;
+  color: #204563;
+  font-weight: 800;
+  border-radius: 0.75rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(239, 127, 26, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-primary:hover {
+  background-color: #d96e12;
+  color: #204563;
+  box-shadow: 0 6px 18px rgba(239, 127, 26, 0.35);
+  transform: translateY(-0.5px);
+}
+.btn-primary:active {
+  transform: translateY(0.5px);
+}
+
+.btn-secondary {
+  background-color: #FFFFFF;
+  color: #204563;
+  border: 1px solid #E5D9C8;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-secondary:hover {
+  background-color: #FAF7F1;
+  border-color: #E8DDCA;
+  color: #204563;
+}
+
+.btn-dark {
+  background-color: #204563;
+  color: #FFFFFF;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-dark:hover {
+  background-color: #183750;
+  color: #FFFFFF;
+}
+
+/* Standardized Form Input Control */
+.input-field {
+  background-color: #FFFFFF;
+  color: #204563;
+  border: 1px solid #E5D9C8;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+}
+.input-field:focus {
+  outline: none;
+  border-color: #EF7F1A;
+  box-shadow: 0 0 0 2px rgba(239, 127, 26, 0.2);
+}
+.input-field::placeholder {
+  color: rgba(32, 69, 99, 0.4);
 }
 
 /* Custom scrollbars */
@@ -21,12 +112,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #E5D9C8;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #C4AF92;
 }
 
 @layer utilities {

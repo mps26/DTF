@@ -13,7 +13,7 @@ const DEFAULT_USERS: Array<UserProfile & { passwordHash: string }> = [
     role: 'shop_owner',
     plan: 'Industrial Enterprise',
     initials: 'NP',
-    avatarColor: 'from-purple-600 to-indigo-600',
+    avatarColor: 'from-[#204563] to-[#132c40]',
     createdAt: '2026-01-15T08:00:00Z',
     passwordHash: 'password123'
   },
@@ -248,8 +248,8 @@ export async function registerUser(formData: RegisterFormData): Promise<{ succes
   }
 
   const colors = [
-    'from-indigo-600 to-purple-600',
-    'from-blue-600 to-indigo-600',
+    'from-[#204563] to-[#132c40]',
+    'from-[#EF7F1A] to-[#d97014]',
     'from-emerald-600 to-teal-600',
     'from-amber-600 to-orange-600',
     'from-rose-600 to-pink-600'

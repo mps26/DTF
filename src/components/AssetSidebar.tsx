@@ -117,7 +117,7 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
             <button
               onClick={() => onModeChange('multiple')}
               className={`px-2 py-0.5 rounded transition-all ${
-                mode === 'multiple' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                mode === 'multiple' ? 'bg-[#EF7F1A] text-[#204563] font-black' : 'text-slate-400 hover:text-white'
               }`}
               title="Pack multiple different designs on sheet"
             >
@@ -126,7 +126,7 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
             <button
               onClick={() => onModeChange('repeat')}
               className={`px-2 py-0.5 rounded transition-all ${
-                mode === 'repeat' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                mode === 'repeat' ? 'bg-[#EF7F1A] text-[#204563] font-black' : 'text-slate-400 hover:text-white'
               }`}
               title="Repeat single design across sheet"
             >
@@ -143,7 +143,7 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
           onClick={() => fileInputRef.current?.click()}
           className={`border border-dashed rounded-lg p-2.5 text-center cursor-pointer transition-all ${
             isDragging
-              ? 'border-indigo-500 bg-indigo-950/40 text-indigo-300'
+              ? 'border-[#EF7F1A] bg-[#204563]/30 text-[#EF7F1A]'
               : 'border-slate-700 hover:border-slate-500 bg-[#0d1220] hover:bg-[#13192c]'
           }`}
         >
@@ -158,7 +158,7 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
             }}
           />
           <div className="flex items-center justify-center space-x-2">
-            <UploadCloud className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+            <UploadCloud className="w-4 h-4 text-[#EF7F1A] flex-shrink-0" />
             <span className="text-xs font-semibold text-slate-200">
               Drop artwork or click to upload
             </span>
@@ -177,7 +177,7 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
               placeholder="Search designs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0d1220] border border-slate-800 rounded px-2.5 py-1 pl-8 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#0d1220] border border-slate-800 rounded px-2.5 py-1 pl-8 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#EF7F1A]"
             />
           </div>
 
@@ -199,7 +199,7 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
               className="flex items-center space-x-1 hover:text-white transition-colors"
             >
               {allSelected ? (
-                <CheckSquare className="w-3.5 h-3.5 text-indigo-400" />
+                <CheckSquare className="w-3.5 h-3.5 text-[#EF7F1A]" />
               ) : (
                 <Square className="w-3.5 h-3.5 text-slate-600" />
               )}
@@ -253,9 +253,9 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
                 onClick={() => onSelectAsset(asset.id)}
                 className={`p-2.5 rounded-lg border transition-all text-xs cursor-pointer relative group ${
                   isSelected
-                    ? 'bg-[#1a233d] border-indigo-500 shadow-sm ring-1 ring-indigo-500/30 text-white'
+                    ? 'bg-[#132537] border-[#EF7F1A] shadow-sm ring-1 ring-[#EF7F1A]/30 text-white'
                     : isMultiSelected
-                    ? 'bg-[#151c30] border-indigo-800 text-slate-200'
+                    ? 'bg-[#0f1d2c] border-[#204563] text-slate-200'
                     : 'bg-[#0f1424] hover:bg-[#141b30] border-slate-800 text-slate-300'
                 } ${!isVisible ? 'opacity-40' : ''}`}
               >
@@ -268,10 +268,10 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
                         e.stopPropagation();
                         onToggleMultiSelect(asset.id);
                       }}
-                      className="mt-0.5 text-slate-500 hover:text-indigo-400"
+                      className="mt-0.5 text-slate-500 hover:text-[#EF7F1A]"
                     >
                       {isMultiSelected ? (
-                        <CheckSquare className="w-3.5 h-3.5 text-indigo-400" />
+                        <CheckSquare className="w-3.5 h-3.5 text-[#EF7F1A]" />
                       ) : (
                         <Square className="w-3.5 h-3.5" />
                       )}
@@ -365,7 +365,7 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
                     >
                       <Minus className="w-3 h-3" />
                     </button>
-                    <span className="font-mono font-bold text-xs text-indigo-400">
+                    <span className="font-mono font-bold text-xs text-[#EF7F1A]">
                       {asset.copies} {asset.copies === 1 ? 'copy' : 'copies'}
                     </span>
                     <button
@@ -401,9 +401,9 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
 
                 {/* Auto BG Removal Notification if Opaque */}
                 {!asset.hasAlpha && !asset.isBgRemoved && (
-                  <div className="mt-2 bg-purple-950/40 border border-purple-800/60 rounded px-2 py-1 flex items-center justify-between text-[10px] text-purple-300">
+                  <div className="mt-2 bg-[#132537] border border-[#204563] rounded px-2 py-1 flex items-center justify-between text-[10px] text-slate-200">
                     <span className="flex items-center space-x-1 truncate">
-                      <Sparkles className="w-3 h-3 flex-shrink-0" />
+                      <Sparkles className="w-3 h-3 flex-shrink-0 text-[#EF7F1A]" />
                       <span className="truncate">Opaque background</span>
                     </span>
                     <button
@@ -411,7 +411,7 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
                         e.stopPropagation();
                         onRemoveBgAsset(asset.id);
                       }}
-                      className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-2 py-0.5 rounded text-[10px] transition-colors"
+                      className="bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] font-black px-2 py-0.5 rounded text-[10px] transition-colors"
                     >
                       Cut BG
                     </button>

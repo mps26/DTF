@@ -136,18 +136,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#204563]/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-800 overflow-hidden relative max-h-[92vh] flex flex-col"
+        className="w-full max-w-lg bg-white border border-[#E5D9C8] rounded-2xl sm:rounded-3xl shadow-2xl text-[#204563] overflow-hidden relative max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Accent Stripe */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shrink-0" />
+        <div className="h-1.5 w-full bg-[#EF7F1A] shrink-0" />
 
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors border border-slate-200 cursor-pointer z-10"
+          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FAF7F1] hover:bg-[#E8DDCA] text-[#526A7B] hover:text-[#204563] flex items-center justify-center transition-colors border border-[#E5D9C8] cursor-pointer z-10"
           title="Close modal"
         >
           <X className="w-4 h-4" />
@@ -155,20 +155,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Modal Header */}
         <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-3 sm:pb-4 text-center shrink-0">
-          <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 shadow-md shadow-indigo-600/20 mb-2.5 sm:mb-3 text-white">
-            <Layers className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#204563] shadow-md shadow-[#204563]/25 mb-2.5 sm:mb-3 text-[#EF7F1A] border border-[#183750]">
+            <Layers className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-black text-[#204563] tracking-tight">
             {mode === 'login' ? 'Print Shop Operator Login' : 'Create Print Shop Account'}
           </h2>
-          <p className="text-[11px] sm:text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
+          <p className="text-[11px] sm:text-xs text-[#526A7B] mt-1 max-w-sm mx-auto leading-relaxed">
             {mode === 'login'
               ? 'Access your industrial gang sheet engine, RIP TIFF presets, and nest queues'
               : 'Deploy multi-channel DTF & UV-DTF gang nesting for high-speed print roll production'}
           </p>
 
           {/* Mode Tabs */}
-          <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl mt-4 sm:mt-5 border border-slate-200">
+          <div className="grid grid-cols-2 p-1 bg-[#FAF7F1] rounded-xl mt-4 sm:mt-5 border border-[#E5D9C8]">
             <button
               type="button"
               onClick={() => {
@@ -177,8 +177,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               }}
               className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                 mode === 'login'
-                  ? 'bg-white text-slate-900 shadow-sm font-extrabold'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-[#EF7F1A] text-[#204563] shadow-sm font-black'
+                  : 'text-[#526A7B] hover:text-[#204563]'
               }`}
             >
               Sign In
@@ -191,8 +191,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               }}
               className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                 mode === 'register'
-                  ? 'bg-white text-slate-900 shadow-sm font-extrabold'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-[#EF7F1A] text-[#204563] shadow-sm font-black'
+                  : 'text-[#526A7B] hover:text-[#204563]'
               }`}
             >
               Register New Shop
@@ -214,17 +214,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             /* LOGIN FORM */
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[#204563] uppercase tracking-wider mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-[#526A7B] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                     placeholder="operator@printworks.com"
-                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-hidden transition-all font-medium"
+                    className="w-full bg-[#FAF7F1] border border-[#E5D9C8] focus:bg-white focus:border-[#EF7F1A] focus:ring-1 focus:ring-[#EF7F1A] rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#204563] placeholder-[#526A7B]/60 outline-hidden transition-all font-medium"
                     required
                   />
                 </div>
@@ -232,31 +232,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  <label className="text-xs font-bold text-[#204563] uppercase tracking-wider">
                     Password
                   </label>
                   <button
                     type="button"
                     onClick={() => setErrorMessage('For testing, you can use password123 or click one of the 1-click accounts below.')}
-                    className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold cursor-pointer"
+                    className="text-xs text-[#EF7F1A] hover:text-[#d96e12] font-bold cursor-pointer"
                   >
                     Forgot?
                   </button>
                 </div>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-[#526A7B] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={loginData.password}
                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl pl-10 pr-10 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-hidden transition-all font-medium"
+                    className="w-full bg-[#FAF7F1] border border-[#E5D9C8] focus:bg-white focus:border-[#EF7F1A] focus:ring-1 focus:ring-[#EF7F1A] rounded-xl pl-10 pr-10 py-2.5 text-xs text-[#204563] placeholder-[#526A7B]/60 outline-hidden transition-all font-medium"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#526A7B] hover:text-[#204563] cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -269,66 +269,63 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="checkbox"
                     checked={loginData.rememberMe}
                     onChange={(e) => setLoginData({ ...loginData, rememberMe: e.target.checked })}
-                    className="rounded bg-slate-100 border-slate-300 text-indigo-600 focus:ring-0 focus:ring-offset-0"
+                    className="rounded bg-[#FAF7F1] border-[#E5D9C8] text-[#EF7F1A] focus:ring-0 focus:ring-offset-0"
                   />
-                  <span className="text-slate-600 text-xs">Remember this workstation</span>
+                  <span className="text-[#526A7B] text-xs">Remember this workstation</span>
                 </label>
-
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-indigo-600/20 flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-60"
+                className="w-full mt-2 py-3 px-4 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs rounded-xl shadow-md shadow-orange-500/25 flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-60"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#204563]" />
                     <span>Verifying Credentials...</span>
                   </>
                 ) : (
                   <>
-                    <span>Sign In & Open Studio</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>Sign In &amp; Open Studio</span>
+                    <ArrowRight className="w-4 h-4 text-[#204563]" />
                   </>
                 )}
               </button>
-
-
             </form>
           ) : (
             /* REGISTER FORM */
             <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-bold text-[#204563] uppercase tracking-wider mb-1">
                     Your Full Name
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <User className="w-4 h-4 text-[#526A7B] absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={registerData.name}
                       onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
                       placeholder="e.g. Ninad Pawar"
-                      className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 outline-hidden transition-all"
+                      className="w-full bg-[#FAF7F1] border border-[#E5D9C8] focus:bg-white focus:border-[#EF7F1A] focus:ring-1 focus:ring-[#EF7F1A] rounded-xl pl-9 pr-3 py-2 text-xs text-[#204563] placeholder-[#526A7B]/60 outline-hidden transition-all"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-bold text-[#204563] uppercase tracking-wider mb-1">
                     Shop / Brand Name
                   </label>
                   <div className="relative">
-                    <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Building2 className="w-4 h-4 text-[#526A7B] absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={registerData.companyName}
                       onChange={(e) => setRegisterData({ ...registerData, companyName: e.target.value })}
                       placeholder="e.g. Apex Printworks"
-                      className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 outline-hidden transition-all"
+                      className="w-full bg-[#FAF7F1] border border-[#E5D9C8] focus:bg-white focus:border-[#EF7F1A] focus:ring-1 focus:ring-[#EF7F1A] rounded-xl pl-9 pr-3 py-2 text-xs text-[#204563] placeholder-[#526A7B]/60 outline-hidden transition-all"
                       required
                     />
                   </div>
@@ -336,32 +333,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-[#204563] uppercase tracking-wider mb-1">
                   Business Email
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-[#526A7B] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     value={registerData.email}
                     onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                     placeholder="production@yourshop.com"
-                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 outline-hidden transition-all"
+                    className="w-full bg-[#FAF7F1] border border-[#E5D9C8] focus:bg-white focus:border-[#EF7F1A] focus:ring-1 focus:ring-[#EF7F1A] rounded-xl pl-9 pr-3 py-2 text-xs text-[#204563] placeholder-[#526A7B]/60 outline-hidden transition-all"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-[#204563] uppercase tracking-wider mb-1">
                   Primary DTF / UV-DTF Printer
                 </label>
                 <div className="relative">
-                  <Printer className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Printer className="w-4 h-4 text-[#526A7B] absolute left-3 top-1/2 -translate-y-1/2" />
                   <select
                     value={registerData.printerModel}
                     onChange={(e) => setRegisterData({ ...registerData, printerModel: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 outline-hidden transition-all font-medium"
+                    className="w-full bg-[#FAF7F1] border border-[#E5D9C8] focus:bg-white focus:border-[#EF7F1A] focus:ring-1 focus:ring-[#EF7F1A] rounded-xl pl-9 pr-3 py-2 text-xs text-[#204563] outline-hidden transition-all font-medium"
                   >
                     <option value='24" Dual Epson i3200 (Hoson / Maintop)'>24" Dual Epson i3200 (Hoson / Maintop)</option>
                     <option value='22" 4-Head High Volume Roll Line'>22" 4-Head High Volume Roll Line</option>
@@ -374,34 +371,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-bold text-[#204563] uppercase tracking-wider mb-1">
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-4 h-4 text-[#526A7B] absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={registerData.password}
                       onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                       placeholder="Min 6 chars"
-                      className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 outline-hidden transition-all"
+                      className="w-full bg-[#FAF7F1] border border-[#E5D9C8] focus:bg-white focus:border-[#EF7F1A] focus:ring-1 focus:ring-[#EF7F1A] rounded-xl pl-9 pr-3 py-2 text-xs text-[#204563] placeholder-[#526A7B]/60 outline-hidden transition-all"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-bold text-[#204563] uppercase tracking-wider mb-1">
                     Confirm Password
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-4 h-4 text-[#526A7B] absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={registerData.confirmPassword}
                       onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
                       placeholder="Repeat"
-                      className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 outline-hidden transition-all"
+                      className="w-full bg-[#FAF7F1] border border-[#E5D9C8] focus:bg-white focus:border-[#EF7F1A] focus:ring-1 focus:ring-[#EF7F1A] rounded-xl pl-9 pr-3 py-2 text-xs text-[#204563] placeholder-[#526A7B]/60 outline-hidden transition-all"
                       required
                     />
                   </div>
@@ -413,9 +410,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   type="checkbox"
                   checked={registerData.termsAccepted}
                   onChange={(e) => setRegisterData({ ...registerData, termsAccepted: e.target.checked })}
-                  className="rounded mt-0.5 bg-slate-100 border-slate-300 text-indigo-600 focus:ring-0 focus:ring-offset-0"
+                  className="rounded mt-0.5 bg-[#FAF7F1] border-[#E5D9C8] text-[#EF7F1A] focus:ring-0 focus:ring-offset-0"
                 />
-                <span className="text-slate-600 text-xs leading-tight">
+                <span className="text-[#526A7B] text-xs leading-tight">
                   I agree to the Gang Sheet Automation Service Terms, RIP TIFF Export standards, and Print Preflight rules.
                 </span>
               </label>
@@ -423,17 +420,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-2 py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-indigo-600/20 flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-60"
+                className="w-full mt-2 py-3 px-4 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs rounded-xl shadow-md shadow-orange-500/25 flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-60"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#204563]" />
                     <span>Creating Production Account...</span>
                   </>
                 ) : (
                   <>
-                    <span>Create Free Account & Launch</span>
-                    <Sparkles className="w-4 h-4" />
+                    <span>Create Free Account &amp; Launch</span>
+                    <Sparkles className="w-4 h-4 text-[#204563]" />
                   </>
                 )}
               </button>

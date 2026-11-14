@@ -110,7 +110,7 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
               onClick={() => onUpdateSettings({ lengthMode: 'auto' })}
               className={`px-2 py-0.5 rounded transition-all ${
                 settings.lengthMode === 'auto'
-                  ? 'bg-indigo-600 text-white font-bold'
+                  ? 'bg-[#EF7F1A] text-[#204563] font-black'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -120,7 +120,7 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
               onClick={() => onUpdateSettings({ lengthMode: 'fixed' })}
               className={`px-2 py-0.5 rounded transition-all ${
                 settings.lengthMode === 'fixed'
-                  ? 'bg-indigo-600 text-white font-bold'
+                  ? 'bg-[#EF7F1A] text-[#204563] font-black'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -139,7 +139,7 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
         <span className="text-slate-600">•</span>
         <span>
           Length:{' '}
-          <strong className="text-indigo-400">
+          <strong className="text-[#EF7F1A]">
             {formatUnit(mmToUnit(layout.usedLengthMm, settings.unit), settings.unit, 1)}{' '}
             {settings.unit === 'inch' ? 'in' : settings.unit}
           </strong>{' '}
@@ -158,7 +158,7 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
           onClick={onOpenPreviewModal}
           className="flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-colors"
         >
-          <Eye className="w-3.5 h-3.5 text-indigo-400" />
+          <Eye className="w-3.5 h-3.5 text-[#EF7F1A]" />
           <span className="hidden md:inline">Preview</span>
         </button>
 
@@ -167,14 +167,14 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
           <div className="inline-flex rounded shadow-xs">
             <button
               onClick={onExportPng}
-              className="flex items-center space-x-1.5 px-3 py-1 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-l transition-colors"
+              className="flex items-center space-x-1.5 px-3 py-1 text-xs font-bold text-white bg-[#204563] hover:bg-[#18364e] rounded-l transition-colors"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-[#EF7F1A]" />
               <span>Download</span>
             </button>
             <button
               onClick={() => setDownloadMenuOpen(!downloadMenuOpen)}
-              className="px-1.5 py-1 text-xs font-bold text-white bg-indigo-700 hover:bg-indigo-600 rounded-r border-l border-indigo-500/40 transition-colors"
+              className="px-1.5 py-1 text-xs font-bold text-white bg-[#18364e] hover:bg-[#204563] rounded-r border-l border-[#EF7F1A]/40 transition-colors"
             >
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
@@ -188,7 +188,7 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
             >
               <button
                 onClick={onExportPng}
-                className="w-full flex items-center space-x-2 p-2 rounded hover:bg-indigo-950/80 text-left text-xs transition-colors"
+                className="w-full flex items-center space-x-2 p-2 rounded hover:bg-[#132537] text-left text-xs transition-colors"
               >
                 <FileImage className="w-4 h-4 text-emerald-400" />
                 <div>
@@ -199,9 +199,9 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
 
               <button
                 onClick={onExportPdf}
-                className="w-full flex items-center space-x-2 p-2 rounded hover:bg-indigo-950/80 text-left text-xs transition-colors"
+                className="w-full flex items-center space-x-2 p-2 rounded hover:bg-[#132537] text-left text-xs transition-colors"
               >
-                <FileText className="w-4 h-4 text-indigo-400" />
+                <FileText className="w-4 h-4 text-[#EF7F1A]" />
                 <div>
                   <div className="font-bold text-white">Production High-Res PDF</div>
                   <div className="text-[10px] text-slate-400">Standard document sheet</div>
@@ -210,9 +210,9 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
 
               <button
                 onClick={onExportJobTicket}
-                className="w-full flex items-center space-x-2 p-2 rounded hover:bg-indigo-950/80 text-left text-xs transition-colors"
+                className="w-full flex items-center space-x-2 p-2 rounded hover:bg-[#132537] text-left text-xs transition-colors"
               >
-                <Layers className="w-4 h-4 text-purple-400" />
+                <Layers className="w-4 h-4 text-[#EF7F1A]" />
                 <div>
                   <div className="font-bold text-white">Job Ticket (JSON)</div>
                   <div className="text-[10px] text-slate-400">Placements & cut coordinates</div>
@@ -226,9 +226,9 @@ export const ProductionBottomBar: React.FC<ProductionBottomBarProps> = ({
         <button
           onClick={onGenerateLayout}
           disabled={isGenerating}
-          className="flex items-center space-x-1.5 px-4 py-1 text-xs font-black text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded transition-all shadow-md active:scale-95 disabled:opacity-50"
+          className="flex items-center space-x-1.5 px-4 py-1 text-xs font-black text-[#204563] bg-[#EF7F1A] hover:bg-[#d97014] rounded transition-all shadow-md active:scale-95 disabled:opacity-50"
         >
-          <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
+          <Sparkles className="w-3.5 h-3.5 text-[#204563]" />
           <span>{isGenerating ? 'Packing...' : 'Generate Layout'}</span>
         </button>
       </div>

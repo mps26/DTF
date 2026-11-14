@@ -568,7 +568,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
           <div className="h-5 w-px bg-slate-200" />
 
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/25">
+            <div className="w-9 h-9 rounded-xl bg-[#204563] flex items-center justify-center text-white shadow-md shadow-[#204563]/25">
               <FileStack className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -576,7 +576,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 <span className="font-black text-sm text-slate-900 tracking-tight uppercase">
                   RIP TIFF Channel Compositor
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-[#EF7F1A]/10 text-[#EF7F1A] border border-[#EF7F1A]/30 px-2 py-0.5 rounded-full">
                   Multi-Channel Engine
                 </span>
               </div>
@@ -597,7 +597,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
             }}
             className={`px-3.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
               !uvDtfEnabled
-                ? 'bg-white text-indigo-900 shadow-xs font-black'
+                ? 'bg-[#204563] text-white shadow-xs font-black'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -612,14 +612,14 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
             }}
             className={`px-3.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
               uvDtfEnabled
-                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs font-black'
+                ? 'bg-[#EF7F1A] text-[#204563] shadow-xs font-black'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>UVDTF</span>
             <span className={`text-[9px] px-1.5 py-0.2 rounded-full uppercase font-black ${
-              uvDtfEnabled ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700'
+              uvDtfEnabled ? 'bg-[#204563]/20 text-[#204563]' : 'bg-[#EF7F1A]/20 text-[#EF7F1A]'
             }`}>
               W2
             </span>
@@ -658,8 +658,8 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
               </span>
               <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                 uvDtfEnabled
-                  ? 'bg-purple-50 text-purple-700 border-purple-200'
-                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                  ? 'bg-[#FAF7F1] text-[#204563] border-[#E5D9C8]'
+                  : 'bg-[#FAF7F1] text-[#204563] border-[#E5D9C8]'
               }`}>
                 {uvDtfEnabled ? 'UV-DTF · Varnish Active' : 'DTF · Textile Active'}
               </span>
@@ -675,7 +675,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 }}
                 className={`p-3 rounded-2xl border text-left transition-all relative cursor-pointer group flex flex-col justify-between ${
                   !uvDtfEnabled
-                    ? 'bg-gradient-to-b from-indigo-50/90 to-blue-50/40 border-2 border-indigo-600 shadow-xs'
+                    ? 'bg-[#FAF7F1] border-2 border-[#204563] shadow-xs'
                     : 'bg-slate-50/80 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
@@ -683,14 +683,14 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1.5">
                       <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                        !uvDtfEnabled ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
+                        !uvDtfEnabled ? 'bg-[#204563] text-white' : 'bg-slate-200 text-slate-600'
                       }`}>
                         <Shirt className="w-3.5 h-3.5" />
                       </div>
                       <span className="font-black text-sm tracking-tight text-slate-900">DTF</span>
                     </div>
                     {!uvDtfEnabled && (
-                      <span className="w-4.5 h-4.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                      <span className="w-4.5 h-4.5 rounded-full bg-[#204563] text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
                         ✓
                       </span>
                     )}
@@ -701,7 +701,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 </div>
 
                 <div className="mt-2.5 pt-2 border-t border-slate-200 flex items-center justify-between text-[10px]">
-                  <span className={`font-bold font-mono ${!uvDtfEnabled ? 'text-indigo-700' : 'text-slate-500'}`}>
+                  <span className={`font-bold font-mono ${!uvDtfEnabled ? 'text-[#204563]' : 'text-slate-500'}`}>
                     CMYK, W1
                   </span>
                   <span className="text-slate-400 font-medium">Textile</span>
@@ -717,7 +717,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 }}
                 className={`p-3 rounded-2xl border text-left transition-all relative cursor-pointer group flex flex-col justify-between ${
                   uvDtfEnabled
-                    ? 'bg-gradient-to-b from-purple-50/90 to-fuchsia-50/40 border-2 border-purple-600 shadow-xs'
+                    ? 'bg-[#FAF7F1] border-2 border-[#EF7F1A] shadow-xs'
                     : 'bg-slate-50/80 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
@@ -725,25 +725,25 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1.5">
                       <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                        uvDtfEnabled ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-600'
+                        uvDtfEnabled ? 'bg-[#EF7F1A] text-[#204563] font-black' : 'bg-slate-200 text-slate-600'
                       }`}>
                         <Sparkles className="w-3.5 h-3.5" />
                       </div>
                       <span className="font-black text-sm tracking-tight text-slate-900">UVDTF</span>
                     </div>
                     {uvDtfEnabled && (
-                      <span className="w-4.5 h-4.5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                      <span className="w-4.5 h-4.5 rounded-full bg-[#EF7F1A] text-[#204563] font-black flex items-center justify-center text-[10px] shadow-xs">
                         ✓
                       </span>
                     )}
                   </div>
-                  <div className="text-[11px] font-semibold text-purple-700 mt-2">
+                  <div className="text-[11px] font-semibold text-[#204563] mt-2">
                     UV + Varnish Gloss
                   </div>
                 </div>
 
-                <div className="mt-2.5 pt-2 border-t border-purple-200/80 flex items-center justify-between text-[10px]">
-                  <span className={`font-bold font-mono ${uvDtfEnabled ? 'text-purple-700' : 'text-slate-500'}`}>
+                <div className="mt-2.5 pt-2 border-t border-[#E5D9C8] flex items-center justify-between text-[10px]">
+                  <span className={`font-bold font-mono ${uvDtfEnabled ? 'text-[#204563]' : 'text-slate-500'}`}>
                     CMYK, W1, W2
                   </span>
                   <span className="text-slate-400 font-medium">Hard Goods</span>
@@ -764,7 +764,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                   {sheetWidth} × {sheetHeight}" · {sheetDpi} DPI
                 </span>
                 <div className="w-5 h-5 flex items-center justify-center text-slate-400">
-                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.sheet ? 'rotate-90 text-indigo-600' : ''}`} />
+                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.sheet ? 'rotate-90 text-[#EF7F1A]' : ''}`} />
                 </div>
               </div>
             </div>
@@ -863,11 +863,11 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                     }}
                     className={`py-2 px-4 rounded-full border text-xs font-bold transition-all flex items-center space-x-2 shadow-2xs cursor-pointer ${
                       isLayerLifted
-                        ? 'bg-indigo-50/90 text-indigo-950 border-2 border-indigo-600 shadow-xs'
+                        ? 'bg-[#FAF7F1] text-[#204563] border-2 border-[#EF7F1A] shadow-xs'
                         : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
                     }`}
                   >
-                    <Layers className={`w-4 h-4 ${isLayerLifted ? 'text-indigo-600' : 'text-slate-500'}`} />
+                    <Layers className={`w-4 h-4 ${isLayerLifted ? 'text-[#EF7F1A]' : 'text-slate-500'}`} />
                     <span>{isLayerLifted ? 'Put the layers back' : 'Lift the layers'}</span>
                   </button>
                 </div>
@@ -890,7 +890,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                       onClick={() => setColorMode('cmyk')}
                       className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                         colorMode === 'cmyk'
-                          ? 'bg-white text-indigo-950 font-black shadow-xs'
+                          ? 'bg-white text-[#204563] font-black shadow-xs'
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
@@ -988,7 +988,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                   {ripPreset === 'maintop' ? 'Maintop · W1' : ripPreset === 'riin' ? 'RIIN · W1' : ripPreset === 'printfactory' ? 'PrintFactory · White' : ripPreset === 'flexi' ? 'Flexi · Spot_White' : `${ripPreset} · ${whiteChannelName}`}
                 </span>
                 <div className="w-5 h-5 flex items-center justify-center text-slate-400">
-                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.rip ? 'rotate-90 text-indigo-600' : ''}`} />
+                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.rip ? 'rotate-90 text-[#EF7F1A]' : ''}`} />
                 </div>
               </div>
             </div>
@@ -1001,14 +1001,14 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                     onClick={() => handleSelectRipPreset('maintop')}
                     className={`p-3 rounded-2xl border text-left transition-all relative ${
                       ripPreset === 'maintop'
-                        ? 'bg-indigo-50/70 border-indigo-600 text-indigo-950 shadow-xs ring-1 ring-indigo-600/30'
+                        ? 'bg-white border-[#204563] text-[#204563] shadow-xs ring-1 ring-[#204563]/30'
                         : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     <div className="font-extrabold text-[13px] text-slate-900 flex items-center justify-between">
                       <span>Maintop</span>
                       {ripPreset === 'maintop' && (
-                        <span className="w-4.5 h-4.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">
+                        <span className="w-4.5 h-4.5 rounded-full bg-[#204563] text-white flex items-center justify-center text-[10px]">
                           ✓
                         </span>
                       )}
@@ -1020,7 +1020,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                     onClick={() => handleSelectRipPreset('riin')}
                     className={`p-3 rounded-2xl border text-left transition-all ${
                       ripPreset === 'riin'
-                        ? 'bg-indigo-50/70 border-indigo-600 text-indigo-950 shadow-xs ring-1 ring-indigo-600/30'
+                        ? 'bg-white border-[#204563] text-[#204563] shadow-xs ring-1 ring-[#204563]/30'
                         : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
@@ -1032,7 +1032,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                     onClick={() => handleSelectRipPreset('printfactory')}
                     className={`p-3 rounded-2xl border text-left transition-all ${
                       ripPreset === 'printfactory'
-                        ? 'bg-indigo-50/70 border-indigo-600 text-indigo-950 shadow-xs ring-1 ring-indigo-600/30'
+                        ? 'bg-white border-[#204563] text-[#204563] shadow-xs ring-1 ring-[#204563]/30'
                         : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
@@ -1044,7 +1044,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                     onClick={() => handleSelectRipPreset('flexi')}
                     className={`p-3 rounded-2xl border text-left transition-all ${
                       ripPreset === 'flexi'
-                        ? 'bg-indigo-50/70 border-indigo-600 text-indigo-950 shadow-xs ring-1 ring-indigo-600/30'
+                        ? 'bg-white border-[#204563] text-[#204563] shadow-xs ring-1 ring-[#204563]/30'
                         : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
@@ -1058,7 +1058,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                   onClick={() => handleSelectRipPreset('other')}
                   className={`w-full p-3 rounded-2xl border text-left transition-all ${
                     ripPreset === 'other'
-                      ? 'bg-indigo-50/70 border-indigo-600 text-indigo-950 shadow-xs ring-1 ring-indigo-600/30'
+                      ? 'bg-white border-[#204563] text-[#204563] shadow-xs ring-1 ring-[#204563]/30'
                       : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
@@ -1093,7 +1093,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                   </div>
                   <button
                     onClick={handleResetToMaintop}
-                    className="text-[11px] font-bold text-slate-500 hover:text-indigo-600 transition-colors"
+                    className="text-[11px] font-bold text-slate-500 hover:text-[#EF7F1A] transition-colors"
                   >
                     Reset to Maintop default
                   </button>
@@ -1114,7 +1114,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                   {chokePx} px choke · {whiteStrength}%
                 </span>
                 <div className="w-5 h-5 flex items-center justify-center text-slate-400">
-                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.white ? 'rotate-90 text-indigo-600' : ''}`} />
+                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.white ? 'rotate-90 text-[#EF7F1A]' : ''}`} />
                 </div>
               </div>
             </div>
@@ -1131,7 +1131,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                         onClick={() => setChokePx(px)}
                         className={`flex-1 py-1.5 rounded-full text-xs font-bold border transition-all ${
                           chokePx === px
-                            ? 'bg-indigo-50 border-indigo-600 text-indigo-900 font-extrabold shadow-2xs'
+                            ? 'bg-[#FAF7F1] border-[#204563] text-[#204563] font-black shadow-2xs'
                             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                         }`}
                       >
@@ -1177,7 +1177,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                     max="100"
                     value={whiteStrength}
                     onChange={(e) => setWhiteStrength(Number(e.target.value))}
-                    className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                    className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                   />
                 </div>
 
@@ -1218,7 +1218,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                         onClick={() => setCleanFaintEdgePixels(m)}
                         className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize border transition-all ${
                           cleanFaintEdgePixels === m
-                            ? 'bg-indigo-50 border-indigo-600 text-indigo-900 font-extrabold shadow-2xs'
+                            ? 'bg-[#FAF7F1] border-[#204563] text-[#204563] font-black shadow-2xs'
                             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                         }`}
                       >
@@ -1267,7 +1267,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 </button>
 
                 <div className="w-5 h-5 flex items-center justify-center text-slate-400">
-                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.uv ? 'rotate-90 text-indigo-600' : ''}`} />
+                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.uv ? 'rotate-90 text-[#EF7F1A]' : ''}`} />
                 </div>
               </div>
             </div>
@@ -1275,10 +1275,10 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
             {openCards.uv && (
               <div className="px-5 pb-5 pt-2 space-y-4 border-t border-[#f3e8ff]/80 bg-[#faf5ff] animate-in fade-in">
                 {!uvDtfEnabled && (
-                  <div className="p-3 bg-purple-100/80 border border-purple-200/90 rounded-2xl flex items-center justify-between">
+                  <div className="p-3 bg-[#FAF7F1] border border-[#E5D9C8] rounded-2xl flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-bold text-purple-950">Varnish is currently turned off</div>
-                      <div className="text-[11px] text-purple-700">Turn on the switch to enable UV DTF Varnish layer</div>
+                      <div className="text-xs font-bold text-[#204563]">Varnish is currently turned off</div>
+                      <div className="text-[11px] text-[#204563]">Turn on the switch to enable UV DTF Varnish layer</div>
                     </div>
                     <button
                       type="button"
@@ -1286,7 +1286,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                         setUvDtfEnabled(true);
                         onNotification('UVDTF Varnish enabled');
                       }}
-                      className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex-shrink-0"
+                      className="px-3.5 py-1.5 bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] font-black text-xs font-bold rounded-xl shadow-xs transition-all flex-shrink-0"
                     >
                       Enable
                     </button>
@@ -1340,7 +1340,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                         onClick={() => setVarnishOffsetPx(px)}
                         className={`flex-1 py-1.5 rounded-full text-xs font-bold border transition-all ${
                           varnishOffsetPx === px
-                            ? 'bg-indigo-50 border-indigo-600 text-indigo-900 font-extrabold shadow-2xs'
+                            ? 'bg-[#FAF7F1] border-[#204563] text-[#204563] font-black shadow-2xs'
                             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                         }`}
                       >
@@ -1362,7 +1362,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                     max="100"
                     value={varnishStrength}
                     onChange={(e) => setVarnishStrength(Number(e.target.value))}
-                    className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                    className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                   />
                 </div>
               </div>
@@ -1381,7 +1381,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                   {fileOutputMode === 'one' ? 'One TIFF' : 'Separate TIFFs'}
                 </span>
                 <div className="w-5 h-5 flex items-center justify-center text-slate-400">
-                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.files ? 'rotate-90 text-indigo-600' : ''}`} />
+                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${openCards.files ? 'rotate-90 text-[#EF7F1A]' : ''}`} />
                 </div>
               </div>
             </div>
@@ -1415,7 +1415,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 <div className="pt-2">
                   <button
                     onClick={handleResetToMaintop}
-                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                    className="text-xs font-bold text-[#EF7F1A] hover:text-[#d97014] underline cursor-pointer"
                   >
                     Clear all
                   </button>
@@ -1438,7 +1438,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 onClick={() => setActiveChannelView('composite')}
                 className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeChannelView === 'composite'
-                    ? 'bg-indigo-600 text-white shadow-xs'
+                    ? 'bg-[#204563] text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="Composite Full Print"
@@ -1452,7 +1452,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 onClick={() => setActiveChannelView('cmyk')}
                 className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeChannelView === 'cmyk'
-                    ? 'bg-indigo-600 text-white shadow-xs'
+                    ? 'bg-[#204563] text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title={`${colorMode.toUpperCase()} Color Pass`}
@@ -1596,12 +1596,12 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                     {/* Right side "+ Add sheet" placeholder matching screenshot */}
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      className="ml-24 w-36 h-80 rounded-3xl border-2 border-dashed border-indigo-300/80 hover:border-indigo-600 bg-white/40 hover:bg-white/80 transition-all flex flex-col items-center justify-center cursor-pointer group shadow-2xs hidden xl:flex"
+                      className="ml-24 w-36 h-80 rounded-3xl border-2 border-dashed border-[#E5D9C8] hover:border-[#EF7F1A] bg-white/40 hover:bg-white/80 transition-all flex flex-col items-center justify-center cursor-pointer group shadow-2xs hidden xl:flex"
                     >
-                      <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform mb-1">
+                      <div className="w-8 h-8 rounded-full bg-[#FAF7F1] text-[#EF7F1A] flex items-center justify-center group-hover:scale-110 transition-transform mb-1">
                         +
                       </div>
-                      <span className="text-xs font-bold text-indigo-600 group-hover:underline">
+                      <span className="text-xs font-bold text-[#EF7F1A] group-hover:underline">
                         Add sheet
                       </span>
                     </div>
@@ -1645,7 +1645,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
             ) : (
               /* CLEAN EMPTY STATE (No prior image) */
               <div className="flex flex-col items-center justify-center text-center p-8 max-w-md bg-white border border-slate-200 rounded-3xl shadow-lg space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                <div className="w-16 h-16 rounded-2xl bg-[#FAF7F1] border border-[#E5D9C8] flex items-center justify-center text-[#EF7F1A] shadow-sm">
                   <FileStack className="w-8 h-8" />
                 </div>
                 <div>
@@ -1660,7 +1660,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 <div className="flex flex-col sm:flex-row items-center gap-2 pt-2 w-full">
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] font-black text-xs shadow-md shadow-[#EF7F1A]/20 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
                     <UploadCloud className="w-4 h-4" />
                     <span>Browse PNGs</span>
@@ -1671,7 +1671,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                       onClick={handleImportCurrentGangSheet}
                       className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-200 transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
                     >
-                      <Layers className="w-4 h-4 text-indigo-600" />
+                      <Layers className="w-4 h-4 text-[#EF7F1A]" />
                       <span>Import Gang Sheet</span>
                     </button>
                   )}
@@ -1684,24 +1684,24 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
               <div className="absolute bottom-4 right-4 z-20 flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-700">
                 <button
                   onClick={() => setZoom((z) => Math.max(0.2, z - 0.1))}
-                  className="hover:text-indigo-600 transition-colors cursor-pointer"
+                  className="hover:text-[#EF7F1A] transition-colors cursor-pointer"
                   title="Zoom Out"
                 >
                   <ZoomOut className="w-3.5 h-3.5" />
                 </button>
-                <span className="font-mono text-indigo-700 w-12 text-center">
+                <span className="font-mono text-[#204563] w-12 text-center">
                   {Math.round(zoom * 100)}%
                 </span>
                 <button
                   onClick={() => setZoom((z) => Math.min(3, z + 0.1))}
-                  className="hover:text-indigo-600 transition-colors cursor-pointer"
+                  className="hover:text-[#EF7F1A] transition-colors cursor-pointer"
                   title="Zoom In"
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setZoom(1)}
-                  className="text-[10px] text-slate-500 hover:text-indigo-600 font-bold pl-1.5 border-l border-slate-200 cursor-pointer"
+                  className="text-[10px] text-slate-500 hover:text-[#EF7F1A] font-bold pl-1.5 border-l border-slate-200 cursor-pointer"
                   title="Fit 100%"
                 >
                   Fit 100%
@@ -1749,7 +1749,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/40 hover:bg-indigo-50/80 rounded-2xl p-5 text-center cursor-pointer transition-all group"
+              className="border-2 border-dashed border-[#E5D9C8] hover:border-[#EF7F1A] bg-[#FAF7F1] hover:bg-[#F3EBDD]/50 rounded-2xl p-5 text-center cursor-pointer transition-all group"
             >
               <input
                 ref={fileInputRef}
@@ -1759,7 +1759,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                 onChange={(e) => e.target.files && handleFiles(e.target.files)}
                 className="hidden"
               />
-              <div className="w-10 h-10 rounded-xl bg-white text-indigo-600 border border-indigo-100 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 shadow-xs transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-white text-[#EF7F1A] border border-[#E5D9C8] flex items-center justify-center mx-auto mb-2 group-hover:scale-110 shadow-xs transition-transform">
                 <UploadCloud className="w-5 h-5" />
               </div>
               <div className="font-extrabold text-xs text-slate-800">
@@ -1770,7 +1770,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
               </p>
               <button
                 type="button"
-                className="mt-3 px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 shadow-xs transition-colors"
+                className="mt-3 px-3.5 py-1.5 rounded-xl bg-[#EF7F1A] text-[#204563] font-black text-xs hover:bg-[#d97014] shadow-xs transition-colors"
               >
                 Browse PNGs
               </button>
@@ -1784,7 +1784,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
               {currentAssets.length > 0 && queue.length === 0 && (
                 <button
                   onClick={handleImportCurrentGangSheet}
-                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                  className="text-[10px] font-bold text-[#EF7F1A] hover:text-[#d97014] hover:underline"
                 >
                   + Add Active Gang Sheet
                 </button>
@@ -1806,7 +1806,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                       onClick={() => setSelectedQueueId(item.id)}
                       className={`p-2 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
                         isSelected
-                          ? 'border-indigo-600 bg-indigo-50/70 shadow-xs'
+                          ? 'border-[#204563] bg-[#FAF7F1] shadow-xs'
                           : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
@@ -1832,7 +1832,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                             e.stopPropagation();
                             handleExportTiff(item);
                           }}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-[#EF7F1A] hover:bg-white rounded-lg transition-colors"
                           title="Export this TIFF"
                         >
                           <Download className="w-3.5 h-3.5" />
@@ -1870,7 +1870,7 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
                   <span>Color Mode: {colorMode === 'cmyk' ? 'Photometric 5 (CMYK)' : 'Photometric 2 (RGB)'}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <CheckCircle2 className={`w-3.5 h-3.5 flex-shrink-0 ${uvDtfEnabled ? 'text-purple-600' : 'text-indigo-600'}`} />
+                  <CheckCircle2 className={`w-3.5 h-3.5 flex-shrink-0 text-[#EF7F1A]`} />
                   <span className="font-semibold text-slate-800">
                     Process: {uvDtfEnabled ? 'UVDTF (Hard Goods + W2 Varnish)' : 'DTF (Textile + W1 White)'}
                   </span>
@@ -1891,11 +1891,11 @@ export const TiffExportStudio: React.FC<TiffExportStudioProps> = ({
               disabled={isProcessing || !activeItem}
               className={`w-full py-3 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center space-x-2 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
                 uvDtfEnabled
-                  ? 'bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-600/20'
-                  : 'bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-indigo-600/20'
+                  ? 'bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] font-black'
+                  : 'bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] font-black'
               }`}
             >
-              <Zap className="w-4 h-4 text-white" />
+              <Zap className="w-4 h-4 text-[#204563]" />
               <span>
                 {isProcessing
                   ? 'Generating TIFF...'

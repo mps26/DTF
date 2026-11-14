@@ -34,7 +34,7 @@ export const ToolGrid: React.FC<ToolGridProps> = ({ onSelectTool, collapsed = fa
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+            className="text-xs font-bold text-[#204563] hover:text-[#EF7F1A] transition-colors"
           >
             {collapsed ? 'Show Tool Palette' : 'Hide Tool Palette'}
           </button>
@@ -44,9 +44,9 @@ export const ToolGrid: React.FC<ToolGridProps> = ({ onSelectTool, collapsed = fa
       {!collapsed && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Group 1: FIX & QUALITY */}
-          <div className="bg-gradient-to-b from-indigo-50/40 to-white p-3.5 rounded-2xl border border-indigo-100/70 shadow-sm">
+          <div className="bg-[#FAF7F1] p-3.5 rounded-2xl border border-[#E5D9C8] shadow-sm">
             <div className="flex items-center justify-between mb-2.5 px-1">
-              <span className="text-[11px] font-extrabold tracking-wider text-indigo-700 uppercase">
+              <span className="text-[11px] font-extrabold tracking-wider text-[#204563] uppercase">
                 Fix & Quality
               </span>
             </div>
@@ -54,13 +54,13 @@ export const ToolGrid: React.FC<ToolGridProps> = ({ onSelectTool, collapsed = fa
               {/* Image Upscaler */}
               <button
                 onClick={() => onSelectTool('upscale')}
-                className="bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/60 p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group relative overflow-hidden"
+                className="bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] hover:border-[#EF7F1A] p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group relative overflow-hidden"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                  <div className="w-6 h-6 rounded-lg bg-[#204563] text-[#EF7F1A] flex items-center justify-center shadow-xs">
                     <Maximize2 className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.5 rounded-full">
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-[#EF7F1A] text-[#204563] px-1.5 py-0.5 rounded-full">
                     AI TOOL
                   </span>
                 </div>
@@ -123,10 +123,10 @@ export const ToolGrid: React.FC<ToolGridProps> = ({ onSelectTool, collapsed = fa
               {/* Remove/Replace Color */}
               <button
                 onClick={() => onSelectTool('remove-color')}
-                className="bg-indigo-50/70 hover:bg-indigo-100/80 border border-indigo-200/60 p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
+                className="bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] hover:border-[#EF7F1A] p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                  <div className="w-6 h-6 rounded-lg bg-[#204563] text-[#EF7F1A] flex items-center justify-center shadow-xs">
                     <Pipette className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -179,9 +179,9 @@ export const ToolGrid: React.FC<ToolGridProps> = ({ onSelectTool, collapsed = fa
           </div>
 
           {/* Group 3: STYLE & EFFECTS */}
-          <div className="bg-gradient-to-b from-purple-50/40 to-white p-3.5 rounded-2xl border border-purple-100/70 shadow-sm">
+          <div className="bg-[#FAF7F1] p-3.5 rounded-2xl border border-[#E5D9C8] shadow-sm">
             <div className="flex items-center justify-between mb-2.5 px-1">
-              <span className="text-[11px] font-extrabold tracking-wider text-purple-700 uppercase">
+              <span className="text-[11px] font-extrabold tracking-wider text-[#204563] uppercase">
                 Style & Effects
               </span>
             </div>
@@ -189,13 +189,13 @@ export const ToolGrid: React.FC<ToolGridProps> = ({ onSelectTool, collapsed = fa
               {/* Texture Effects */}
               <button
                 onClick={() => onSelectTool('texture')}
-                className="bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/60 p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
+                className="bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] hover:border-[#EF7F1A] p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                  <div className="w-6 h-6 rounded-lg bg-[#204563] text-[#EF7F1A] flex items-center justify-center shadow-xs">
                     <Layers className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.5 rounded-full">
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-[#EF7F1A] text-[#204563] px-1.5 py-0.5 rounded-full">
                     11
                   </span>
                 </div>
@@ -206,10 +206,10 @@ export const ToolGrid: React.FC<ToolGridProps> = ({ onSelectTool, collapsed = fa
               {/* Halftone */}
               <button
                 onClick={() => onSelectTool('halftone')}
-                className="bg-violet-50/70 hover:bg-violet-100/80 border border-violet-200/60 p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
+                className="bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] hover:border-[#EF7F1A] p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="w-6 h-6 rounded-lg bg-violet-600 text-white flex items-center justify-center shadow-xs">
+                  <div className="w-6 h-6 rounded-lg bg-[#204563] text-[#EF7F1A] flex items-center justify-center shadow-xs">
                     <CircleDot className="w-3.5 h-3.5" />
                   </div>
                   <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">
@@ -261,13 +261,13 @@ export const ToolGrid: React.FC<ToolGridProps> = ({ onSelectTool, collapsed = fa
               {/* Image Vectoriser */}
               <button
                 onClick={() => onSelectTool('vectorize')}
-                className="bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/60 p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
+                className="bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] hover:border-[#EF7F1A] p-2.5 rounded-xl text-left transition-all hover:scale-[1.02] group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                  <div className="w-6 h-6 rounded-lg bg-[#204563] text-[#EF7F1A] flex items-center justify-center shadow-xs">
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.5 rounded-full">
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-[#EF7F1A] text-[#204563] px-1.5 py-0.5 rounded-full">
                     AI TOOL
                   </span>
                 </div>

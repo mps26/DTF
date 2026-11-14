@@ -17,23 +17,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   onReset
 }) => {
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-indigo-100/60 sticky top-0 z-40 transition-all">
+    <header className="bg-white/95 backdrop-blur-md border-b border-[#E5D9C8] sticky top-0 z-40 transition-all">
       <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand / Logo */}
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20 text-white font-black text-xl">
-            <Layers className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl bg-[#204563] flex items-center justify-center shadow-md shadow-[#204563]/20 text-white font-black text-xl">
+            <Layers className="w-5 h-5 text-[#EF7F1A]" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 bg-clip-text text-transparent">
+              <span className="font-extrabold text-xl tracking-tight text-[#204563]">
                 DTF Set Files
               </span>
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/60 rounded-full">
+              <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-[#FAF7F1] text-[#EF7F1A] border border-[#E5D9C8] rounded-full">
                 Auto Gang Sheet Pro
               </span>
             </div>
-            <p className="text-xs text-slate-500 hidden sm:block">
+            <p className="text-xs text-[#526A7B] hidden sm:block">
               Print Preparation & Automatic Nesting Engine
             </p>
           </div>
@@ -41,21 +41,21 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Pills & Shortcuts */}
         <div className="flex items-center space-x-2 sm:space-x-3">
-          <div className="hidden lg:flex items-center bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 text-xs">
+          <div className="hidden lg:flex items-center bg-[#FAF7F1] p-1 rounded-xl border border-[#E5D9C8] text-xs">
             <button
               onClick={onLoadSampleMulti}
-              className="px-3 py-1.5 rounded-lg font-medium text-slate-700 hover:text-indigo-600 hover:bg-white transition-all flex items-center space-x-1.5"
+              className="px-3 py-1.5 rounded-lg font-bold text-[#204563] hover:text-[#EF7F1A] hover:bg-white transition-all flex items-center space-x-1.5"
               title="Load the 4 reference designs from the specification screenshot"
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+              <Sparkles className="w-3.5 h-3.5 text-[#EF7F1A]" />
               <span>Multi-Design Demo</span>
             </button>
             <button
               onClick={onLoadSampleRepeat}
-              className="px-3 py-1.5 rounded-lg font-medium text-slate-700 hover:text-indigo-600 hover:bg-white transition-all flex items-center space-x-1.5"
+              className="px-3 py-1.5 rounded-lg font-bold text-[#204563] hover:text-[#EF7F1A] hover:bg-white transition-all flex items-center space-x-1.5"
               title="Load Screen 1 (om.png x 10 copies)"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-purple-500" />
+              <RotateCcw className="w-3.5 h-3.5 text-[#EF7F1A]" />
               <span>Repeat 10× Demo</span>
             </button>
           </div>
@@ -70,15 +70,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={onOpenHowToUse}
-            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm transition-all"
+            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold text-[#204563] hover:text-[#EF7F1A] bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] shadow-sm transition-all"
           >
-            <HelpCircle className="w-4 h-4 text-indigo-500" />
+            <HelpCircle className="w-4 h-4 text-[#EF7F1A]" />
             <span>How to use</span>
           </button>
 
           <button
             onClick={onReset}
-            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+            className="p-2 text-[#526A7B] hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
             title="Reset Workspace"
           >
             <RotateCcw className="w-4 h-4" />

@@ -122,34 +122,34 @@ export const ProductionHistoryView: React.FC<ProductionHistoryViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#f8fafc] text-slate-800 overflow-hidden font-sans select-none">
+    <div className="flex-1 flex flex-col h-full bg-[#F3EBDD] text-[#204563] overflow-hidden font-sans select-none">
       {/* Top Console Header */}
-      <div className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between flex-shrink-0 z-20">
+      <div className="h-16 bg-white border-b border-[#E5D9C8] px-6 flex items-center justify-between flex-shrink-0 z-20">
         <div className="flex items-center space-x-4">
           <button
             type="button"
             onClick={onBackToStudio}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors border border-slate-200 shadow-2xs cursor-pointer"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-[#FAF7F1] hover:bg-[#E8DDCA] text-[#204563] text-xs font-bold transition-colors border border-[#E5D9C8] shadow-2xs cursor-pointer"
           >
             <span>← Back to Gang Sheet</span>
           </button>
 
-          <div className="h-5 w-px bg-slate-200" />
+          <div className="h-5 w-px bg-[#E5D9C8]" />
 
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/25">
-              <Clock className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-[#204563] flex items-center justify-center text-[#EF7F1A] shadow-md shadow-[#204563]/25 border border-[#183750]">
+              <Clock className="w-4 h-4 text-[#EF7F1A]" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-black text-sm text-slate-900 tracking-tight uppercase">
-                  Production History & Export Log
+                <span className="font-black text-sm text-[#204563] tracking-tight uppercase">
+                  Production History &amp; Export Log
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-[#FCE8D5] text-[#204563] border border-[#EF7F1A]/30 px-2 py-0.5 rounded-full">
                   {jobs.length} Logged Runs
                 </span>
               </div>
-              <div className="text-[11px] text-slate-500 font-medium">
+              <div className="text-[11px] text-[#526A7B] font-medium">
                 Detailed audit trail of generated RIP TIFFs, high-res gang sheets, and film consumption
               </div>
             </div>
@@ -161,9 +161,9 @@ export const ProductionHistoryView: React.FC<ProductionHistoryViewProps> = ({
           <button
             type="button"
             onClick={handleSaveCurrentJob}
-            className="h-9 px-3.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 flex items-center space-x-1.5 transition-colors cursor-pointer"
+            className="h-9 px-3.5 bg-[#FAF7F1] hover:bg-[#FCE8D5] text-[#204563] font-bold text-xs rounded-xl border border-[#E5D9C8] flex items-center space-x-1.5 transition-colors cursor-pointer"
           >
-            <CheckCircle2 className="w-4 h-4" />
+            <CheckCircle2 className="w-4 h-4 text-[#EF7F1A]" />
             <span>Log Active Sheet to History</span>
           </button>
 
@@ -182,47 +182,47 @@ export const ProductionHistoryView: React.FC<ProductionHistoryViewProps> = ({
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-36 sm:pb-6 space-y-6">
         {jobs.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-md mx-auto my-12 shadow-xs">
-            <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="font-extrabold text-base text-slate-900">No Production History Yet</h3>
-            <p className="text-xs text-slate-500 mt-1">
+          <div className="bg-white rounded-3xl border border-[#E5D9C8] p-12 text-center max-w-md mx-auto my-12 shadow-xs">
+            <Clock className="w-12 h-12 text-[#526A7B]/40 mx-auto mb-3" />
+            <h3 className="font-extrabold text-base text-[#204563]">No Production History Yet</h3>
+            <p className="text-xs text-[#526A7B] mt-1">
               Whenever you generate and download a gang sheet or TIFF export, it will be automatically logged here.
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-              <span className="font-extrabold text-xs text-slate-700 uppercase tracking-wider">
+          <div className="bg-white rounded-3xl border border-[#E5D9C8] shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-[#E5D9C8] flex items-center justify-between bg-[#FAF7F1]">
+              <span className="font-extrabold text-xs text-[#204563] uppercase tracking-wider">
                 Production Job Queue History
               </span>
-              <span className="text-[11px] font-mono text-slate-400">
+              <span className="text-[11px] font-mono text-[#526A7B]">
                 Sorted by most recent
               </span>
             </div>
 
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[#E5D9C8]">
               {jobs.map((job) => (
                 <div
                   key={job.id}
-                  className="p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors"
+                  className="p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-[#FAF7F1]/60 transition-colors"
                 >
                   {/* Left Column: Job Info */}
                   <div className="flex items-start space-x-4">
-                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-black text-xs font-mono shadow-2xs flex-shrink-0">
+                    <div className="w-10 h-10 rounded-2xl bg-[#FAF7F1] border border-[#E5D9C8] text-[#204563] flex items-center justify-center font-black text-xs font-mono shadow-2xs flex-shrink-0">
                       {job.id.replace('JOB-', '')}
                     </div>
 
                     <div>
                       <div className="flex items-center space-x-2">
-                        <span className="font-extrabold text-sm text-slate-900 tracking-tight">
+                        <span className="font-extrabold text-sm text-[#204563] tracking-tight">
                           {job.name}
                         </span>
                         <span
                           className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
                             job.exportFormat === 'TIFF_UVDTF'
-                              ? 'bg-purple-50 text-purple-700 border-purple-200'
+                              ? 'bg-[#FCE8D5] text-[#204563] border-[#EF7F1A]/30'
                               : job.exportFormat === 'TIFF_DTF'
-                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                              ? 'bg-[#FAF7F1] text-[#204563] border-[#E5D9C8]'
                               : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           }`}
                         >
@@ -230,9 +230,9 @@ export const ProductionHistoryView: React.FC<ProductionHistoryViewProps> = ({
                         </span>
                       </div>
 
-                      <div className="flex items-center space-x-3 text-xs text-slate-500 font-mono mt-1">
+                      <div className="flex items-center space-x-3 text-xs text-[#526A7B] font-mono mt-1">
                         <span className="flex items-center space-x-1">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          <Calendar className="w-3.5 h-3.5 text-[#526A7B]" />
                           <span>{job.createdAt}</span>
                         </span>
                         <span>•</span>
@@ -250,16 +250,16 @@ export const ProductionHistoryView: React.FC<ProductionHistoryViewProps> = ({
                     <button
                       type="button"
                       onClick={onBackToStudio}
-                      className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center space-x-1.5 cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
                     >
                       <span>Open in Studio</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-3.5 h-3.5 text-[#204563]" />
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleDeleteJob(job.id)}
-                      className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-xl bg-[#FAF7F1] hover:bg-rose-50 text-[#526A7B] hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer border border-[#E5D9C8]"
                       title="Delete log entry"
                     >
                       <Trash2 className="w-4 h-4" />

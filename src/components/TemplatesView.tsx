@@ -86,7 +86,7 @@ const PRESET_TEMPLATES: TemplatePreset[] = [
     marginIn: 0.25,
     recommendedFor: 'Standard 22" Commercial Roll with dynamic continuous height (till 99.5")',
     algorithm: 'true-shape',
-    color: 'from-blue-600 to-indigo-600',
+    color: 'from-[#204563] to-[#204563]',
     badge: '22" × 99.5" (MAX)',
     topLabel: '22',
     sideLabel: 'height (till 99.5)',
@@ -104,7 +104,7 @@ const PRESET_TEMPLATES: TemplatePreset[] = [
     marginIn: 0.2,
     recommendedFor: '22.2" Master Wide Roll with full printable edge and continuous feed (till 99.5")',
     algorithm: 'true-shape',
-    color: 'from-indigo-600 to-purple-600',
+    color: 'from-[#EF7F1A] to-[#d96e12]',
     badge: '22.2" × 99.5" (MAX)',
     topLabel: '22.2',
     sideLabel: 'height (till 99.5)',
@@ -166,7 +166,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
       marginIn: currentSettings.margin || 0.25,
       recommendedFor: 'Custom User Gang Sheet Configuration',
       algorithm: currentSettings.nestingAlgorithm || 'true-shape',
-      color: 'from-indigo-600 to-blue-600',
+      color: 'from-[#204563] to-[#EF7F1A]',
       badge: 'CUSTOM',
       topLabel: `${w}`,
       sideLabel: isFix ? `${l}` : `till ${l}`,
@@ -200,34 +200,34 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
   });
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#f8fafc] text-slate-800 overflow-hidden font-sans select-none">
+    <div className="flex-1 flex flex-col h-full bg-[#F3EBDD] text-[#204563] overflow-hidden font-sans select-none">
       {/* Top Console Header */}
-      <div className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between flex-shrink-0 z-20">
+      <div className="h-16 bg-white border-b border-[#E5D9C8] px-6 flex items-center justify-between flex-shrink-0 z-20">
         <div className="flex items-center space-x-4">
           <button
             type="button"
             onClick={onBackToStudio}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold transition-colors border border-slate-200 shadow-2xs cursor-pointer"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-[#FAF7F1] hover:bg-[#E8DDCA] text-[#204563] text-xs font-bold transition-colors border border-[#E5D9C8] shadow-2xs cursor-pointer"
           >
             <span>← Back to Gang Sheet</span>
           </button>
 
-          <div className="h-5 w-px bg-slate-200" />
+          <div className="h-5 w-px bg-[#E5D9C8]" />
 
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/25">
-              <Copy className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-[#204563] flex items-center justify-center text-[#EF7F1A] shadow-md shadow-[#204563]/25 border border-[#183750]">
+              <Copy className="w-4 h-4 text-[#EF7F1A]" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-black text-sm text-slate-900 tracking-tight uppercase">
+                <span className="font-black text-sm text-[#204563] tracking-tight uppercase">
                   Standard Gang Sheet Templates
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-[#FCE8D5] text-[#204563] border border-[#EF7F1A]/30 px-2 py-0.5 rounded-full">
                   Width × Height Presets
                 </span>
               </div>
-              <div className="text-[11px] text-slate-500 font-medium">
+              <div className="text-[11px] text-[#526A7B] font-medium">
                 Standard cut sheets (11" × 8", 11" × 17") &amp; production rolls (22", 22.2" × up to 99.5")
               </div>
             </div>
@@ -239,9 +239,9 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
           <button
             type="button"
             onClick={handleSaveCurrentAsTemplate}
-            className="h-9 px-4 bg-white hover:bg-slate-50 text-indigo-600 hover:text-indigo-700 border border-indigo-200 font-extrabold text-xs rounded-xl shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+            className="h-9 px-4 bg-white hover:bg-[#FAF7F1] text-[#204563] hover:text-[#EF7F1A] border border-[#E5D9C8] font-black text-xs rounded-xl shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
           >
-            <BookmarkPlus className="w-4 h-4" />
+            <BookmarkPlus className="w-4 h-4 text-[#EF7F1A]" />
             <span>Save Current Sheet as Template</span>
           </button>
         </div>
@@ -265,8 +265,8 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
                 onClick={() => setSelectedCategory(cat.id as any)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   selectedCategory === cat.id
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 shadow-2xs'
+                    ? 'bg-[#EF7F1A] text-[#204563] shadow-xs font-black'
+                    : 'bg-white hover:bg-[#FAF7F1] text-[#526A7B] hover:text-[#204563] border border-[#E5D9C8] shadow-2xs'
                 }`}
               >
                 {cat.label}
@@ -274,7 +274,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
             ))}
           </div>
 
-          <div className="text-xs text-slate-500 font-medium font-mono">
+          <div className="text-xs text-[#526A7B] font-medium font-mono">
             Showing {filteredTemplates.length} Production Template(s)
           </div>
         </div>
@@ -284,123 +284,115 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
           {filteredTemplates.map((tpl) => (
             <div
               key={tpl.id}
-              className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden"
+              className="bg-white rounded-3xl border border-[#E5D9C8] p-5 shadow-xs hover:shadow-md hover:border-[#EF7F1A] transition-all flex flex-col justify-between group relative overflow-hidden"
             >
-              {/* Top Accent Gradient Bar */}
-              <div className={`h-1.5 w-full absolute top-0 left-0 bg-gradient-to-r ${tpl.color}`} />
+              {/* Top Accent Bar */}
+              <div className="h-1.5 w-full absolute top-0 left-0 bg-[#EF7F1A]" />
 
               <div className="space-y-4">
                 {/* Header: Title & Badge */}
                 <div className="flex items-start justify-between pt-1">
                   <div>
-                    <h3 className="font-black text-sm text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors">
+                    <h3 className="font-black text-sm text-[#204563] tracking-tight group-hover:text-[#EF7F1A] transition-colors">
                       {tpl.name}
                     </h3>
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
+                    <p className="text-[11px] text-[#526A7B] font-medium mt-0.5 leading-snug">
                       {tpl.recommendedFor}
                     </p>
                   </div>
-                  <span className="text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex-shrink-0 ml-2">
+                  <span className="text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full bg-[#FCE8D5] text-[#204563] border border-[#EF7F1A]/30 flex-shrink-0 ml-2">
                     {tpl.badge}
                   </span>
                 </div>
 
-                {/* Aspect Ratio Illustration Box — Architectural drafting representation matching Images 1 & 2 */}
-                <div className="h-56 rounded-2xl bg-[#f8fafc] border border-slate-200/90 flex flex-col items-center justify-center p-3 relative overflow-hidden group-hover:border-indigo-300 transition-colors">
+                {/* Aspect Ratio Illustration Box */}
+                <div className="h-56 rounded-2xl bg-[#FAF7F1] border border-[#E5D9C8] flex flex-col items-center justify-center p-3 relative overflow-hidden group-hover:border-[#EF7F1A] transition-colors">
                   {/* Subtle Blueprint Dot Grid */}
-                  <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:10px_10px] pointer-events-none" />
+                  <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#526A7B_1px,transparent_1px)] [background-size:10px_10px] pointer-events-none" />
 
-                  {/* Top Dimension Indicator (Width on Top) */}
+                  {/* Top Dimension Indicator */}
                   <div className="relative z-10 flex flex-col items-center mb-1.5" style={{ width: `${tpl.boxWidthPx}px` }}>
-                    <span className="font-mono font-black text-xs text-indigo-900 bg-white/95 px-2.5 py-0.5 rounded-md border border-indigo-200 shadow-2xs">
+                    <span className="font-mono font-black text-xs text-[#204563] bg-white px-2.5 py-0.5 rounded-md border border-[#E5D9C8] shadow-2xs">
                       {tpl.topLabel}
                     </span>
                     {/* Measurement horizontal line with ticks */}
-                    <div className="w-full flex items-center justify-between text-indigo-400 text-[10px] px-0.5 mt-0.5">
+                    <div className="w-full flex items-center justify-between text-[#EF7F1A] text-[10px] px-0.5 mt-0.5">
                       <span className="leading-none select-none">◀</span>
-                      <div className="flex-1 border-t-2 border-indigo-400/80 mx-1"></div>
+                      <div className="flex-1 border-t-2 border-[#EF7F1A] mx-1"></div>
                       <span className="leading-none select-none">▶</span>
                     </div>
                   </div>
 
-                  {/* Main Diagram Area: Box + Side Dimension */}
+                  {/* Main Diagram Area */}
                   <div className="relative z-10 flex items-center justify-center">
-                    {/* Box Layer Stack */}
                     <div className="relative">
-                      {/* Layer 1: Offset secondary background rectangle (matches handwritten sketches in Images 1 & 2) */}
                       <div
-                        className="absolute -top-2 -right-2 border-2 border-slate-300/90 bg-slate-200/40 rounded-lg pointer-events-none transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        className="absolute -top-2 -right-2 border-2 border-[#E5D9C8] bg-[#E8DDCA]/40 rounded-lg pointer-events-none transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                         style={{ width: `${tpl.boxWidthPx}px`, height: `${tpl.boxHeightPx}px` }}
                       />
 
-                      {/* Layer 2: Primary foreground rectangle (Solid blue/indigo border as drawn in pen) */}
                       <div
-                        className="relative border-2 border-indigo-600 bg-white shadow-md rounded-lg flex flex-col items-center justify-center p-2 transition-transform group-hover:scale-102 overflow-hidden"
+                        className="relative border-2 border-[#204563] bg-white shadow-md rounded-lg flex flex-col items-center justify-center p-2 transition-transform group-hover:scale-102 overflow-hidden"
                         style={{ width: `${tpl.boxWidthPx}px`, height: `${tpl.boxHeightPx}px` }}
                       >
-                        {/* Subtle internal film texture */}
-                        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(#312e81_1px,transparent_1px)] [background-size:6px_6px] pointer-events-none" />
-
-                        {/* Film Header Perforation / Feed indicator */}
-                        <div className="w-8 h-1 rounded-full bg-indigo-200/80 mb-2 pointer-events-none" />
+                        <div className="w-8 h-1 rounded-full bg-[#EF7F1A] mb-2 pointer-events-none" />
 
                         <div className="relative z-10 text-center">
-                          <div className="font-black font-mono text-xs text-slate-900 leading-tight">
+                          <div className="font-black font-mono text-xs text-[#204563] leading-tight">
                             {tpl.widthIn}" × {tpl.lengthIn === 99.5 ? '99.5"' : `${tpl.lengthIn}"`}
                           </div>
-                          <div className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-600 mt-0.5">
+                          <div className="text-[9px] font-extrabold uppercase tracking-wider text-[#EF7F1A] mt-0.5">
                             {tpl.isFixed ? 'Cut Sheet' : 'Continuous Roll'}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Right Side Dimension Indicator (Height on Right Side) */}
+                    {/* Right Side Dimension Indicator */}
                     <div className="flex items-center ml-3" style={{ height: `${tpl.boxHeightPx}px` }}>
-                      {/* Vertical measurement line with ticks */}
-                      <div className="h-full flex flex-col items-center justify-between text-indigo-400 text-[10px] py-0.5 mr-1.5">
+                      <div className="h-full flex flex-col items-center justify-between text-[#EF7F1A] text-[10px] py-0.5 mr-1.5">
                         <span className="leading-none select-none">▲</span>
-                        <div className="flex-1 border-l-2 border-indigo-400/80 my-1"></div>
+                        <div className="flex-1 border-l-2 border-[#EF7F1A] my-1"></div>
                         <span className="leading-none select-none">▼</span>
                       </div>
-                      <span className="font-mono font-black text-xs text-indigo-900 bg-white/95 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs whitespace-nowrap">
+                      <span className="font-mono font-black text-xs text-[#204563] bg-white px-2 py-0.5 rounded-md border border-[#E5D9C8] shadow-2xs whitespace-nowrap">
                         {tpl.sideLabel}
                       </span>
                     </div>
                   </div>
 
                   {/* Bottom Info Ribbon */}
-                  <div className="absolute bottom-1.5 left-3 text-[10px] font-mono text-slate-400">
+                  <div className="absolute bottom-1.5 left-3 text-[10px] font-mono text-[#526A7B]">
                     {tpl.isFixed ? 'Cut Sheet' : 'Variable Feed (≤ 99.5")'}
                   </div>
                 </div>
 
                 {/* Technical Specs Grid */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] text-slate-400 font-semibold block uppercase">Width (Top)</span>
-                    <span className="font-extrabold text-slate-800 font-mono">
+                  <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8]">
+                    <span className="text-[10px] text-[#526A7B] font-semibold block uppercase">Width (Top)</span>
+                    <span className="font-extrabold text-[#204563] font-mono">
                       {tpl.widthIn}"
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] text-slate-400 font-semibold block uppercase">Height (Side)</span>
-                    <span className="font-extrabold text-slate-800 font-mono">
+                  <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8]">
+                    <span className="text-[10px] text-[#526A7B] font-semibold block uppercase">Height (Side)</span>
+                    <span className="font-extrabold text-[#204563] font-mono">
                       {tpl.isFixed ? `${tpl.lengthIn}"` : 'till 99.5"'}
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] text-slate-400 font-semibold block uppercase">Spacing / Margin</span>
-                    <span className="font-extrabold text-slate-800 font-mono">
+                  <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8]">
+                    <span className="text-[10px] text-[#526A7B] font-semibold block uppercase">Spacing / Margin</span>
+                    <span className="font-extrabold text-[#204563] font-mono">
                       {tpl.spacingIn}" / {tpl.marginIn}"
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] text-slate-400 font-semibold block uppercase">Nesting Mode</span>
-                    <span className="font-extrabold text-indigo-700 font-mono text-[11px]">
+                  <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8]">
+                    <span className="text-[10px] text-[#526A7B] font-semibold block uppercase">Nesting Mode</span>
+                    <span className="font-extrabold text-[#204563] font-mono text-[11px]">
                       {tpl.algorithm === 'true-shape' ? 'True-Shape' : 'Box Packing'}
                     </span>
                   </div>
@@ -408,7 +400,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
               </div>
 
               {/* Bottom Actions */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2 mt-4">
+              <div className="pt-4 border-t border-[#E5D9C8] flex items-center justify-between gap-2 mt-4">
                 {tpl.badge === 'CUSTOM' ? (
                   <button
                     type="button"
@@ -428,10 +420,10 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleApply(tpl)}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer group-hover:scale-102"
+                  className="px-4 py-2 rounded-xl bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer group-hover:scale-102"
                 >
                   <span>Apply Template</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 text-[#204563]" />
                 </button>
               </div>
             </div>

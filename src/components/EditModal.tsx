@@ -130,7 +130,7 @@ export const EditModal: React.FC<EditModalProps> = ({
       name: 'Fix & Quality',
       icon: Sparkles,
       tools: [
-        { id: 'upscaler', name: 'Image Upscaler', desc: 'Sharpen & 2x/4x enlarge resolution', badge: 'AI', badgeColor: 'bg-purple-100 text-purple-700 border-purple-200' },
+        { id: 'upscaler', name: 'Image Upscaler', desc: 'Sharpen & 2x/4x enlarge resolution', badge: 'AI', badgeColor: 'bg-[#EF7F1A]/10 text-[#EF7F1A] border-[#EF7F1A]/30' },
         { id: 'color-tone', name: 'Color & Tone', desc: 'Levels, saturation, contrast & balance' },
         { id: 'pixel-doctor', name: 'Pixel Doctor', desc: 'Clean stray pixels & edge fringes' },
         { id: 'print-check', name: 'Print Check', desc: 'Automated pre-print audit', badge: 'AUDIT', badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
@@ -153,7 +153,7 @@ export const EditModal: React.FC<EditModalProps> = ({
       name: 'Style & Effects',
       icon: Wand2,
       tools: [
-        { id: 'texture', name: 'Texture Effects', desc: '11 creative color & texture filters', badge: '11', badgeColor: 'bg-purple-100 text-purple-700 border-purple-200' },
+        { id: 'texture', name: 'Texture Effects', desc: '11 creative color & texture filters', badge: '11', badgeColor: 'bg-[#EF7F1A]/10 text-[#EF7F1A] border-[#EF7F1A]/30' },
         { id: 'halftone', name: 'Halftone Dots', desc: 'Screen dots for breathable prints', badge: 'PRINT', badgeColor: 'bg-teal-100 text-teal-700 border-teal-200' },
         { id: 'stroke-outline', name: 'Stroke / Outline', desc: 'Contour edge outline & choke' }
       ]
@@ -165,8 +165,8 @@ export const EditModal: React.FC<EditModalProps> = ({
       tools: [
         { id: 'text-number', name: 'Text & Number', desc: 'Team jersey & typography generator', badge: 'NEW', badgeColor: 'bg-amber-100 text-amber-800 border-amber-200' },
         { id: 'vectorize', name: 'Image Vectoriser', desc: 'Trace bitmap to sharp vector paths', badge: 'SVG', badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-200' },
-        { id: 'recreate-ai', name: 'Recreate with AI', desc: 'Redraw and enhance low-res artwork', badge: 'AI', badgeColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200' },
-        { id: 'tiff-export', name: 'TIFF Export (RIP)', desc: 'Generate multi-channel W1 underbase', badge: 'RIP', badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200' }
+        { id: 'recreate-ai', name: 'Recreate with AI', desc: 'Redraw and enhance low-res artwork', badge: 'AI', badgeColor: 'bg-[#EF7F1A]/10 text-[#EF7F1A] border-[#EF7F1A]/30' },
+        { id: 'tiff-export', name: 'TIFF Export (RIP)', desc: 'Generate multi-channel W1 underbase', badge: 'RIP', badgeColor: 'bg-[#204563]/10 text-[#204563] border-[#204563]/30' }
       ]
     }
   ];
@@ -1376,14 +1376,14 @@ export const EditModal: React.FC<EditModalProps> = ({
       <div className="bg-white text-slate-800 rounded-3xl border border-slate-200 shadow-2xl max-w-6xl w-full h-[94vh] flex flex-col overflow-hidden">
         
         {/* Top Header Bar: Clean White with Crisp Dark Typography */}
-        <div className="px-6 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-3.5 border-b border-[#E5D9C8] bg-white flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/25">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-2xl bg-[#204563] flex items-center justify-center text-[#EF7F1A] shadow-md shadow-[#204563]/25">
+              <Sparkles className="w-5 h-5 text-[#EF7F1A]" />
             </div>
             <div>
               <div className="flex items-center space-x-2.5">
-                <h3 className="font-black text-base text-slate-900 tracking-tight">
+                <h3 className="font-black text-base text-[#204563] tracking-tight">
                   Design Studio & Image Suite
                 </h3>
                 {assets && assets.length > 1 ? (
@@ -1395,15 +1395,15 @@ export const EditModal: React.FC<EditModalProps> = ({
                         const prevIdx = (idx - 1 + assets.length) % assets.length;
                         handleSwitchAsset(assets[prevIdx]);
                       }}
-                      className="p-1 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                      className="p-1 rounded-lg text-[#526A7B] hover:text-[#EF7F1A] hover:bg-[#FAF7F1] transition-colors cursor-pointer"
                       title="Previous image"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
                     </button>
 
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center space-x-1.5 shadow-xs">
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#FAF7F1] text-[#204563] border border-[#E5D9C8] flex items-center space-x-1.5 shadow-xs">
                       <span className="truncate max-w-[140px]">{currentAsset.filename}</span>
-                      <span className="text-[10px] text-indigo-500 font-extrabold">
+                      <span className="text-[10px] text-[#EF7F1A] font-extrabold">
                         ({assets.findIndex((a) => a.id === currentAsset.id) + 1}/{assets.length})
                       </span>
                     </span>
@@ -1415,20 +1415,20 @@ export const EditModal: React.FC<EditModalProps> = ({
                         const nextIdx = (idx + 1) % assets.length;
                         handleSwitchAsset(assets[nextIdx]);
                       }}
-                      className="p-1 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                      className="p-1 rounded-lg text-[#526A7B] hover:text-[#EF7F1A] hover:bg-[#FAF7F1] transition-colors cursor-pointer"
                       title="Next image"
                     >
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ) : (
-                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#FAF7F1] text-[#204563] border border-[#E5D9C8]">
                     {currentAsset.filename}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 font-medium">
-                Active: <span className="text-indigo-600 font-bold capitalize">{activeTool.replace('-', ' ')}</span> • {currentAsset.trimmedWidth || currentAsset.originalWidth || imageNaturalSize.width} × {currentAsset.trimmedHeight || currentAsset.originalHeight || imageNaturalSize.height} px • 300 DPI High-Res
+              <p className="text-xs text-[#526A7B] font-medium">
+                Active: <span className="text-[#EF7F1A] font-bold capitalize">{activeTool.replace('-', ' ')}</span> • {currentAsset.trimmedWidth || currentAsset.originalWidth || imageNaturalSize.width} × {currentAsset.trimmedHeight || currentAsset.originalHeight || imageNaturalSize.height} px • 300 DPI High-Res
               </p>
             </div>
           </div>
@@ -1443,17 +1443,17 @@ export const EditModal: React.FC<EditModalProps> = ({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center space-x-1.5 border border-slate-200 shadow-xs"
+              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#FAF7F1] text-[#204563] text-xs font-bold transition-all flex items-center space-x-1.5 border border-[#E5D9C8] shadow-xs"
               title="Replace current image"
             >
-              <UploadCloud className="w-3.5 h-3.5 text-slate-600" />
+              <UploadCloud className="w-3.5 h-3.5 text-[#204563]" />
               <span>Replace File</span>
             </button>
 
             <button
               onClick={handleUndo}
               disabled={historyIndex <= 0}
-              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 transition-all border border-slate-200 cursor-pointer"
+              className="p-2 rounded-xl text-[#526A7B] hover:text-[#204563] hover:bg-[#FAF7F1] disabled:opacity-30 transition-all border border-[#E5D9C8] cursor-pointer"
               title="Undo last change"
             >
               <RotateCcw className="w-4 h-4" />
@@ -1462,7 +1462,7 @@ export const EditModal: React.FC<EditModalProps> = ({
             <button
               onClick={handleRedo}
               disabled={historyIndex >= history.length - 1}
-              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 transition-all border border-slate-200 cursor-pointer"
+              className="p-2 rounded-xl text-[#526A7B] hover:text-[#204563] hover:bg-[#FAF7F1] disabled:opacity-30 transition-all border border-[#E5D9C8] cursor-pointer"
               title="Redo last undone change"
             >
               <RotateCw className="w-4 h-4" />
@@ -1478,7 +1478,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all ml-1"
+              className="p-2 rounded-xl text-[#526A7B] hover:text-[#204563] hover:bg-[#FAF7F1] transition-all ml-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -1486,7 +1486,7 @@ export const EditModal: React.FC<EditModalProps> = ({
         </div>
 
         {/* 1. TOP CATEGORY SWITCHER (Clean White Tabs) */}
-        <div className="bg-slate-50 border-b border-slate-200 px-6 py-2 flex items-center space-x-2 overflow-x-auto flex-shrink-0">
+        <div className="bg-[#FAF7F1] border-b border-[#E5D9C8] px-6 py-2 flex items-center space-x-2 overflow-x-auto flex-shrink-0">
           {categories.map((cat) => {
             const Icon = cat.icon;
             const isCatActive = activeCategory === cat.id;
@@ -1509,14 +1509,14 @@ export const EditModal: React.FC<EditModalProps> = ({
                 }}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${
                   isCatActive
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-600/20'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-[#204563] text-white shadow-md shadow-[#204563]/25 ring-2 ring-[#204563]/20'
+                    : 'bg-white text-[#204563] hover:bg-[#FAF7F1] border border-[#E5D9C8]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isCatActive ? 'text-white' : 'text-indigo-600'}`} />
+                <Icon className={`w-4 h-4 ${isCatActive ? 'text-[#EF7F1A]' : 'text-[#204563]'}`} />
                 <span>{cat.name}</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  isCatActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                  isCatActive ? 'bg-white/20 text-white' : 'bg-[#FAF7F1] text-[#526A7B]'
                 }`}>
                   {cat.tools.length}
                 </span>
@@ -1526,8 +1526,8 @@ export const EditModal: React.FC<EditModalProps> = ({
         </div>
 
         {/* 2. SUB-BAR: ALL TOOLS OF ACTIVE CATEGORY PROMINENTLY VISIBLE */}
-        <div className="bg-white border-b border-slate-200 px-6 py-2.5 flex items-center space-x-2 overflow-x-auto flex-shrink-0">
-          <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mr-2 flex-shrink-0">
+        <div className="bg-white border-b border-[#E5D9C8] px-6 py-2.5 flex items-center space-x-2 overflow-x-auto flex-shrink-0">
+          <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#526A7B] mr-2 flex-shrink-0">
             {currentCategoryObj.name} Tools:
           </div>
           {currentCategoryObj.tools.map((t) => {
@@ -1546,14 +1546,14 @@ export const EditModal: React.FC<EditModalProps> = ({
                 }}
                 className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
                   isToolActive
-                    ? 'bg-indigo-50 border-2 border-indigo-600 text-indigo-900 shadow-xs'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/90'
+                    ? 'bg-[#EF7F1A] border-2 border-[#EF7F1A] text-[#204563] font-black shadow-xs'
+                    : 'bg-[#FAF7F1] hover:bg-white text-[#204563] border border-[#E5D9C8]'
                 }`}
               >
                 <span>{t.name}</span>
                 {t.badge && (
                   <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md uppercase border ${
-                    t.badgeColor || 'bg-slate-100 text-slate-600 border-slate-200'
+                    t.badgeColor || 'bg-white text-[#204563] border-[#E5D9C8]'
                   }`}>
                     {t.badge}
                   </span>
@@ -1567,35 +1567,35 @@ export const EditModal: React.FC<EditModalProps> = ({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           
           {/* Left Canvas Preview Pane with Garment Simulator & Checkerboard */}
-          <div className="flex-1 bg-slate-100 p-4 sm:p-6 pt-16 flex flex-col items-center justify-center relative overflow-auto min-w-0 min-h-0">
+          <div className="flex-1 bg-[#F3EBDD] p-4 sm:p-6 pt-16 flex flex-col items-center justify-center relative overflow-auto min-w-0 min-h-0">
             
             {/* Viewport Zoom & Garment Background Strip */}
-            <div className="absolute top-4 left-4 z-20 flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-700">
-              <span className="text-[10px] uppercase text-slate-400 font-extrabold mr-1">Zoom:</span>
+            <div className="absolute top-4 left-4 z-20 flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#E5D9C8] shadow-sm text-xs font-bold text-[#204563]">
+              <span className="text-[10px] uppercase text-[#526A7B] font-extrabold mr-1">Zoom:</span>
               <button
                 onClick={() => setZoom((z) => Math.max(0.3, Number((z - 0.15).toFixed(2))))}
-                className="p-1 hover:text-indigo-600 transition-colors"
+                className="p-1 hover:text-[#EF7F1A] transition-colors"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setZoom(1)}
-                className="text-[11px] font-mono text-indigo-700 w-10 text-center font-bold hover:underline cursor-pointer"
+                className="text-[11px] font-mono text-[#204563] w-10 text-center font-bold hover:underline cursor-pointer"
                 title="Reset zoom to 100%"
               >
                 {Math.round(zoom * 100)}%
               </button>
               <button
                 onClick={() => setZoom((z) => Math.min(3, Number((z + 0.15).toFixed(2))))}
-                className="p-1 hover:text-indigo-600 transition-colors"
+                className="p-1 hover:text-[#EF7F1A] transition-colors"
                 title="Zoom In"
               >
                 <ZoomIn className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setZoom(1)}
-                className="text-[10px] text-slate-500 hover:text-slate-900 ml-1 pl-1.5 border-l border-slate-200 cursor-pointer font-bold"
+                className="text-[10px] text-[#526A7B] hover:text-[#204563] ml-1 pl-1.5 border-l border-[#E5D9C8] cursor-pointer font-bold"
               >
                 Fit
               </button>
@@ -1606,8 +1606,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                     if (activeTool === 'vectorize') setVectorCompareMode(!vectorCompareMode);
                     if (activeTool === 'upscaler') setUpscaleCompareMode(!upscaleCompareMode);
                   }}
-                  className={`ml-2 pl-2 border-l border-slate-200 flex items-center space-x-1.5 text-xs font-bold transition-colors cursor-pointer ${
-                    (activeTool === 'vectorize' ? vectorCompareMode : upscaleCompareMode) ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'
+                  className={`ml-2 pl-2 border-l border-[#E5D9C8] flex items-center space-x-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                    (activeTool === 'vectorize' ? vectorCompareMode : upscaleCompareMode) ? 'text-[#EF7F1A]' : 'text-[#526A7B] hover:text-[#204563]'
                   }`}
                   title="Toggle Compare Side-by-Side"
                 >
@@ -1650,7 +1650,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       </span>
                     </div>
                     <div className="absolute top-2 right-2 z-20 pointer-events-none">
-                      <span className="px-2.5 py-1 rounded-full bg-indigo-600 text-white font-extrabold text-[10px] tracking-wide shadow-md">
+                      <span className="px-2.5 py-1 rounded-full bg-[#204563] text-white font-extrabold text-[10px] tracking-wide shadow-md">
                         {upscaledDims
                           ? `AI Upscaled (${upscaleFactor}× • ${upscaleSharpness}% Sharp): ${upscaledDims.width} × ${upscaledDims.height} px`
                           : `AI Target (${upscaleFactor}×): ${(currentAsset?.originalWidth || imageNaturalSize.width) * upscaleFactor} × ${(currentAsset?.originalHeight || imageNaturalSize.height) * upscaleFactor} px`}
@@ -1691,7 +1691,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       >
                         <div className="w-0.5 h-full bg-white shadow-md shadow-black/40" />
                         <div className="absolute w-7 h-7 rounded-full bg-white border border-slate-300 shadow-lg flex items-center justify-center text-slate-700 hover:scale-110 active:scale-95 transition-transform">
-                          <MoveHorizontal className="w-4 h-4 text-indigo-600" />
+                          <MoveHorizontal className="w-4 h-4 text-[#204563]" />
                         </div>
                       </div>
                     )}
@@ -1725,12 +1725,12 @@ export const EditModal: React.FC<EditModalProps> = ({
                   >
                     {/* Top Badges */}
                     <div className="absolute top-2 left-2 z-20 pointer-events-none">
-                      <span className="px-2.5 py-1 rounded-full bg-indigo-600 text-white font-extrabold text-[10px] tracking-wide shadow-md">
+                      <span className="px-2.5 py-1 rounded-full bg-[#204563] text-white font-extrabold text-[10px] tracking-wide shadow-md">
                         Original (Raster)
                       </span>
                     </div>
                     <div className="absolute top-2 right-2 z-20 pointer-events-none">
-                      <span className="px-2.5 py-1 rounded-full bg-blue-600 text-white font-extrabold text-[10px] tracking-wide shadow-md">
+                      <span className="px-2.5 py-1 rounded-full bg-[#EF7F1A] text-[#204563] font-black text-[10px] tracking-wide shadow-md">
                         {vectorizedSvgUrl ? 'Vectorized (SVG)' : 'Vectorized (Preview)'}
                       </span>
                     </div>
@@ -1769,7 +1769,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       >
                         <div className="w-0.5 h-full bg-white shadow-md shadow-black/40" />
                         <div className="absolute w-7 h-7 rounded-full bg-white border border-slate-300 shadow-lg flex items-center justify-center text-slate-700 hover:scale-110 active:scale-95 transition-transform">
-                          <MoveHorizontal className="w-4 h-4 text-indigo-600" />
+                          <MoveHorizontal className="w-4 h-4 text-[#204563]" />
                         </div>
                       </div>
                     )}
@@ -1937,8 +1937,8 @@ export const EditModal: React.FC<EditModalProps> = ({
             {/* Processing Indicator */}
             {isProcessing && (
               <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center z-30">
-                <div className="flex items-center space-x-2.5 px-5 py-2.5 bg-indigo-600 text-white rounded-2xl font-black text-xs shadow-xl animate-pulse">
-                  <Sparkles className="w-4 h-4 animate-spin" />
+                <div className="flex items-center space-x-2.5 px-5 py-2.5 bg-[#204563] text-white rounded-2xl font-black text-xs shadow-xl animate-pulse">
+                  <Sparkles className="w-4 h-4 animate-spin text-[#EF7F1A]" />
                   <span>Processing {activeTool.replace('-', ' ')}...</span>
                 </div>
               </div>
@@ -1946,20 +1946,20 @@ export const EditModal: React.FC<EditModalProps> = ({
           </div>
 
           {/* Right Tools Controls Pane: Clean White Panel */}
-          <div className="w-full md:w-96 bg-white border-l border-slate-200 p-5 flex flex-col justify-between overflow-y-auto flex-shrink-0">
+          <div className="w-full md:w-96 bg-white border-l border-[#E5D9C8] p-5 flex flex-col justify-between overflow-y-auto flex-shrink-0">
             <div className="space-y-4">
               
               {/* Tool Title & Description */}
-              <div className="border-b border-slate-100 pb-3">
+              <div className="border-b border-[#E5D9C8] pb-3">
                 <div className="flex items-center space-x-2">
-                  <h4 className="font-extrabold text-sm text-slate-900 capitalize">
+                  <h4 className="font-extrabold text-sm text-[#204563] capitalize">
                     {activeTool === 'texture' ? 'Texture Effects' : activeTool === 'stroke-outline' ? 'Stroke Outline' : activeTool.replace('-', ' ')}
                   </h4>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EF7F1A]/10 text-[#EF7F1A] border border-[#EF7F1A]/30 uppercase">
                     DTF Ready
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-[#526A7B] mt-1">
                   {activeTool === 'texture'
                     ? 'Apply creative texture and color effects to your image. Select an effect, adjust its intensity, and preview in real time.'
                     : 'Adjust settings below and preview results in real time before applying to your gang sheet.'}
@@ -1968,18 +1968,18 @@ export const EditModal: React.FC<EditModalProps> = ({
 
               {/* Uploaded Images Selector (Visible when multiple images uploaded) */}
               {assets && assets.length > 1 && (
-                <div className="bg-slate-50/90 border border-slate-200 rounded-2xl p-3 shadow-xs">
+                <div className="bg-[#FAF7F1] border border-[#E5D9C8] rounded-2xl p-3 shadow-xs">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-1.5">
-                      <Images className="w-3.5 h-3.5 text-indigo-600" />
-                      <span className="text-xs font-black text-slate-800">
+                      <Images className="w-3.5 h-3.5 text-[#204563]" />
+                      <span className="text-xs font-black text-[#204563]">
                         Uploaded Images
                       </span>
-                      <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-700">
+                      <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-[#204563]/10 text-[#204563]">
                         {assets.length}
                       </span>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400">
+                    <span className="text-[10px] font-bold text-[#526A7B]">
                       Click image to edit
                     </span>
                   </div>
@@ -1995,15 +1995,15 @@ export const EditModal: React.FC<EditModalProps> = ({
                           onClick={() => handleSwitchAsset(item)}
                           className={`group relative flex flex-col items-center p-1.5 rounded-xl border text-center transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-white border-indigo-600 ring-2 ring-indigo-500/30 shadow-sm shadow-indigo-600/10'
-                              : 'bg-white/80 border-slate-200 hover:bg-white hover:border-slate-300 hover:shadow-xs'
+                              ? 'bg-white border-[#204563] ring-2 ring-[#204563]/30 shadow-sm shadow-[#204563]/10'
+                              : 'bg-white/80 border-[#E5D9C8] hover:bg-white hover:border-[#204563]/40 hover:shadow-xs'
                           }`}
                           title={item.filename}
                         >
                           {/* Square Thumbnail */}
                           <div
                             className={`w-full aspect-square rounded-lg overflow-hidden flex items-center justify-center relative ${
-                              isSelected ? 'bg-indigo-50/30' : 'bg-slate-100'
+                              isSelected ? 'bg-[#FAF7F1]' : 'bg-slate-100'
                             }`}
                             style={{
                               backgroundImage: `
@@ -2021,13 +2021,13 @@ export const EditModal: React.FC<EditModalProps> = ({
                               className="w-full h-full object-contain p-0.5"
                             />
                             {isSelected && (
-                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-black shadow-xs">
+                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#204563] text-white flex items-center justify-center text-[9px] font-black shadow-xs">
                                 ✓
                               </div>
                             )}
                             <span
                               className={`absolute bottom-0.5 left-0.5 px-1 py-0.2 rounded text-[8px] font-black ${
-                                isSelected ? 'bg-indigo-600 text-white' : 'bg-black/60 text-white'
+                                isSelected ? 'bg-[#204563] text-white' : 'bg-black/60 text-white'
                               }`}
                             >
                               #{idx + 1}
@@ -2037,7 +2037,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                           {/* Filename */}
                           <span
                             className={`text-[10px] mt-1 font-bold truncate w-full block leading-tight ${
-                              isSelected ? 'text-indigo-700 font-extrabold' : 'text-slate-600 group-hover:text-slate-900'
+                              isSelected ? 'text-[#204563] font-extrabold' : 'text-[#526A7B] group-hover:text-[#204563]'
                             }`}
                             title={item.filename}
                           >
@@ -2054,7 +2054,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'upscaler' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-bold text-[#204563] block mb-1.5">
                       Upscale Resolution Factor
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -2066,12 +2066,12 @@ export const EditModal: React.FC<EditModalProps> = ({
                         }}
                         className={`p-2.5 rounded-xl text-left transition-all cursor-pointer ${
                           upscaleFactor === 2
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-600/20'
-                            : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                            ? 'bg-[#204563] text-white shadow-md shadow-[#204563]/30 ring-2 ring-[#204563]/20'
+                            : 'bg-[#FAF7F1] text-[#204563] hover:bg-white border border-[#E5D9C8]'
                         }`}
                       >
                         <div className="text-xs font-black">2× Super-Resolution</div>
-                        <div className={`text-[10px] font-mono mt-0.5 ${upscaleFactor === 2 ? 'text-indigo-200' : 'text-slate-500'}`}>
+                        <div className={`text-[10px] font-mono mt-0.5 ${upscaleFactor === 2 ? 'text-white/80' : 'text-[#526A7B]'}`}>
                           {(currentAsset.originalWidth || imageNaturalSize.width) * 2} × {(currentAsset.originalHeight || imageNaturalSize.height) * 2} px
                         </div>
                       </button>
@@ -2083,12 +2083,12 @@ export const EditModal: React.FC<EditModalProps> = ({
                         }}
                         className={`p-2.5 rounded-xl text-left transition-all cursor-pointer ${
                           upscaleFactor === 4
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-600/20'
-                            : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                            ? 'bg-[#204563] text-white shadow-md shadow-[#204563]/30 ring-2 ring-[#204563]/20'
+                            : 'bg-[#FAF7F1] text-[#204563] hover:bg-white border border-[#E5D9C8]'
                         }`}
                       >
                         <div className="text-xs font-black">4× Ultra-Resolution</div>
-                        <div className={`text-[10px] font-mono mt-0.5 ${upscaleFactor === 4 ? 'text-indigo-200' : 'text-slate-500'}`}>
+                        <div className={`text-[10px] font-mono mt-0.5 ${upscaleFactor === 4 ? 'text-white/80' : 'text-[#526A7B]'}`}>
                           {(currentAsset.originalWidth || imageNaturalSize.width) * 4} × {(currentAsset.originalHeight || imageNaturalSize.height) * 4} px
                         </div>
                       </button>
@@ -2096,13 +2096,13 @@ export const EditModal: React.FC<EditModalProps> = ({
                   </div>
 
                   <div>
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between items-center text-xs font-bold text-[#204563] mb-1">
                       <span>Edge Clarity & Sharpness</span>
                       <div className="flex items-center space-x-1.5">
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 font-extrabold">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#FAF7F1] text-[#204563] border border-[#E5D9C8] font-extrabold">
                           {upscaleSharpness === 0 ? 'Minimal (0%)' : upscaleSharpness <= 25 ? 'Slight (25%)' : upscaleSharpness <= 50 ? 'Balanced (50%)' : upscaleSharpness <= 75 ? 'Strong (75%)' : 'Maximum (100%)'}
                         </span>
-                        <span className="text-indigo-600 font-extrabold">{upscaleSharpness}%</span>
+                        <span className="text-[#204563] font-extrabold">{upscaleSharpness}%</span>
                       </div>
                     </div>
                     <input
@@ -2111,7 +2111,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="100"
                       value={upscaleSharpness}
                       onChange={(e) => setUpscaleSharpness(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
@@ -2138,9 +2138,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                     <button
                       onClick={handleApplyUpscaler}
                       disabled={isProcessing}
-                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] disabled:opacity-50 text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-4 h-4 text-[#204563]" />
                       <span>{isProcessing ? `Upscaling with AI (${upscaleFactor}×)...` : `Run AI Upscaler (${upscaleFactor}×)`}</span>
                     </button>
 
@@ -2152,9 +2152,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                           link.download = `${currentAsset.filename.replace(/\.[^/.]+$/, '')}_upscaled_${upscaleFactor}x.png`;
                           link.click();
                         }}
-                        className="w-full py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                        className="w-full py-2 rounded-xl bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] text-[#204563] text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer"
                       >
-                        <Download className="w-4 h-4 text-slate-500" />
+                        <Download className="w-4 h-4 text-[#526A7B]" />
                         <span>Download Upscaled PNG ({upscaledDims ? `${upscaledDims.width}×${upscaledDims.height}` : `${upscaleFactor}×`})</span>
                       </button>
                     )}
@@ -2166,9 +2166,9 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'color-tone' && (
                 <div className="space-y-3.5">
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Brightness</span>
-                      <span className="text-indigo-600 font-extrabold">{brightness}</span>
+                      <span className="text-[#204563] font-extrabold">{brightness}</span>
                     </div>
                     <input
                       type="range"
@@ -2176,14 +2176,14 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="100"
                       value={brightness}
                       onChange={(e) => setBrightness(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Contrast</span>
-                      <span className="text-indigo-600 font-extrabold">{contrast}</span>
+                      <span className="text-[#204563] font-extrabold">{contrast}</span>
                     </div>
                     <input
                       type="range"
@@ -2191,14 +2191,14 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="100"
                       value={contrast}
                       onChange={(e) => setContrast(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Saturation</span>
-                      <span className="text-indigo-600 font-extrabold">{saturation}</span>
+                      <span className="text-[#204563] font-extrabold">{saturation}</span>
                     </div>
                     <input
                       type="range"
@@ -2206,14 +2206,14 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="100"
                       value={saturation}
                       onChange={(e) => setSaturation(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Hue Rotation</span>
-                      <span className="text-indigo-600 font-extrabold">{hue}°</span>
+                      <span className="text-[#204563] font-extrabold">{hue}°</span>
                     </div>
                     <input
                       type="range"
@@ -2221,7 +2221,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="180"
                       value={hue}
                       onChange={(e) => setHue(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
@@ -2229,9 +2229,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                     <button
                       onClick={handleApplyColorTone}
                       disabled={isProcessing || (brightness === 0 && contrast === 0 && saturation === 0 && hue === 0)}
-                      className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      className="flex-1 py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] disabled:opacity-50 text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                     >
-                      <Sliders className="w-4 h-4" />
+                      <Sliders className="w-4 h-4 text-[#204563]" />
                       <span>{isProcessing ? 'Applying...' : 'Apply Color & Tone'}</span>
                     </button>
                     {(brightness !== 0 || contrast !== 0 || saturation !== 0 || hue !== 0) && (
@@ -2243,7 +2243,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                           setSaturation(0);
                           setHue(0);
                         }}
-                        className="px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold cursor-pointer"
+                        className="px-3 py-2.5 rounded-xl border border-[#E5D9C8] bg-white hover:bg-[#FAF7F1] text-[#204563] text-xs font-bold cursor-pointer"
                       >
                         Reset
                       </button>
@@ -2262,9 +2262,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                   <button
                     onClick={handleDespeckle}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-black shadow-md shadow-teal-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-[#204563] hover:bg-[#18364e] text-white text-xs font-black shadow-md shadow-[#204563]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
-                    <Activity className="w-4 h-4" />
+                    <Activity className="w-4 h-4 text-[#EF7F1A]" />
                     <span>Clean Stray Pixels & Fringes</span>
                   </button>
                 </div>
@@ -2284,46 +2284,46 @@ export const EditModal: React.FC<EditModalProps> = ({
                   </div>
 
                   <div className="space-y-2 text-xs">
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] flex items-center justify-between">
                       <div>
-                        <span className="font-bold text-slate-800 block">Resolution & Density</span>
-                        <span className="text-[11px] text-slate-500 font-mono">
+                        <span className="font-bold text-[#204563] block">Resolution & Density</span>
+                        <span className="text-[11px] text-[#526A7B] font-mono">
                           {imageNaturalSize.width} × {imageNaturalSize.height} px • {currentAsset.effectiveDpi || 300} DPI
                         </span>
                       </div>
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        (currentAsset.effectiveDpi || 300) >= 250 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
+                        (currentAsset.effectiveDpi || 300) >= 250 ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EF7F1A]/20 text-[#EF7F1A]'
                       }`}>
                         {(currentAsset.effectiveDpi || 300) >= 250 ? 'Optimal (300 DPI)' : 'Low DPI'}
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] flex items-center justify-between">
                       <div>
-                        <span className="font-bold text-slate-800 block">Transparent Alpha Cutout</span>
-                        <span className="text-[11px] text-slate-500">No unwanted solid backings</span>
+                        <span className="font-bold text-[#204563] block">Transparent Alpha Cutout</span>
+                        <span className="text-[11px] text-[#526A7B]">No unwanted solid backings</span>
                       </div>
                       <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                         Passed
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] flex items-center justify-between">
                       <div>
-                        <span className="font-bold text-slate-800 block">Stroke Thickness Audit</span>
-                        <span className="text-[11px] text-slate-500">Meets 0.3mm minimum ink line</span>
+                        <span className="font-bold text-[#204563] block">Stroke Thickness Audit</span>
+                        <span className="text-[11px] text-[#526A7B]">Meets 0.3mm minimum ink line</span>
                       </div>
                       <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                         DTF Ready
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] flex items-center justify-between">
                       <div>
-                        <span className="font-bold text-slate-800 block">Empty Margin Padding</span>
-                        <span className="text-[11px] text-slate-500">Transparent outer border</span>
+                        <span className="font-bold text-[#204563] block">Empty Margin Padding</span>
+                        <span className="text-[11px] text-[#526A7B]">Transparent outer border</span>
                       </div>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-[#204563]">
                         {emptyPercent}%
                       </span>
                     </div>
@@ -2332,9 +2332,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                   {onOpenAudit && (
                     <button
                       onClick={onOpenAudit}
-                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer mt-1"
+                      className="w-full py-2.5 rounded-xl bg-[#204563] hover:bg-[#18364e] text-white text-xs font-black shadow-md shadow-[#204563]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer mt-1"
                     >
-                      <ShieldCheck className="w-4 h-4" />
+                      <ShieldCheck className="w-4 h-4 text-[#EF7F1A]" />
                       <span>Open Full Audit Window</span>
                     </button>
                   )}
@@ -2345,9 +2345,9 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'bg-remover' && (
                 <div className="space-y-4">
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Tolerance Threshold</span>
-                      <span className="text-indigo-600 font-extrabold">{bgTolerance}</span>
+                      <span className="text-[#204563] font-extrabold">{bgTolerance}</span>
                     </div>
                     <input
                       type="range"
@@ -2355,16 +2355,16 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="80"
                       value={bgTolerance}
                       onChange={(e) => setBgTolerance(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   <button
                     onClick={handleRemoveBackground}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-md shadow-blue-600/25 transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2"
                   >
-                    <Scissors className="w-4 h-4" />
+                    <Scissors className="w-4 h-4 text-[#204563]" />
                     <span>Auto Remove Background</span>
                   </button>
                 </div>
@@ -2374,7 +2374,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'remove-replace-color' && (
                 <div className="space-y-3.5">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                    <label className="text-xs font-bold text-[#204563] block mb-1">
                       Color to Knockout / Replace
                     </label>
                     <div className="flex items-center space-x-2">
@@ -2382,13 +2382,13 @@ export const EditModal: React.FC<EditModalProps> = ({
                         type="color"
                         value={targetColorHex}
                         onChange={(e) => setTargetColorHex(e.target.value)}
-                        className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-200"
+                        className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-[#E5D9C8]"
                       />
                       <input
                         type="text"
                         value={targetColorHex}
                         onChange={(e) => setTargetColorHex(e.target.value)}
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-mono text-slate-800"
+                        className="flex-1 bg-[#FAF7F1] border border-[#E5D9C8] rounded-xl px-2.5 py-1.5 text-xs font-mono text-[#204563]"
                       />
                     </div>
                   </div>
@@ -2399,16 +2399,16 @@ export const EditModal: React.FC<EditModalProps> = ({
                       id="transparentKnockout"
                       checked={replaceWithTransparent}
                       onChange={(e) => setReplaceWithTransparent(e.target.checked)}
-                      className="rounded accent-indigo-600 cursor-pointer"
+                      className="rounded accent-[#EF7F1A] cursor-pointer"
                     />
-                    <label htmlFor="transparentKnockout" className="text-xs text-slate-700 font-bold cursor-pointer">
+                    <label htmlFor="transparentKnockout" className="text-xs text-[#204563] font-bold cursor-pointer">
                       Make Transparent (Knockout)
                     </label>
                   </div>
 
                   {!replaceWithTransparent && (
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                      <label className="text-xs font-bold text-[#204563] block mb-1">
                         New Replacement Color
                       </label>
                       <div className="flex items-center space-x-2">
@@ -2416,22 +2416,22 @@ export const EditModal: React.FC<EditModalProps> = ({
                           type="color"
                           value={replaceColorHex}
                           onChange={(e) => setReplaceColorHex(e.target.value)}
-                          className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-200"
+                          className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-[#E5D9C8]"
                         />
                         <input
                           type="text"
                           value={replaceColorHex}
                           onChange={(e) => setReplaceColorHex(e.target.value)}
-                          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-mono text-slate-800"
+                          className="flex-1 bg-[#FAF7F1] border border-[#E5D9C8] rounded-xl px-2.5 py-1.5 text-xs font-mono text-[#204563]"
                         />
                       </div>
                     </div>
                   )}
 
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Color Tolerance</span>
-                      <span className="text-indigo-600 font-extrabold">{colorTol}</span>
+                      <span className="text-[#204563] font-extrabold">{colorTol}</span>
                     </div>
                     <input
                       type="range"
@@ -2439,16 +2439,16 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="80"
                       value={colorTol}
                       onChange={(e) => setColorTol(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   <button
                     onClick={handleReplaceColor}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2"
                   >
-                    <Pipette className="w-4 h-4" />
+                    <Pipette className="w-4 h-4 text-[#204563]" />
                     <span>Apply Color Knockout / Swap</span>
                   </button>
                 </div>
@@ -2472,7 +2472,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                     <button
                       onClick={handleTightenCropBoxToArtwork}
                       type="button"
-                      className="p-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl bg-[#FAF7F1] hover:bg-white text-[#204563] text-xs font-bold border border-[#E5D9C8] flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
                       title="Tighten the crop border directly to the graphic"
                     >
                       <Crop className="w-3.5 h-3.5" />
@@ -2481,7 +2481,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                     <button
                       onClick={handleResetCropBox}
                       type="button"
-                      className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl bg-[#FAF7F1] hover:bg-white text-[#204563] text-xs font-bold border border-[#E5D9C8] flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
                       title="Reset crop selection to 100% full bounds"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
@@ -2491,7 +2491,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 
                   {/* Aspect Ratio Presets */}
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-bold text-[#204563] block mb-1.5">
                       Aspect Ratio Lock
                     </label>
                     <div className="grid grid-cols-5 gap-1.5">
@@ -2507,8 +2507,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                           onClick={() => handleSetAspectRatio(ar.id as any)}
                           className={`py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
                             cropAspectRatio === ar.id
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                              ? 'bg-[#204563] text-white border-[#204563] shadow-2xs'
+                              : 'bg-white text-[#526A7B] border-[#E5D9C8] hover:bg-[#FAF7F1]'
                           }`}
                         >
                           {ar.label}
@@ -2521,44 +2521,44 @@ export const EditModal: React.FC<EditModalProps> = ({
                   <button
                     onClick={handleAutoTrim}
                     disabled={isProcessing}
-                    className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-300 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full py-2 rounded-xl bg-[#FAF7F1] hover:bg-white text-[#204563] text-xs font-bold border border-[#E5D9C8] transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
-                    <Scissors className="w-3.5 h-3.5 text-indigo-600" />
+                    <Scissors className="w-3.5 h-3.5 text-[#204563]" />
                     <span>Auto-Trim Transparent Padding ({emptyPercent}% Waste)</span>
                   </button>
 
                   {/* Transform & Rotate */}
-                  <div className="pt-2 border-t border-slate-100">
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  <div className="pt-2 border-t border-[#E5D9C8]">
+                    <label className="text-xs font-bold text-[#204563] block mb-1.5">
                       Transform & Rotate
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => handleTransformImage('rot90')}
-                        className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 flex items-center justify-center space-x-1.5 cursor-pointer"
+                        className="p-2 rounded-xl bg-[#FAF7F1] hover:bg-white text-[#204563] text-xs font-bold border border-[#E5D9C8] flex items-center justify-center space-x-1.5 cursor-pointer"
                       >
-                        <RotateCw className="w-3.5 h-3.5 text-indigo-600" />
+                        <RotateCw className="w-3.5 h-3.5 text-[#204563]" />
                         <span>90° CW</span>
                       </button>
                       <button
                         onClick={() => handleTransformImage('rot270')}
-                        className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 flex items-center justify-center space-x-1.5 cursor-pointer"
+                        className="p-2 rounded-xl bg-[#FAF7F1] hover:bg-white text-[#204563] text-xs font-bold border border-[#E5D9C8] flex items-center justify-center space-x-1.5 cursor-pointer"
                       >
-                        <RotateCcw className="w-3.5 h-3.5 text-indigo-600" />
+                        <RotateCcw className="w-3.5 h-3.5 text-[#204563]" />
                         <span>90° CCW</span>
                       </button>
                       <button
                         onClick={() => handleTransformImage('flipH')}
-                        className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 flex items-center justify-center space-x-1.5 cursor-pointer"
+                        className="p-2 rounded-xl bg-[#FAF7F1] hover:bg-white text-[#204563] text-xs font-bold border border-[#E5D9C8] flex items-center justify-center space-x-1.5 cursor-pointer"
                       >
-                        <FlipHorizontal className="w-3.5 h-3.5 text-indigo-600" />
+                        <FlipHorizontal className="w-3.5 h-3.5 text-[#204563]" />
                         <span>Flip H</span>
                       </button>
                       <button
                         onClick={() => handleTransformImage('flipV')}
-                        className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 flex items-center justify-center space-x-1.5 cursor-pointer"
+                        className="p-2 rounded-xl bg-[#FAF7F1] hover:bg-white text-[#204563] text-xs font-bold border border-[#E5D9C8] flex items-center justify-center space-x-1.5 cursor-pointer"
                       >
-                        <FlipVertical className="w-3.5 h-3.5 text-indigo-600" />
+                        <FlipVertical className="w-3.5 h-3.5 text-[#204563]" />
                         <span>Flip V</span>
                       </button>
                     </div>
@@ -2574,9 +2574,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Eraser Brush Radius</span>
-                      <span className="text-indigo-600 font-extrabold">{eraserSize} px</span>
+                      <span className="text-[#204563] font-extrabold">{eraserSize} px</span>
                     </div>
                     <input
                       type="range"
@@ -2584,7 +2584,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="72"
                       value={eraserSize}
                       onChange={(e) => setEraserSize(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
                 </div>
@@ -2598,9 +2598,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Frame Inset / Border Thickness</span>
-                      <span className="text-indigo-600 font-extrabold">{borderInset} px</span>
+                      <span className="text-[#204563] font-extrabold">{borderInset} px</span>
                     </div>
                     <input
                       type="range"
@@ -2609,17 +2609,17 @@ export const EditModal: React.FC<EditModalProps> = ({
                       step="2"
                       value={borderInset}
                       onChange={(e) => setBorderInset(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">Knockout Mask Shape</label>
+                    <label className="text-xs font-bold text-[#204563] block mb-1.5">Knockout Mask Shape</label>
                     <div className="grid grid-cols-3 gap-1.5">
                       <button
                         onClick={() => setBorderKnockoutShape('rect')}
                         className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          borderKnockoutShape === 'rect' ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-2xs' : 'border-slate-200 bg-white text-slate-700'
+                          borderKnockoutShape === 'rect' ? 'border-[#204563] bg-[#FAF7F1] text-[#204563] shadow-2xs' : 'border-[#E5D9C8] bg-white text-[#526A7B]'
                         }`}
                       >
                         Rectangle
@@ -2627,7 +2627,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       <button
                         onClick={() => setBorderKnockoutShape('round')}
                         className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          borderKnockoutShape === 'round' ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-2xs' : 'border-slate-200 bg-white text-slate-700'
+                          borderKnockoutShape === 'round' ? 'border-[#204563] bg-[#FAF7F1] text-[#204563] shadow-2xs' : 'border-[#E5D9C8] bg-white text-[#526A7B]'
                         }`}
                       >
                         Rounded
@@ -2635,7 +2635,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       <button
                         onClick={() => setBorderKnockoutShape('oval')}
                         className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          borderKnockoutShape === 'oval' ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-2xs' : 'border-slate-200 bg-white text-slate-700'
+                          borderKnockoutShape === 'oval' ? 'border-[#204563] bg-[#FAF7F1] text-[#204563] shadow-2xs' : 'border-[#E5D9C8] bg-white text-[#526A7B]'
                         }`}
                       >
                         Oval
@@ -2646,9 +2646,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                   <button
                     onClick={handleBorderKnockout}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
-                    <Scissors className="w-4 h-4" />
+                    <Scissors className="w-4 h-4 text-[#204563]" />
                     <span>Punch-Out Outer Border</span>
                   </button>
                 </div>
@@ -2673,8 +2673,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                           }}
                           className={`flex items-center justify-between p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-indigo-50/50 border-indigo-600 ring-2 ring-indigo-500/20 text-indigo-950 font-bold shadow-xs'
-                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                              ? 'bg-[#FAF7F1] border-[#204563] ring-2 ring-[#204563]/20 text-[#204563] font-bold shadow-xs'
+                              : 'bg-white border-[#E5D9C8] hover:bg-[#FAF7F1] text-[#526A7B]'
                           }`}
                         >
                           <div className="flex items-center space-x-2 min-w-0">
@@ -2695,7 +2695,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                           </div>
 
                           {isSelected && (
-                            <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] flex-shrink-0 ml-1">
+                            <span className="w-4 h-4 rounded-full bg-[#204563] text-white flex items-center justify-center text-[10px] flex-shrink-0 ml-1">
                               ✓
                             </span>
                           )}
@@ -2706,9 +2706,9 @@ export const EditModal: React.FC<EditModalProps> = ({
 
                   {/* Intensity Slider */}
                   <div className="pt-1">
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Intensity</span>
-                      <span className="text-indigo-600 font-extrabold">{textureIntensity}%</span>
+                      <span className="text-[#204563] font-extrabold">{textureIntensity}%</span>
                     </div>
                     <input
                       type="range"
@@ -2716,7 +2716,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="100"
                       value={textureIntensity}
                       onChange={(e) => setTextureIntensity(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
@@ -2729,7 +2729,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                         setTextureIntensity(0);
                         setTexturePreviewUrl(null);
                       }}
-                      className="text-[11px] font-bold text-slate-500 hover:text-indigo-600 flex items-center space-x-1.5 transition-colors cursor-pointer py-1"
+                      className="text-[11px] font-bold text-[#526A7B] hover:text-[#EF7F1A] flex items-center space-x-1.5 transition-colors cursor-pointer py-1"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Reset Effect</span>
@@ -2741,14 +2741,14 @@ export const EditModal: React.FC<EditModalProps> = ({
                           type="button"
                           onClick={handleApplyEffectToAllAssets}
                           disabled={isProcessing}
-                          className="text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-all flex items-center space-x-1 cursor-pointer"
+                          className="text-[11px] font-extrabold text-[#204563] hover:text-[#EF7F1A] bg-[#FAF7F1] hover:bg-white px-2.5 py-1 rounded-lg border border-[#E5D9C8] transition-all flex items-center space-x-1 cursor-pointer"
                           title="Apply this effect to all uploaded images"
                         >
                           <Copy className="w-3 h-3" />
                           <span>Apply to All ({assets.length})</span>
                         </button>
                       )}
-                      <span className="text-[11px] font-semibold text-slate-400">
+                      <span className="text-[11px] font-semibold text-[#526A7B]">
                         {selectedTextureEffect !== 'none' && textureIntensity > 0
                           ? `${TEXTURE_EFFECTS_LIST.find((e) => e.id === selectedTextureEffect)?.name} (${textureIntensity}%)`
                           : 'Original (No Effect)'}
@@ -2762,7 +2762,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'halftone' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-bold text-[#204563] block mb-1.5">
                       Halftone Screen Mode
                     </label>
                     <div className="grid grid-cols-3 gap-1.5">
@@ -2785,8 +2785,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                           }}
                           className={`py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                             halftoneStyle === mode.id
-                              ? 'bg-teal-600 text-white shadow-md'
-                              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                              ? 'bg-[#204563] text-white shadow-md'
+                              : 'bg-white text-[#526A7B] hover:bg-[#FAF7F1] border border-[#E5D9C8]'
                           }`}
                         >
                           {mode.label}
@@ -2797,9 +2797,9 @@ export const EditModal: React.FC<EditModalProps> = ({
 
                   {/* Dot Size */}
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Dot Size</span>
-                      <span className="text-teal-600 font-extrabold">{halftoneDotSize} px</span>
+                      <span className="text-[#204563] font-extrabold">{halftoneDotSize} px</span>
                     </div>
                     <input
                       type="range"
@@ -2807,15 +2807,15 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="25"
                       value={halftoneDotSize}
                       onChange={(e) => setHalftoneDotSize(Number(e.target.value))}
-                      className="w-full accent-teal-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   {/* Density / Spacing */}
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Density / Spacing</span>
-                      <span className="text-teal-600 font-extrabold">{halftoneDensity}%</span>
+                      <span className="text-[#204563] font-extrabold">{halftoneDensity}%</span>
                     </div>
                     <input
                       type="range"
@@ -2823,15 +2823,15 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="100"
                       value={halftoneDensity}
                       onChange={(e) => setHalftoneDensity(Number(e.target.value))}
-                      className="w-full accent-teal-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   {/* Fade / Spread */}
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Fade / Spread</span>
-                      <span className="text-teal-600 font-extrabold">{halftoneFadeSpread}%</span>
+                      <span className="text-[#204563] font-extrabold">{halftoneFadeSpread}%</span>
                     </div>
                     <input
                       type="range"
@@ -2839,15 +2839,15 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="100"
                       value={halftoneFadeSpread}
                       onChange={(e) => setHalftoneFadeSpread(Number(e.target.value))}
-                      className="w-full accent-teal-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   {/* Dot Angle (Rotation) */}
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Dot Angle (Rotation)</span>
-                      <span className="text-teal-600 font-extrabold">{halftoneAngle}°</span>
+                      <span className="text-[#204563] font-extrabold">{halftoneAngle}°</span>
                     </div>
                     <input
                       type="range"
@@ -2855,7 +2855,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="90"
                       value={halftoneAngle}
                       onChange={(e) => setHalftoneAngle(Number(e.target.value))}
-                      className="w-full accent-teal-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
@@ -2863,15 +2863,15 @@ export const EditModal: React.FC<EditModalProps> = ({
                   {halftoneStyle === 'color' && (
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-bold text-slate-700">
+                        <label className="text-xs font-bold text-[#204563]">
                           Dot Color (for Color Dots)
                         </label>
-                        <label className="flex items-center space-x-1 cursor-pointer text-[10px] font-bold text-teal-700">
+                        <label className="flex items-center space-x-1 cursor-pointer text-[10px] font-bold text-[#204563]">
                           <input
                             type="checkbox"
                             checked={useCustomDotColor}
                             onChange={(e) => setUseCustomDotColor(e.target.checked)}
-                            className="accent-teal-600 rounded"
+                            className="accent-[#EF7F1A] rounded"
                           />
                           <span>Custom Tint</span>
                         </label>
@@ -2885,7 +2885,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                             setHalftoneDotColor(e.target.value);
                             setHalftoneDotColorHex(e.target.value);
                           }}
-                          className={`w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-200 ${!useCustomDotColor ? 'opacity-40 cursor-not-allowed' : ''}`}
+                          className={`w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-[#E5D9C8] ${!useCustomDotColor ? 'opacity-40 cursor-not-allowed' : ''}`}
                         />
                         <input
                           type="text"
@@ -2898,7 +2898,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                               setHalftoneDotColor(val);
                             }
                           }}
-                          className={`flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-mono text-slate-800 ${!useCustomDotColor ? 'opacity-70 cursor-not-allowed italic' : ''}`}
+                          className={`flex-1 bg-[#FAF7F1] border border-[#E5D9C8] rounded-xl px-2.5 py-1 text-xs font-mono text-[#204563] ${!useCustomDotColor ? 'opacity-70 cursor-not-allowed italic' : ''}`}
                         />
                       </div>
                     </div>
@@ -2907,9 +2907,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                   <button
                     onClick={handleApplyHalftone}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-teal-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] disabled:opacity-50 text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
-                    <CircleDot className="w-4 h-4" />
+                    <CircleDot className="w-4 h-4 text-[#204563]" />
                     <span>{isProcessing ? 'Applying Halftone...' : 'Apply Halftone Screen'}</span>
                   </button>
                 </div>
@@ -2919,9 +2919,9 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'stroke-outline' && (
                 <div className="space-y-4">
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Contour Stroke Width</span>
-                      <span className="text-indigo-600 font-extrabold">{strokeWidth} px</span>
+                      <span className="text-[#204563] font-extrabold">{strokeWidth} px</span>
                     </div>
                     <input
                       type="range"
@@ -2929,12 +2929,12 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="20"
                       value={strokeWidth}
                       onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                    <label className="text-xs font-bold text-[#204563] block mb-1">
                       Contour Stroke Color
                     </label>
                     <div className="flex items-center space-x-2">
@@ -2946,7 +2946,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                           setStrokeColor(val);
                           setStrokeHexInput(val);
                         }}
-                        className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-200"
+                        className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-[#E5D9C8]"
                       />
                       <input
                         type="text"
@@ -2962,7 +2962,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                           }
                         }}
                         placeholder="#ffffff"
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="flex-1 bg-[#FAF7F1] border border-[#E5D9C8] rounded-xl px-2.5 py-1 text-xs font-mono text-[#204563] focus:outline-none focus:ring-1 focus:ring-[#EF7F1A]"
                       />
                     </div>
                   </div>
@@ -2970,9 +2970,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                   <button
                     onClick={handleApplyStroke}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] disabled:opacity-50 text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
-                    <PenTool className="w-4 h-4" />
+                    <PenTool className="w-4 h-4 text-[#204563]" />
                     <span>{isProcessing ? 'Applying Outline Stroke...' : 'Apply Outline Stroke'}</span>
                   </button>
                 </div>
@@ -2982,47 +2982,47 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'text-number' && (
                 <div className="space-y-3.5">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                    <label className="text-xs font-bold text-[#204563] block mb-1">
                       Text / Number String
                     </label>
                     <input
                       type="text"
                       value={customText}
                       onChange={(e) => setCustomText(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 uppercase focus:bg-white focus:border-indigo-500"
+                      className="w-full bg-[#FAF7F1] border border-[#E5D9C8] rounded-xl px-3 py-1.5 text-xs font-bold text-[#204563] uppercase focus:bg-white focus:border-[#EF7F1A]"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                      <label className="text-xs font-bold text-[#204563] block mb-1">
                         Fill Color
                       </label>
                       <input
                         type="color"
                         value={textFillColor}
                         onChange={(e) => setTextFillColor(e.target.value)}
-                        className="w-full h-8 rounded-lg cursor-pointer bg-transparent border border-slate-200"
+                        className="w-full h-8 rounded-lg cursor-pointer bg-transparent border border-[#E5D9C8]"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                      <label className="text-xs font-bold text-[#204563] block mb-1">
                         Outline Color
                       </label>
                       <input
                         type="color"
                         value={textStrokeColor}
                         onChange={(e) => setTextStrokeColor(e.target.value)}
-                        className="w-full h-8 rounded-lg cursor-pointer bg-transparent border border-slate-200"
+                        className="w-full h-8 rounded-lg cursor-pointer bg-transparent border border-[#E5D9C8]"
                       />
                     </div>
                   </div>
 
                   <button
                     onClick={handleGenerateText}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white text-xs font-black shadow-md shadow-amber-500/25 transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2"
                   >
-                    <Type className="w-4 h-4" />
+                    <Type className="w-4 h-4 text-[#204563]" />
                     <span>Render Jersey Text</span>
                   </button>
                 </div>
@@ -3032,43 +3032,43 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'vectorize' && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="font-extrabold text-slate-900 text-sm">Vectorize Image</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <h3 className="font-extrabold text-[#204563] text-sm">Vectorize Image</h3>
+                    <p className="text-xs text-[#526A7B] mt-0.5">
                       Convert your image to a scalable SVG with clean, smooth vectors.
                     </p>
                   </div>
 
                   {/* Vectorization Mode */}
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-bold text-[#204563] block mb-1.5">
                       Vectorization Mode
                     </label>
                     <div className="space-y-1.5">
                       <label className={`flex items-center space-x-2.5 p-2 rounded-xl border cursor-pointer transition-all ${
                         vectorMode === 'color'
-                          ? 'bg-indigo-50/70 border-indigo-500/80 text-indigo-950 font-bold shadow-xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          ? 'bg-[#FAF7F1] border-[#204563] text-[#204563] font-bold shadow-xs'
+                          : 'bg-white border-[#E5D9C8] text-[#526A7B] hover:bg-[#FAF7F1]'
                       }`}>
                         <input
                           type="radio"
                           name="vectorMode"
                           checked={vectorMode === 'color'}
                           onChange={() => setVectorMode('color')}
-                          className="w-4 h-4 text-indigo-600 accent-indigo-600 cursor-pointer"
+                          className="w-4 h-4 text-[#EF7F1A] accent-[#EF7F1A] cursor-pointer"
                         />
                         <span className="text-xs">Color (Multicolor)</span>
                       </label>
                       <label className={`flex items-center space-x-2.5 p-2 rounded-xl border cursor-pointer transition-all ${
                         vectorMode === 'binary'
-                          ? 'bg-indigo-50/70 border-indigo-500/80 text-indigo-950 font-bold shadow-xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          ? 'bg-[#FAF7F1] border-[#204563] text-[#204563] font-bold shadow-xs'
+                          : 'bg-white border-[#E5D9C8] text-[#526A7B] hover:bg-[#FAF7F1]'
                       }`}>
                         <input
                           type="radio"
                           name="vectorMode"
                           checked={vectorMode === 'binary'}
                           onChange={() => setVectorMode('binary')}
-                          className="w-4 h-4 text-indigo-600 accent-indigo-600 cursor-pointer"
+                          className="w-4 h-4 text-[#EF7F1A] accent-[#EF7F1A] cursor-pointer"
                         />
                         <span className="text-xs">Black & White (Trace)</span>
                       </label>
@@ -3077,18 +3077,18 @@ export const EditModal: React.FC<EditModalProps> = ({
 
                   {/* Detail Level */}
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                    <label className="text-xs font-bold text-[#204563] block mb-1.5">
                       Detail Level
                     </label>
                     <div className="flex items-center space-x-4 px-1 py-0.5">
                       {(['low', 'medium', 'high'] as const).map((lvl) => (
-                        <label key={lvl} className="flex items-center space-x-1.5 cursor-pointer text-xs font-bold text-slate-700 capitalize">
+                        <label key={lvl} className="flex items-center space-x-1.5 cursor-pointer text-xs font-bold text-[#204563] capitalize">
                           <input
                             type="radio"
                             name="vectorDetailLevel"
                             checked={vectorDetailLevel === lvl}
                             onChange={() => setVectorDetailLevel(lvl)}
-                            className="w-4 h-4 text-indigo-600 accent-indigo-600 cursor-pointer"
+                            className="w-4 h-4 text-[#EF7F1A] accent-[#EF7F1A] cursor-pointer"
                           />
                           <span>{lvl}</span>
                         </label>
@@ -3098,9 +3098,9 @@ export const EditModal: React.FC<EditModalProps> = ({
 
                   {/* Smoothness Slider */}
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
                       <span>Smoothness</span>
-                      <span className="text-indigo-600 font-extrabold">{vectorSmoothness}%</span>
+                      <span className="text-[#204563] font-extrabold">{vectorSmoothness}%</span>
                     </div>
                     <input
                       type="range"
@@ -3108,58 +3108,58 @@ export const EditModal: React.FC<EditModalProps> = ({
                       max="100"
                       value={vectorSmoothness}
                       onChange={(e) => setVectorSmoothness(Number(e.target.value))}
-                      className="w-full accent-indigo-600 bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   {/* Checkboxes */}
-                  <div className="space-y-2 pt-1 border-t border-slate-100">
+                  <div className="space-y-2 pt-1 border-t border-[#E5D9C8]">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={vectorRemoveBg}
                         onChange={(e) => setVectorRemoveBg(e.target.checked)}
-                        className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                        className="w-4 h-4 accent-[#EF7F1A] rounded cursor-pointer"
                       />
-                      <span className="text-xs font-bold text-slate-700">Remove Background</span>
+                      <span className="text-xs font-bold text-[#204563]">Remove Background</span>
                     </label>
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={vectorOptimize}
                         onChange={(e) => setVectorOptimize(e.target.checked)}
-                        className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                        className="w-4 h-4 accent-[#EF7F1A] rounded cursor-pointer"
                       />
-                      <span className="text-xs font-bold text-slate-700">Optimize Paths (Reduce File Size)</span>
+                      <span className="text-xs font-bold text-[#204563]">Optimize Paths (Reduce File Size)</span>
                     </label>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="pt-2 space-y-2 border-t border-slate-100">
+                  <div className="pt-2 space-y-2 border-t border-[#E5D9C8]">
                     <button
                       onClick={handleRunVectorize}
                       disabled={isProcessing}
-                      className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] disabled:opacity-50 text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-4 h-4 text-[#204563]" />
                       <span>{isProcessing ? 'Vectorizing Artwork...' : 'Vectorize & Preview'}</span>
                     </button>
 
                     <button
                       onClick={handleSaveVectorAndApply}
                       disabled={isProcessing}
-                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-black shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      className="w-full py-2.5 rounded-xl bg-[#204563] hover:bg-[#18364e] disabled:opacity-50 text-white text-xs font-black shadow-md shadow-[#204563]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                     >
-                      <Check className="w-4 h-4" />
+                      <Check className="w-4 h-4 text-[#EF7F1A]" />
                       <span>Save as SVG & Apply</span>
                     </button>
 
                     <button
                       onClick={handleDownloadSvg}
                       disabled={isProcessing}
-                      className="w-full py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      className="w-full py-2 rounded-xl bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] text-[#204563] text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer"
                     >
-                      <Download className="w-4 h-4 text-slate-500" />
+                      <Download className="w-4 h-4 text-[#526A7B]" />
                       <span>Download SVG</span>
                     </button>
                   </div>
@@ -3169,11 +3169,11 @@ export const EditModal: React.FC<EditModalProps> = ({
               {/* 4. Create & Convert -> Recreate AI */}
               {activeTool === 'recreate-ai' && (
                 <div className="space-y-4">
-                  <div className="p-3 rounded-xl bg-fuchsia-50 border border-fuchsia-200 text-xs text-fuchsia-900 font-medium">
+                  <div className="p-3 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] text-xs text-[#204563] font-medium">
                     Regenerates high-frequency details, removes compression artifacts, and rebuilds high-fidelity edge contours using neural edge reconstruction.
                   </div>
                   <div>
-                    <span className="text-[11px] font-bold text-slate-500 mb-1.5 block">
+                    <span className="text-[11px] font-bold text-[#526A7B] mb-1.5 block">
                       Recreation Style
                     </span>
                     <div className="grid grid-cols-3 gap-1.5">
@@ -3188,8 +3188,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                           onClick={() => setRecreateStyle(item.id as RecreateAiStyle)}
                           className={`py-1.5 px-2 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
                             recreateStyle === item.id
-                              ? 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-xs'
-                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                              ? 'bg-[#204563] text-white border-[#204563] shadow-xs'
+                              : 'bg-white text-[#526A7B] border-[#E5D9C8] hover:bg-[#FAF7F1]'
                           }`}
                         >
                           {item.label}
@@ -3200,9 +3200,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                   <button
                     onClick={handleRecreateAi}
                     disabled={isProcessing}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white text-xs font-black shadow-md shadow-fuchsia-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4 text-[#204563]" />
                     <span>{isProcessing ? 'Recreating Artwork...' : 'Recreate with AI (2x High-Fidelity)'}</span>
                   </button>
                 </div>
@@ -3211,13 +3211,13 @@ export const EditModal: React.FC<EditModalProps> = ({
               {/* 4. Create & Convert -> TIFF Export (RIP) */}
               {activeTool === 'tiff-export' && (
                 <div className="space-y-3.5">
-                  <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-900 font-medium">
+                  <div className="p-3 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] text-xs text-[#204563] font-medium">
                     Generates production-grade multi-channel TIFFs for professional RIP software (Maintop, RIIN, PrintFactory, Flexi).
                   </div>
 
                   {/* DTF vs UVDTF Mode Toggle Buttons */}
                   <div>
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-[#526A7B] mb-2">
                       Choose Print Process
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -3226,23 +3226,23 @@ export const EditModal: React.FC<EditModalProps> = ({
                         onClick={() => setTiffProcessMode('dtf')}
                         className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                           tiffProcessMode === 'dtf'
-                            ? 'bg-indigo-50/80 border-2 border-indigo-600 shadow-xs'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-[#FAF7F1] border-2 border-[#204563] shadow-xs'
+                            : 'bg-white border-[#E5D9C8] text-[#526A7B] hover:bg-[#FAF7F1]'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-1.5">
-                            <Shirt className={`w-4 h-4 ${tiffProcessMode === 'dtf' ? 'text-indigo-600' : 'text-slate-400'}`} />
-                            <span className="font-extrabold text-xs text-slate-900">DTF</span>
+                            <Shirt className={`w-4 h-4 ${tiffProcessMode === 'dtf' ? 'text-[#204563]' : 'text-slate-400'}`} />
+                            <span className="font-extrabold text-xs text-[#204563]">DTF</span>
                           </div>
                           {tiffProcessMode === 'dtf' && (
-                            <span className="text-[10px] font-bold text-indigo-600">✓</span>
+                            <span className="text-[10px] font-bold text-[#204563]">✓</span>
                           )}
                         </div>
-                        <div className="text-[10px] font-medium text-slate-500 mt-1">
+                        <div className="text-[10px] font-medium text-[#526A7B] mt-1">
                           Direct-to-Film (Textiles)
                         </div>
-                        <div className="text-[9px] font-mono text-indigo-700 font-bold mt-1">
+                        <div className="text-[9px] font-mono text-[#204563] font-bold mt-1">
                           CMYK, W1
                         </div>
                       </button>
@@ -3252,23 +3252,23 @@ export const EditModal: React.FC<EditModalProps> = ({
                         onClick={() => setTiffProcessMode('uvdtf')}
                         className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                           tiffProcessMode === 'uvdtf'
-                            ? 'bg-purple-50/80 border-2 border-purple-600 shadow-xs'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-[#FAF7F1] border-2 border-[#EF7F1A] shadow-xs'
+                            : 'bg-white border-[#E5D9C8] text-[#526A7B] hover:bg-[#FAF7F1]'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-1.5">
-                            <Sparkles className={`w-4 h-4 ${tiffProcessMode === 'uvdtf' ? 'text-purple-600' : 'text-slate-400'}`} />
-                            <span className="font-extrabold text-xs text-slate-900">UVDTF</span>
+                            <Sparkles className={`w-4 h-4 ${tiffProcessMode === 'uvdtf' ? 'text-[#EF7F1A]' : 'text-slate-400'}`} />
+                            <span className="font-extrabold text-xs text-[#204563]">UVDTF</span>
                           </div>
                           {tiffProcessMode === 'uvdtf' && (
-                            <span className="text-[10px] font-bold text-purple-600">✓</span>
+                            <span className="text-[10px] font-bold text-[#EF7F1A]">✓</span>
                           )}
                         </div>
-                        <div className="text-[10px] font-medium text-purple-700 mt-1">
+                        <div className="text-[10px] font-medium text-[#EF7F1A] mt-1">
                           UV Transfer + Varnish
                         </div>
-                        <div className="text-[9px] font-mono text-purple-800 font-bold mt-1">
+                        <div className="text-[9px] font-mono text-[#EF7F1A] font-bold mt-1">
                           CMYK, W1, W2
                         </div>
                       </button>
@@ -3277,18 +3277,18 @@ export const EditModal: React.FC<EditModalProps> = ({
 
                   <div className="space-y-2 text-xs">
                     {/* Sequence: CMYK first, then W1, then W2 */}
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
-                      <span className="font-bold text-slate-700">1. Color Channel</span>
-                      <span className="font-mono text-slate-800 font-extrabold">CMYK SWOP v2</span>
+                    <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] flex justify-between items-center">
+                      <span className="font-bold text-[#526A7B]">1. Color Channel</span>
+                      <span className="font-mono text-[#204563] font-extrabold">CMYK SWOP v2</span>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
-                      <span className="font-bold text-slate-700">2. White Underbase Channel</span>
-                      <span className="font-mono text-indigo-600 font-extrabold">W1 (Spot White)</span>
+                    <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] flex justify-between items-center">
+                      <span className="font-bold text-[#526A7B]">2. White Underbase Channel</span>
+                      <span className="font-mono text-[#204563] font-extrabold">W1 (Spot White)</span>
                     </div>
                     {tiffProcessMode === 'uvdtf' && (
-                      <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-200 flex justify-between items-center animate-in fade-in">
-                        <span className="font-bold text-purple-900">3. UV Varnish Pass</span>
-                        <span className="font-mono text-purple-700 font-extrabold">W2 Spot Gloss (Active)</span>
+                      <div className="p-2.5 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] flex justify-between items-center animate-in fade-in">
+                        <span className="font-bold text-[#EF7F1A]">3. UV Varnish Pass</span>
+                        <span className="font-mono text-[#EF7F1A] font-extrabold">W2 Spot Gloss (Active)</span>
                       </div>
                     )}
                   </div>
@@ -3296,13 +3296,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                   {onOpenTiff && (
                     <button
                       onClick={onOpenTiff}
-                      className={`w-full py-2.5 rounded-xl text-white text-xs font-black shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer mt-1 ${
-                        tiffProcessMode === 'uvdtf'
-                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-600/25'
-                          : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/25'
-                      }`}
+                      className="w-full py-2.5 rounded-xl text-[#204563] bg-[#EF7F1A] hover:bg-[#d97014] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2 cursor-pointer mt-1"
                     >
-                      <FileStack className="w-4 h-4" />
+                      <FileStack className="w-4 h-4 text-[#204563]" />
                       <span>Open TIFF Studio ({tiffProcessMode.toUpperCase()})</span>
                     </button>
                   )}
@@ -3312,19 +3308,19 @@ export const EditModal: React.FC<EditModalProps> = ({
             </div>
 
             {/* Bottom Actions: Save to Gang Sheet */}
-            <div className="pt-4 border-t border-slate-200 space-y-2 mt-4 flex-shrink-0">
+            <div className="pt-4 border-t border-[#E5D9C8] space-y-2 mt-4 flex-shrink-0">
               <button
                 onClick={handleSaveModal}
                 disabled={isProcessing}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] text-xs font-black shadow-lg shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2"
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4 text-[#204563]" />
                 <span>Save & Apply to Gang Sheet</span>
               </button>
 
               <button
                 onClick={onClose}
-                className="w-full py-2 rounded-xl text-slate-500 hover:text-slate-800 text-xs font-bold hover:bg-slate-100 transition-colors"
+                className="w-full py-2 rounded-xl text-[#526A7B] hover:text-[#204563] text-xs font-bold hover:bg-[#FAF7F1] transition-colors"
               >
                 Cancel
               </button>

@@ -61,7 +61,7 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
 
         <button
           onClick={onCreateLayout}
-          className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-md mb-4"
+          className="w-8 h-8 rounded-lg bg-[#EF7F1A] text-[#204563] font-black flex items-center justify-center shadow-md mb-4"
           title="Create Layout"
         >
           <Plus className="w-4 h-4" />
@@ -73,7 +73,7 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
               onToggleCollapse();
               setOpenCategories((p) => ({ ...p, fix: true }));
             }}
-            className="w-8 h-8 rounded-lg bg-purple-950/60 border border-purple-800/60 text-purple-400 flex items-center justify-center hover:scale-105 transition-transform"
+            className="w-8 h-8 rounded-lg bg-[#132537] border border-[#204563] text-[#EF7F1A] flex items-center justify-center hover:scale-105 transition-transform"
             title="Fix & Quality"
           >
             <Sparkles className="w-4 h-4" />
@@ -119,9 +119,9 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
       <div className="p-3 border-b border-[#1a223a] flex items-center space-x-2">
         <button
           onClick={onCreateLayout}
-          className="flex-1 py-2.5 px-3 bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-600/25 flex items-center justify-center space-x-2 transition-all active:scale-[0.98]"
+          className="flex-1 py-2.5 px-3 bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] rounded-xl font-black text-xs shadow-md shadow-[#EF7F1A]/20 flex items-center justify-center space-x-2 transition-all active:scale-[0.98]"
         >
-          <Plus className="w-4 h-4 text-white" />
+          <Plus className="w-4 h-4 text-[#204563]" />
           <span>Create Layout</span>
         </button>
 
@@ -144,14 +144,14 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
       {/* Accordion Categories matching Image 4 */}
       <div className="p-2.5 space-y-2.5">
         {/* Category 1: Fix & Quality (Image 4 exact design) */}
-        <div className="rounded-2xl bg-[#11172a] border border-[#1e2846] hover:border-purple-500/50 transition-all overflow-hidden shadow-xs">
+        <div className="rounded-2xl bg-[#11172a] border border-[#1e2846] hover:border-[#EF7F1A] transition-all overflow-hidden shadow-xs">
           <div
             onClick={() => toggleCategory('fix')}
             className="w-full p-3 flex items-center justify-between text-left cursor-pointer hover:bg-[#151d34] transition-colors"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-purple-600/30 flex-shrink-0">
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-[#204563] text-[#EF7F1A] flex items-center justify-center shadow-md shadow-[#204563]/30 flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-[#EF7F1A]" />
               </div>
               <div className="min-w-0">
                 <div className="font-extrabold text-xs text-white tracking-tight">Fix & Quality</div>
@@ -168,7 +168,7 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
               className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors"
             >
               {openCategories.fix ? (
-                <ChevronUp className="w-4 h-4 text-purple-400" />
+                <ChevronUp className="w-4 h-4 text-[#EF7F1A]" />
               ) : (
                 <ChevronDown className="w-4 h-4 text-slate-400" />
               )}
@@ -182,10 +182,10 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
                 className="w-full py-2 px-2.5 rounded-xl hover:bg-[#19223e] text-left flex items-center justify-between text-slate-200 transition-colors"
               >
                 <div className="flex items-center space-x-2">
-                  <Maximize2 className="w-3.5 h-3.5 text-purple-400" />
+                  <Maximize2 className="w-3.5 h-3.5 text-[#EF7F1A]" />
                   <span className="font-semibold">Image Upscaler</span>
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.2 rounded-full shadow-2xs">
+                <span className="text-[9px] font-black uppercase tracking-wider bg-[#EF7F1A] text-[#204563] px-1.5 py-0.2 rounded-full shadow-2xs">
                   AI
                 </span>
               </button>
@@ -224,8 +224,8 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
             className="w-full p-3 flex items-center justify-between text-left cursor-pointer hover:bg-[#151d34] transition-colors"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-blue-600/30 flex-shrink-0">
-                <Crop className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-[#204563] text-[#EF7F1A] flex items-center justify-center shadow-md shadow-[#204563]/30 flex-shrink-0">
+                <Crop className="w-5 h-5 text-[#EF7F1A]" />
               </div>
               <div className="min-w-0">
                 <div className="font-extrabold text-xs text-white tracking-tight">Cut & Adjust</div>
@@ -255,7 +255,7 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
                 onClick={() => onSelectTool('remove-color')}
                 className="w-full py-2 px-2.5 rounded-xl hover:bg-[#19223e] text-left flex items-center space-x-2 text-slate-200 transition-colors"
               >
-                <Pipette className="w-3.5 h-3.5 text-indigo-400" />
+                <Pipette className="w-3.5 h-3.5 text-[#EF7F1A]" />
                 <span className="font-semibold">Remove/Replace Color</span>
               </button>
 
@@ -293,8 +293,8 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
             className="w-full p-3 flex items-center justify-between text-left cursor-pointer hover:bg-[#151d34] transition-colors"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-600 to-purple-600 text-white flex items-center justify-center shadow-md shadow-pink-600/30 flex-shrink-0">
-                <Wand2 className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-[#204563] text-[#EF7F1A] flex items-center justify-center shadow-md shadow-[#204563]/30 flex-shrink-0">
+                <Wand2 className="w-5 h-5 text-[#EF7F1A]" />
               </div>
               <div className="min-w-0">
                 <div className="font-extrabold text-xs text-white tracking-tight">Style & Effects</div>
@@ -325,10 +325,10 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
                 className="w-full py-2 px-2.5 rounded-xl hover:bg-[#19223e] text-left flex items-center justify-between text-slate-200 transition-colors"
               >
                 <div className="flex items-center space-x-2">
-                  <Layers className="w-3.5 h-3.5 text-purple-400" />
+                  <Layers className="w-3.5 h-3.5 text-[#EF7F1A]" />
                   <span className="font-semibold">Texture Effects</span>
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.2 rounded-full shadow-2xs">
+                <span className="text-[9px] font-black uppercase tracking-wider bg-[#EF7F1A] text-[#204563] px-1.5 py-0.2 rounded-full shadow-2xs">
                   11
                 </span>
               </button>
@@ -404,10 +404,10 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
                 className="w-full py-2 px-2.5 rounded-xl hover:bg-[#19223e] text-left flex items-center justify-between text-slate-200 transition-colors"
               >
                 <div className="flex items-center space-x-2">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#EF7F1A]" />
                   <span className="font-semibold">Image Vectoriser</span>
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.2 rounded-full shadow-2xs">
+                <span className="text-[9px] font-black uppercase tracking-wider bg-[#EF7F1A] text-[#204563] px-1.5 py-0.2 rounded-full shadow-2xs">
                   AI
                 </span>
               </button>

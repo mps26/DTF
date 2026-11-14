@@ -398,7 +398,7 @@ export const ProductionWorkspace: React.FC<ProductionWorkspaceProps> = ({
             onClick={() => setActiveTool('select')}
             className={`p-1.5 rounded transition-colors ${
               activeTool === 'select'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-[#EF7F1A] text-[#204563] shadow-xs'
                 : 'hover:bg-slate-800 text-slate-400'
             }`}
             title="Selection & Move Tool (V)"
@@ -409,7 +409,7 @@ export const ProductionWorkspace: React.FC<ProductionWorkspaceProps> = ({
             onClick={() => setActiveTool('pan')}
             className={`p-1.5 rounded transition-colors ${
               activeTool === 'pan'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-[#EF7F1A] text-[#204563] shadow-xs'
                 : 'hover:bg-slate-800 text-slate-400'
             }`}
             title="Hand Pan Viewport Tool (H / Spacebar)"
@@ -423,7 +423,7 @@ export const ProductionWorkspace: React.FC<ProductionWorkspaceProps> = ({
           <button
             onClick={() => setShowGrid(!showGrid)}
             className={`p-1.5 rounded transition-colors ${
-              showGrid ? 'bg-slate-800 text-indigo-400' : 'text-slate-500 hover:text-slate-300'
+              showGrid ? 'bg-slate-800 text-[#EF7F1A]' : 'text-slate-500 hover:text-slate-300'
             }`}
             title="Toggle Precision Grid"
           >
@@ -433,7 +433,7 @@ export const ProductionWorkspace: React.FC<ProductionWorkspaceProps> = ({
           <button
             onClick={() => setShowSpacingGuides(!showSpacingGuides)}
             className={`p-1.5 rounded text-[11px] font-mono px-2 transition-colors ${
-              showSpacingGuides ? 'bg-slate-800 text-indigo-400' : 'text-slate-500 hover:text-slate-300'
+              showSpacingGuides ? 'bg-slate-800 text-[#EF7F1A]' : 'text-slate-500 hover:text-slate-300'
             }`}
             title="Toggle Spacing Guides"
           >
@@ -451,7 +451,7 @@ export const ProductionWorkspace: React.FC<ProductionWorkspaceProps> = ({
           </span>
           <span className="text-slate-600">|</span>
           <span>
-            Copies: <strong className="text-indigo-400">{layout.totalCopies}</strong>
+            Copies: <strong className="text-[#EF7F1A]">{layout.totalCopies}</strong>
           </span>
           <span className="text-slate-600">|</span>
           <span>
@@ -550,10 +550,10 @@ export const ProductionWorkspace: React.FC<ProductionWorkspaceProps> = ({
                 left: Math.max(0, selectedPlacement.xMm * scale),
                 top: Math.max(0, (selectedPlacement.yMm * scale) - 34)
               }}
-              className="absolute z-30 bg-[#0d1222] border border-indigo-500 rounded px-2 py-1 flex items-center space-x-1.5 shadow-xl text-white font-mono text-[10px]"
+              className="absolute z-30 bg-[#0d1222] border border-[#EF7F1A] rounded px-2 py-1 flex items-center space-x-1.5 shadow-xl text-white font-mono text-[10px]"
               onClick={(e) => e.stopPropagation()}
             >
-              <span className="font-bold text-indigo-300">
+              <span className="font-bold text-[#EF7F1A]">
                 {selectedPlacement.asset.filename}
               </span>
               <span className="text-slate-500">|</span>
@@ -580,7 +580,7 @@ export const ProductionWorkspace: React.FC<ProductionWorkspaceProps> = ({
 
               <button
                 onClick={() => onOpenEditModal(selectedPlacement.asset)}
-                className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-indigo-400"
+                className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-[#EF7F1A]"
                 title="Open Studio Image Editor"
               >
                 <Sparkles className="w-3 h-3" />

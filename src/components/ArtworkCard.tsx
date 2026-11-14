@@ -77,7 +77,7 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
       : 'bg-rose-500 text-white';
 
   return (
-    <div className="bg-white rounded-3xl border border-indigo-100 shadow-md shadow-indigo-900/5 p-4 sm:p-5 transition-all hover:shadow-lg hover:border-indigo-200 relative group flex flex-col justify-between">
+    <div className="bg-white rounded-3xl border border-[#E5D9C8] shadow-md shadow-[#204563]/5 p-4 sm:p-5 transition-all hover:shadow-lg hover:border-[#EF7F1A] relative group flex flex-col justify-between">
       {/* Top Header: Thumbnail, Filename, DPI Badge, Red Counter */}
       <div>
         <div className="flex items-start justify-between gap-3 mb-4">
@@ -102,8 +102,8 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
                 alt={asset.filename}
                 className="w-full h-full object-contain p-1 group-hover/thumb:scale-105 transition-transform"
               />
-              <div className="absolute inset-0 bg-indigo-600/10 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
-                <Edit2 className="w-4 h-4 text-indigo-700 drop-shadow" />
+              <div className="absolute inset-0 bg-[#204563]/10 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
+                <Edit2 className="w-4 h-4 text-[#204563] drop-shadow" />
               </div>
             </div>
 
@@ -119,7 +119,7 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
                   {asset.effectiveDpi} DPI
                 </span>
                 {asset.isBgRemoved && (
-                  <span className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-bold text-[#204563] bg-[#FAF7F1] border border-[#E5D9C8] px-1.5 py-0.5 rounded">
                     BG Removed
                   </span>
                 )}
@@ -152,7 +152,7 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
                 min="0.1"
                 value={formatUnit(asset.targetWidth, unit)}
                 onChange={(e) => handleWidthChange(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#EF7F1A]/20 focus:border-[#EF7F1A]"
               />
               <span className="absolute right-2 text-[10px] font-medium text-slate-400 pointer-events-none">
                 {unit === 'inch' ? 'inches' : unit}
@@ -172,7 +172,7 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
                 min="0.1"
                 value={formatUnit(asset.targetHeight, unit)}
                 onChange={(e) => handleHeightChange(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#EF7F1A]/20 focus:border-[#EF7F1A]"
               />
               <span className="absolute right-2 text-[10px] font-medium text-slate-400 pointer-events-none">
                 {unit === 'inch' ? 'inches' : unit}
@@ -192,11 +192,11 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
             className="flex items-center space-x-2 text-xs font-medium text-slate-600 select-none cursor-default"
             title="Lock Aspect Ratio is permanently enabled"
           >
-            <div className="w-8 h-4 rounded-full relative p-0.5 bg-indigo-600">
+            <div className="w-8 h-4 rounded-full relative p-0.5 bg-[#204563]">
               <div className="w-3 h-3 rounded-full bg-white transition-transform translate-x-4" />
             </div>
             <span className="flex items-center space-x-1">
-              <Lock className="w-3 h-3 text-indigo-600" />
+              <Lock className="w-3 h-3 text-[#204563]" />
               <span className="text-xs font-semibold">Lock Aspect Ratio</span>
             </span>
           </div>
@@ -204,7 +204,7 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
           <button
             onClick={handleToggleRotation}
             title="Rotate 90° (Swap Width & Height)"
-            className="text-slate-400 hover:text-indigo-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            className="text-slate-400 hover:text-[#EF7F1A] p-1 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <RotateCw className="w-3.5 h-3.5" />
           </button>
@@ -230,14 +230,14 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({
 
         {/* Background removal prompt if opaque PNG / JPG */}
         {!asset.hasAlpha && !asset.isBgRemoved && (
-          <div className="mb-3 bg-purple-50 border border-purple-200 rounded-2xl p-2.5 flex items-center justify-between text-xs text-purple-900">
+          <div className="mb-3 bg-[#FAF7F1] border border-[#E5D9C8] rounded-2xl p-2.5 flex items-center justify-between text-xs text-[#204563]">
             <div className="flex items-center space-x-1.5 font-medium">
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+              <Sparkles className="w-3.5 h-3.5 text-[#EF7F1A]" />
               <span>Opaque background detected</span>
             </div>
             <button
               onClick={() => onRemoveBg(asset.id)}
-              className="ml-2 px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-[11px] shadow-xs flex-shrink-0 transition-colors"
+              className="ml-2 px-2.5 py-1 bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] font-black rounded-lg text-[11px] shadow-xs flex-shrink-0 transition-colors"
             >
               Remove BG
             </button>

@@ -32,18 +32,18 @@ export const StudioToolsPalette: React.FC<StudioToolsPaletteProps> = ({
   onSelectTool
 }) => {
   return (
-    <div className="w-full bg-white/95 backdrop-blur-md rounded-3xl border border-indigo-100/90 shadow-md p-4 sm:p-5 mb-5 transition-all">
+    <div className="w-full bg-white rounded-3xl border border-[#E5D9C8] shadow-md p-4 sm:p-5 mb-5 transition-all">
       {/* Header */}
       <div className="flex items-center justify-between mb-3.5">
         <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-[#FAF7F1] border border-[#E5D9C8] flex items-center justify-center text-[#EF7F1A] shadow-xs">
             <Layers className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-extrabold text-sm text-slate-900 flex items-center space-x-1.5">
+            <h3 className="font-extrabold text-sm text-[#204563] flex items-center space-x-1.5">
               <span>Studio AI & Prep Tools</span>
             </h3>
-            <p className="text-[11px] text-slate-500 font-medium">
+            <p className="text-[11px] text-[#526A7B] font-medium">
               Professional image preparation for DTF printing
             </p>
           </div>
@@ -51,7 +51,7 @@ export const StudioToolsPalette: React.FC<StudioToolsPaletteProps> = ({
 
         <button
           onClick={onToggle}
-          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1 transition-colors px-2.5 py-1 rounded-lg hover:bg-indigo-50"
+          className="text-xs font-bold text-[#204563] hover:text-[#EF7F1A] flex items-center space-x-1 transition-colors px-2.5 py-1 rounded-lg hover:bg-[#FAF7F1]"
         >
           <span>{isOpen ? 'Hide Tool Palette' : 'Show Tool Palette'}</span>
           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -62,10 +62,10 @@ export const StudioToolsPalette: React.FC<StudioToolsPaletteProps> = ({
       {isOpen && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-200">
           {/* Category 1: FIX & QUALITY */}
-          <div className="bg-[#fbfcff] rounded-2xl border border-indigo-100/70 p-3 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center space-x-1.5 mb-2.5 text-indigo-600">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-              <span className="font-extrabold text-[11px] tracking-wider uppercase text-indigo-700">
+          <div className="bg-[#FAF7F1] rounded-2xl border border-[#E5D9C8] p-3 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center space-x-1.5 mb-2.5 text-[#204563]">
+              <Sparkles className="w-3.5 h-3.5 text-[#EF7F1A]" />
+              <span className="font-extrabold text-[11px] tracking-wider uppercase text-[#204563]">
                 Fix & Quality
               </span>
             </div>
@@ -73,15 +73,15 @@ export const StudioToolsPalette: React.FC<StudioToolsPaletteProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => onSelectTool('upscale')}
-                className="p-2.5 rounded-xl bg-white hover:bg-indigo-50/50 border border-indigo-100/80 hover:border-indigo-300 text-left transition-all hover:scale-[1.02] shadow-2xs group relative overflow-hidden"
+                className="p-2.5 rounded-xl bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] hover:border-[#EF7F1A] text-left transition-all hover:scale-[1.02] shadow-2xs group relative overflow-hidden"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <Maximize2 className="w-4 h-4 text-indigo-600" />
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.2 rounded-full">
+                  <Maximize2 className="w-4 h-4 text-[#204563]" />
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-[#EF7F1A] text-[#204563] px-1.5 py-0.2 rounded-full">
                     AI TOOL
                   </span>
                 </div>
-                <div className="font-bold text-xs text-slate-900 group-hover:text-indigo-600">Image Upscaler</div>
+                <div className="font-bold text-xs text-slate-900 group-hover:text-[#EF7F1A]">Image Upscaler</div>
                 <div className="text-[10px] text-slate-400 truncate">Sharpen & enlarge</div>
               </button>
 
@@ -132,12 +132,12 @@ export const StudioToolsPalette: React.FC<StudioToolsPaletteProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => onSelectTool('remove-color')}
-                className="p-2.5 rounded-xl bg-white hover:bg-indigo-50/50 border border-slate-200/80 hover:border-indigo-300 text-left transition-all hover:scale-[1.02] shadow-2xs group"
+                className="p-2.5 rounded-xl bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] hover:border-[#EF7F1A] text-left transition-all hover:scale-[1.02] shadow-2xs group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <Pipette className="w-4 h-4 text-indigo-600" />
+                  <Pipette className="w-4 h-4 text-[#204563]" />
                 </div>
-                <div className="font-bold text-xs text-slate-900 group-hover:text-indigo-600 leading-tight">
+                <div className="font-bold text-xs text-slate-900 group-hover:text-[#EF7F1A] leading-tight">
                   Remove/Replace Color
                 </div>
                 <div className="text-[10px] text-slate-400 truncate">Pick & swap</div>
@@ -190,15 +190,15 @@ export const StudioToolsPalette: React.FC<StudioToolsPaletteProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => onSelectTool('texture')}
-                className="p-2.5 rounded-xl bg-white hover:bg-purple-50/50 border border-slate-200/80 hover:border-purple-300 text-left transition-all hover:scale-[1.02] shadow-2xs group"
+                className="p-2.5 rounded-xl bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] hover:border-[#EF7F1A] text-left transition-all hover:scale-[1.02] shadow-2xs group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <Layers className="w-4 h-4 text-purple-600" />
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.2 rounded-full">
+                  <Layers className="w-4 h-4 text-[#204563]" />
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-[#EF7F1A] text-[#204563] px-1.5 py-0.2 rounded-full">
                     11
                   </span>
                 </div>
-                <div className="font-bold text-xs text-slate-900 group-hover:text-purple-600">Texture Effects</div>
+                <div className="font-bold text-xs text-slate-900 group-hover:text-[#EF7F1A]">Texture Effects</div>
                 <div className="text-[10px] text-slate-400 truncate">11 creative filters</div>
               </button>
 
@@ -252,15 +252,15 @@ export const StudioToolsPalette: React.FC<StudioToolsPaletteProps> = ({
 
               <button
                 onClick={() => onSelectTool('vectorize')}
-                className="p-2.5 rounded-xl bg-white hover:bg-purple-50/50 border border-slate-200/80 hover:border-purple-300 text-left transition-all hover:scale-[1.02] shadow-2xs group relative overflow-hidden"
+                className="p-2.5 rounded-xl bg-white hover:bg-[#FAF7F1] border border-[#E5D9C8] hover:border-[#EF7F1A] text-left transition-all hover:scale-[1.02] shadow-2xs group relative overflow-hidden"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <Sparkles className="w-4 h-4 text-purple-600" />
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.2 rounded-full">
+                  <Sparkles className="w-4 h-4 text-[#204563]" />
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-[#EF7F1A] text-[#204563] px-1.5 py-0.2 rounded-full">
                     AI TOOL
                   </span>
                 </div>
-                <div className="font-bold text-xs text-slate-900 group-hover:text-purple-600">Image Vectoriser</div>
+                <div className="font-bold text-xs text-slate-900 group-hover:text-[#EF7F1A]">Image Vectoriser</div>
                 <div className="text-[10px] text-slate-400 truncate">Trace to vector</div>
               </button>
 

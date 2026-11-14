@@ -337,7 +337,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
           <div className="flex items-center space-x-2">
             {sheetsToDraw.length > 1 ? (
               <>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Select Sheet:</span>
+                <span className="text-[11px] font-bold text-[#526A7B] uppercase tracking-wider">Select Sheet:</span>
                 <div className="flex items-center space-x-1.5 font-mono">
                   {sheetsToDraw.map((s) => (
                     <button
@@ -345,8 +345,8 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                       onClick={() => setSelectedSheetIndex(s.sheetIndex)}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         selectedSheetIndex === s.sheetIndex
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          ? 'bg-[#EF7F1A] text-[#204563] shadow-xs font-black'
+                          : 'bg-white border border-[#E5D9C8] text-[#204563] hover:bg-[#FAF7F1]'
                       }`}
                     >
                       Sheet {s.sheetIndex + 1}
@@ -355,44 +355,44 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                 </div>
               </>
             ) : (
-              <span className="text-xs font-semibold text-slate-500">Preview & Canvas Controls</span>
+              <span className="text-xs font-semibold text-[#526A7B]">Preview &amp; Canvas Controls</span>
             )}
           </div>
 
           {/* Right: Zoom Stepper, Fit, 100%, Swatches, Bounding Box */}
           <div className="flex items-center space-x-2.5 ml-auto">
             {/* Zoom Stepper for Selected Sheet */}
-            <div className="flex items-center space-x-1.5 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-2xs">
+            <div className="flex items-center space-x-1.5 bg-white border border-[#E5D9C8] rounded-lg px-2 py-1 shadow-2xs">
               <button
                 onClick={handleZoomOut}
-                className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-slate-900 font-bold hover:bg-slate-100 rounded cursor-pointer"
+                className="w-5 h-5 flex items-center justify-center text-[#526A7B] hover:text-[#204563] font-bold hover:bg-[#FAF7F1] rounded cursor-pointer"
                 title="Zoom out"
               >
                 –
               </button>
-              <span className="font-mono font-bold text-slate-900 min-w-8 text-center text-xs">
+              <span className="font-mono font-bold text-[#204563] min-w-8 text-center text-xs">
                 {sheetZooms[selectedSheetIndex] || zoomPercent}%
               </span>
               <button
                 onClick={handleZoomIn}
-                className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-slate-900 font-bold hover:bg-slate-100 rounded cursor-pointer"
+                className="w-5 h-5 flex items-center justify-center text-[#526A7B] hover:text-[#204563] font-bold hover:bg-[#FAF7F1] rounded cursor-pointer"
                 title="Zoom in"
               >
                 +
               </button>
             </div>
 
-            <div className="h-4 w-px bg-slate-200" />
+            <div className="h-4 w-px bg-[#E5D9C8]" />
 
             {/* Presets: Fit & 100% for Selected Sheet */}
-            <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
+            <div className="flex items-center space-x-1 bg-white border border-[#E5D9C8] rounded-lg p-0.5 shadow-2xs">
               <button
                 type="button"
                 onClick={handleFit}
                 className={`px-2 py-1 rounded cursor-pointer text-xs transition-colors ${
                   sheetFitModes[selectedSheetIndex] !== false
-                    ? 'bg-indigo-50 text-indigo-700 font-bold'
-                    : 'text-slate-600 font-medium hover:text-slate-900'
+                    ? 'bg-[#EF7F1A] text-[#204563] font-black'
+                    : 'text-[#526A7B] font-medium hover:text-[#204563]'
                 }`}
                 title="Fit selected sheet into view"
               >
@@ -403,8 +403,8 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                 onClick={handle100}
                 className={`px-2 py-1 rounded cursor-pointer text-xs transition-colors ${
                   sheetFitModes[selectedSheetIndex] === false && (sheetZooms[selectedSheetIndex] || zoomPercent) === 100
-                    ? 'bg-indigo-50 text-indigo-700 font-bold'
-                    : 'text-slate-600 font-medium hover:text-slate-900'
+                    ? 'bg-[#EF7F1A] text-[#204563] font-black'
+                    : 'text-[#526A7B] font-medium hover:text-[#204563]'
                 }`}
                 title="View selected sheet at 100% actual print size"
               >
@@ -412,17 +412,17 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
               </button>
             </div>
 
-            <div className="h-4 w-px bg-slate-200" />
+            <div className="h-4 w-px bg-[#E5D9C8]" />
 
             {/* Background Swatches */}
-            <div className="flex items-center space-x-1.5 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-2xs">
+            <div className="flex items-center space-x-1.5 bg-white border border-[#E5D9C8] rounded-lg px-2 py-1 shadow-2xs">
               {/* Checkerboard Swatch */}
               <button
                 onClick={() => setBgMode('checker')}
                 className={`w-4.5 h-4.5 rounded-full border overflow-hidden transition-all cursor-pointer ${
                   bgMode === 'checker'
-                    ? 'border-indigo-600 ring-2 ring-indigo-500/30 scale-110'
-                    : 'border-slate-300 hover:scale-105'
+                    ? 'border-[#EF7F1A] ring-2 ring-[#EF7F1A]/30 scale-110'
+                    : 'border-[#E5D9C8] hover:scale-105'
                 }`}
                 style={{
                   backgroundImage: `
@@ -441,7 +441,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
               <button
                 onClick={() => setBgMode('gray')}
                 className={`w-4.5 h-4.5 rounded-full bg-slate-400 border border-slate-300 transition-all cursor-pointer ${
-                  bgMode === 'gray' ? 'ring-2 ring-indigo-500/40 scale-110' : 'hover:scale-105'
+                  bgMode === 'gray' ? 'ring-2 ring-[#EF7F1A]/40 scale-110' : 'hover:scale-105'
                 }`}
                 title="Gray Background"
               />
@@ -450,21 +450,21 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
               <button
                 onClick={() => setBgMode('black')}
                 className={`w-4.5 h-4.5 rounded-full bg-slate-900 border border-slate-700 transition-all cursor-pointer ${
-                  bgMode === 'black' ? 'ring-2 ring-indigo-500/40 scale-110' : 'hover:scale-105'
+                  bgMode === 'black' ? 'ring-2 ring-[#EF7F1A]/40 scale-110' : 'hover:scale-105'
                 }`}
                 title="Black Garment Background"
               />
             </div>
 
-            <div className="h-4 w-px bg-slate-200" />
+            <div className="h-4 w-px bg-[#E5D9C8]" />
 
             {/* Bounding Box Toggle */}
             <button
               onClick={() => setShowBoundingBox(!showBoundingBox)}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                 showBoundingBox
-                  ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold'
-                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-[#EF7F1A] border-[#EF7F1A] text-[#204563] font-black'
+                  : 'bg-white border-[#E5D9C8] text-[#526A7B] hover:text-[#204563] hover:bg-[#FAF7F1]'
               }`}
             >
               Bounding Box
@@ -475,14 +475,14 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
         {/* ================= CANVAS VIEWPORT (DOTTED BACKGROUND) ================= */}
         <div
           ref={containerRef}
-          className="flex-1 min-h-[140px] overflow-auto p-4 sm:p-8 flex flex-col items-start relative select-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent"
+          className="flex-1 min-h-[140px] overflow-auto p-4 sm:p-8 flex flex-col items-start relative select-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#E8DDCA] hover:[&::-webkit-scrollbar-thumb]:bg-[#E5D9C8] [&::-webkit-scrollbar-track]:bg-transparent"
           style={{
-            backgroundColor: '#F8FAFC',
-            backgroundImage: 'radial-gradient(#cbd5e1 1.2px, transparent 1.2px)',
+            backgroundColor: '#FAF7F1',
+            backgroundImage: 'radial-gradient(#526A7B 1px, transparent 1px)',
             backgroundSize: '20px 20px'
           }}
         >
-          {/* Central Vertical Sheets & Dimension Brackets (Side-by-side beside each other, never clipped on left) */}
+          {/* Central Vertical Sheets & Dimension Brackets */}
           <div className="min-w-full w-max flex items-center justify-center space-x-6 sm:space-x-8 p-4 my-auto">
             {sheetsToDraw.map((sheet) => {
               const isSelected = selectedSheetIndex === sheet.sheetIndex;
@@ -506,25 +506,25 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                     <div className="flex flex-col items-center mb-1">
                       <div className={`rounded-full px-3.5 py-1 text-xs font-bold shadow-xs flex items-center space-x-1.5 z-10 font-mono transition-all ${
                         isSelected
-                          ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-md'
-                          : 'bg-white border border-slate-200 text-slate-800 group-hover:border-indigo-300'
+                          ? 'bg-[#EF7F1A] text-[#204563] ring-2 ring-[#EF7F1A]/40 shadow-md font-black'
+                          : 'bg-white border border-[#E5D9C8] text-[#204563] group-hover:border-[#EF7F1A]'
                       }`}>
                         {sheetsToDraw.length > 1 ? (
                           <>
-                            <span className={isSelected ? 'text-white font-black' : 'text-indigo-600 font-black'}>
+                            <span className={isSelected ? 'text-[#204563] font-black' : 'text-[#204563] font-black'}>
                               Sheet {sheet.sheetIndex + 1}
                             </span>
-                            <span className={isSelected ? 'text-indigo-200' : 'text-slate-400'}>•</span>
+                            <span className={isSelected ? 'text-[#204563]/60' : 'text-[#526A7B]'}>•</span>
                             <span>{Math.round((sheetW / 25.4) * 10) / 10}" wide</span>
                             {isSelected && (
-                              <span className="ml-1 px-1.5 py-0.2 bg-white/20 text-white rounded text-[9px] uppercase tracking-wider font-extrabold">
+                              <span className="ml-1 px-1.5 py-0.2 bg-[#204563] text-white rounded text-[9px] uppercase tracking-wider font-extrabold">
                                 Active
                               </span>
                             )}
                           </>
                         ) : (
                           <>
-                            <span className="text-indigo-600 font-black">⟷</span>
+                            <span className="text-[#204563] font-black">⟷</span>
                             <span>{settings.filmWidth}" wide</span>
                           </>
                         )}
@@ -538,17 +538,17 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                             onExportSingleSheet(sheet.sheetIndex);
                           }}
                           disabled={isExporting}
-                          className="mt-1.5 mb-1 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white text-indigo-700 border border-indigo-200 shadow-xs hover:bg-indigo-50 hover:border-indigo-400 hover:text-indigo-800 transition-all cursor-pointer z-10 disabled:opacity-50"
+                          className="mt-1.5 mb-1 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white text-[#204563] border border-[#E5D9C8] shadow-xs hover:bg-[#EF7F1A] hover:border-[#EF7F1A] transition-all cursor-pointer z-10 disabled:opacity-50"
                           title={`Download Sheet ${sheet.sheetIndex + 1} as separate PNG`}
                         >
-                          <Download className="w-3 h-3 text-indigo-600" />
+                          <Download className="w-3 h-3 text-[#204563]" />
                           <span>Download Sheet {sheet.sheetIndex + 1}</span>
                         </button>
                       )}
 
                       {/* Thin bracket line pointing down to sheet top */}
                       <div
-                        className="h-2 border-b border-l border-r border-indigo-400/80 rounded-b-xs"
+                        className="h-2 border-b border-l border-r border-[#EF7F1A] rounded-b-xs"
                         style={{ width: Math.max(40, cWidth) }}
                       />
                     </div>
@@ -556,8 +556,8 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                     {/* The Sheet Canvas */}
                     <div className={`rounded-sm overflow-hidden relative bg-white transition-all ${
                       isSelected
-                        ? 'ring-3 ring-indigo-500 shadow-2xl scale-[1.01]'
-                        : 'border border-indigo-200/90 shadow-xl opacity-90 group-hover:opacity-100'
+                        ? 'ring-3 ring-[#EF7F1A] shadow-2xl scale-[1.01]'
+                        : 'border border-[#E5D9C8] shadow-xl opacity-90 group-hover:opacity-100'
                     }`}>
                       <canvas
                         ref={(el) => {
@@ -572,15 +572,15 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                   <div className="flex items-center space-x-2.5 flex-shrink-0 self-center">
                     <div
                       className={`w-2.5 border-r-2 border-t-2 border-b-2 rounded-r-md ${
-                        isSelected ? 'border-indigo-600' : 'border-indigo-400/90'
+                        isSelected ? 'border-[#EF7F1A]' : 'border-[#E5D9C8]'
                       }`}
                       style={{ height: Math.min(280, Math.max(60, cHeight * 0.75)) }}
                     />
                     <div className="flex flex-col font-mono text-left">
-                      <span className="font-black text-sm sm:text-base text-slate-900 leading-tight">
+                      <span className="font-black text-sm sm:text-base text-[#204563] leading-tight">
                         {sheetMeters} meters
                       </span>
-                      <span className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
+                      <span className="text-xs text-[#526A7B] font-medium leading-tight mt-0.5">
                         {Math.round((sheetW / 25.4) * 10) / 10}" wide • {sheet.totalCopies} {sheet.totalCopies === 1 ? 'copy' : 'copies'}
                       </span>
                     </div>
@@ -591,21 +591,21 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
           </div>
         </div>
 
-        {/* Real-time Download Progress Banner (Pinned & Never Pushes Footer Out) */}
+        {/* Real-time Download Progress Banner */}
         {isExporting && (
-          <div className="px-6 py-2 bg-gradient-to-r from-indigo-50/90 via-purple-50/90 to-indigo-50/90 border-t border-indigo-100 flex items-center justify-between flex-shrink-0 animate-in fade-in duration-200">
-            <div className="flex items-center space-x-2 text-xs font-bold text-indigo-900 truncate pr-2">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600 flex-shrink-0" />
+          <div className="px-6 py-2 bg-[#FAF7F1] border-t border-[#E5D9C8] flex items-center justify-between flex-shrink-0 animate-in fade-in duration-200">
+            <div className="flex items-center space-x-2 text-xs font-bold text-[#204563] truncate pr-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#EF7F1A] flex-shrink-0" />
               <span className="truncate">{exportStatusText || 'Generating and downloading high-resolution sheets...'}</span>
             </div>
             <div className="flex items-center space-x-2.5 flex-shrink-0">
-              <div className="w-28 sm:w-40 bg-indigo-200/80 h-2 rounded-full overflow-hidden">
+              <div className="w-28 sm:w-40 bg-[#E8DDCA] h-2 rounded-full overflow-hidden">
                 <div
-                  className="bg-indigo-600 h-full transition-all duration-150 ease-out rounded-full"
+                  className="bg-[#EF7F1A] h-full transition-all duration-150 ease-out rounded-full"
                   style={{ width: `${Math.max(4, Math.min(100, exportProgress))}%` }}
                 />
               </div>
-              <span className="font-mono font-bold text-xs text-indigo-700 w-9 text-right">{Math.round(exportProgress)}%</span>
+              <span className="font-mono font-bold text-xs text-[#204563] w-9 text-right">{Math.round(exportProgress)}%</span>
             </div>
           </div>
         )}
@@ -626,22 +626,22 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
           </div>
         )}
 
-        {/* ================= MODAL FOOTER (ALWAYS 100% VISIBLE & PINNED) ================= */}
-        <div className="px-6 py-3 sm:px-8 sm:py-3.5 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+        {/* ================= MODAL FOOTER ================= */}
+        <div className="px-6 py-3 sm:px-8 sm:py-3.5 bg-white border-t border-[#E5D9C8] flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
           {/* Left Dimension & Copies Pills */}
           <div className="flex items-center space-x-2.5">
-            <div className="bg-slate-100/90 text-slate-900 font-bold font-mono text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-slate-200/60 shadow-2xs">
+            <div className="bg-[#FAF7F1] text-[#204563] font-bold font-mono text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-[#E5D9C8] shadow-2xs">
               {settings.filmWidth}" × {meters} meters
             </div>
 
-            <div className="bg-slate-100/90 text-slate-900 font-bold font-mono text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-slate-200/60 shadow-2xs">
+            <div className="bg-[#FAF7F1] text-[#204563] font-bold font-mono text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-[#E5D9C8] shadow-2xs">
               {copiesCount} {copiesCount === 1 ? 'copy' : 'copies'}
             </div>
           </div>
 
           {/* Right Action Buttons: Optimize & Download */}
           <div className="flex items-center space-x-3">
-            {/* Emerald Gradient Optimize Button matching Reference Image */}
+            {/* Emerald Gradient Optimize Button */}
             <button
               onClick={handleRunOptimize}
               disabled={isOptimizing || isExporting}
@@ -670,14 +670,14 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
                     onExportSingleSheet(s.sheetIndex);
                   }}
                   disabled={isExporting}
-                  className={`border disabled:opacity-50 font-bold text-xs sm:text-sm rounded-2xl px-4 py-2.5 shadow-xs flex items-center space-x-2 transition-all cursor-pointer ${
+                  className={`border disabled:opacity-50 font-black text-xs sm:text-sm rounded-2xl px-4 py-2.5 shadow-xs flex items-center space-x-2 transition-all cursor-pointer ${
                     selectedSheetIndex === s.sheetIndex
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-300'
-                      : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+                      ? 'bg-[#EF7F1A] text-[#204563] border-[#EF7F1A] shadow-md ring-2 ring-[#EF7F1A]/30'
+                      : 'bg-[#FAF7F1] hover:bg-[#FCE8D5] text-[#204563] border-[#E5D9C8]'
                   }`}
                   title={`Download Sheet ${s.sheetIndex + 1} as separate PNG file`}
                 >
-                  <Download className={`w-4 h-4 ${selectedSheetIndex === s.sheetIndex ? 'text-white' : 'text-indigo-600'}`} />
+                  <Download className={`w-4 h-4 text-[#204563]`} />
                   <span>Download Sheet {s.sheetIndex + 1}</span>
                 </button>
               ))
@@ -685,10 +685,10 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
               <button
                 onClick={() => onExportSingleSheet(selectedSheetIndex)}
                 disabled={isExporting}
-                className="bg-indigo-600 text-white border border-indigo-600 disabled:opacity-50 font-bold text-xs sm:text-sm rounded-2xl px-4 py-2.5 shadow-md flex items-center space-x-2 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                className="bg-[#EF7F1A] text-[#204563] border border-[#EF7F1A] disabled:opacity-50 font-black text-xs sm:text-sm rounded-2xl px-4 py-2.5 shadow-md flex items-center space-x-2 transition-colors cursor-pointer disabled:cursor-not-allowed"
                 title={`Download Sheet ${selectedSheetIndex + 1} separately`}
               >
-                <Download className="w-4 h-4 text-white" />
+                <Download className="w-4 h-4 text-[#204563]" />
                 <span>Download Sheet {selectedSheetIndex + 1}</span>
               </button>
             ) : null}
@@ -697,20 +697,20 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
             <button
               onClick={onExportPng}
               disabled={isExporting}
-              className={`font-bold text-xs sm:text-sm rounded-2xl px-5 py-2.5 shadow-xs flex items-center space-x-2 transition-all ${
+              className={`font-black text-xs sm:text-sm rounded-2xl px-5 py-2.5 shadow-xs flex items-center space-x-2 transition-all ${
                 isExporting
-                  ? 'bg-indigo-600 text-white cursor-wait shadow-indigo-500/25 ring-2 ring-indigo-400'
-                  : 'bg-slate-200 hover:bg-slate-300 text-slate-800 cursor-pointer'
+                  ? 'bg-[#EF7F1A] text-[#204563] cursor-wait shadow-orange-500/25 ring-2 ring-orange-400'
+                  : 'bg-[#204563] hover:bg-[#183750] text-white cursor-pointer'
               }`}
             >
               {isExporting ? (
                 <>
-                  <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  <Loader2 className="w-4 h-4 text-[#204563] animate-spin" />
                   <span>{exportStatusText || `Downloading (${exportProgress}%)...`}</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4 text-slate-600" />
+                  <Download className="w-4 h-4 text-white" />
                   <span>{sheetsToDraw.length > 1 ? `Download All (${sheetsToDraw.length})` : 'Download PNG'}</span>
                 </>
               )}

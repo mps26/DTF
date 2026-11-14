@@ -627,7 +627,7 @@ export const App: React.FC = () => {
 
   if (navTab === 'landing') {
     return (
-      <div className="min-h-screen w-full flex flex-col bg-white text-slate-800 overflow-x-hidden font-sans selection:bg-indigo-600 selection:text-white">
+      <div className="min-h-screen w-full flex flex-col bg-[#F3EBDD] text-[#204563] overflow-x-hidden font-sans selection:bg-[#EF7F1A] selection:text-[#204563]">
         <LandingPage
           currentUser={currentUser}
           onOpenAuth={(mode) => {
@@ -646,14 +646,14 @@ export const App: React.FC = () => {
           <div
             className={`fixed top-6 right-6 z-50 px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2.5 border backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200 ${
               notification.type === 'warning'
-                ? 'bg-[#1b1429]/95 border-amber-500/80 text-amber-100 shadow-amber-950/50'
-                : 'bg-[#0e1324]/95 border-indigo-500/80 text-white shadow-indigo-950/50'
+                ? 'bg-[#183750]/95 border-amber-500/80 text-amber-100 shadow-slate-900/50'
+                : 'bg-[#204563]/95 border-[#EF7F1A]/80 text-white shadow-slate-900/50'
             }`}
           >
             {notification.type === 'warning' ? (
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0"></span>
             ) : (
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#EF7F1A] flex-shrink-0"></span>
             )}
             <span className="tracking-wide">{notification.message}</span>
           </div>
@@ -683,12 +683,12 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen w-screen flex bg-[#0c101d] text-slate-800 overflow-hidden font-sans">
+    <div className="h-screen w-screen flex bg-[#204563] text-[#204563] overflow-hidden font-sans selection:bg-[#EF7F1A] selection:text-[#204563]">
       {/* 1. Very Left Dark Vertical Icon Nav Strip */}
       <VerticalNavStrip activeTab={navTab} onTabChange={setNavTab} currentUser={currentUser} />
 
       {/* 2. Main Center Work Area (Expanded to full width) */}
-      <div className="flex-1 flex flex-col h-full overflow-y-auto lg:overflow-hidden overflow-x-hidden bg-[#eff2fc] relative">
+      <div className="flex-1 flex flex-col h-full overflow-y-auto lg:overflow-hidden overflow-x-hidden bg-[#F3EBDD] relative">
         {/* Top Navigation Bar with the 4 Tool Categories */}
         <TopNavBar
           onSelectTool={handleSelectTool}
@@ -712,14 +712,14 @@ export const App: React.FC = () => {
           <div
             className={`fixed top-18 right-6 z-50 px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2.5 border backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200 ${
               notification.type === 'warning'
-                ? 'bg-[#1b1429]/95 border-amber-500/80 text-amber-100 shadow-amber-950/50'
-                : 'bg-[#0e1324]/95 border-indigo-500/80 text-white shadow-indigo-950/50'
+                ? 'bg-[#183750]/95 border-amber-500/80 text-amber-100 shadow-slate-900/50'
+                : 'bg-[#204563]/95 border-[#EF7F1A]/80 text-white shadow-slate-900/50'
             }`}
           >
             {notification.type === 'warning' ? (
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0"></span>
             ) : (
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#EF7F1A] flex-shrink-0"></span>
             )}
             <span className="tracking-wide">{notification.message}</span>
           </div>
@@ -817,22 +817,22 @@ export const App: React.FC = () => {
 
                 {/* Header: "Create Your Gang Sheet" (Compact mobile typography & responsive selector) */}
                 <div className="flex flex-col items-center justify-center text-center flex-shrink-0 pt-0.5 pb-0.5 px-1">
-                  <h1 className="text-lg sm:text-2xl font-black text-indigo-950 tracking-tight leading-tight">
-                    Create Your <span className="text-indigo-600">Gang Sheet</span>
+                  <h1 className="text-lg sm:text-2xl font-black text-[#204563] tracking-tight leading-tight">
+                    Create Your <span className="text-[#EF7F1A]">Gang Sheet</span>
                   </h1>
-                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium max-w-md mt-0.5 leading-snug">
+                  <p className="text-[11px] sm:text-xs text-[#526A7B] font-medium max-w-md mt-0.5 leading-snug">
                     Upload your designs and generate optimized layouts for DTF printing
                   </p>
 
                   {/* Multiple Designs / Repeat One Design Responsive Selector */}
-                  <div className="w-full max-w-[340px] flex items-center p-0.5 sm:p-1 bg-white/95 backdrop-blur-md rounded-full shadow-xs border border-indigo-100 mt-1.5">
+                  <div className="w-full max-w-[340px] flex items-center p-0.5 sm:p-1 bg-white/95 backdrop-blur-md rounded-full shadow-xs border border-[#E5D9C8] mt-1.5">
                     <button
                       type="button"
                       onClick={() => handleUpdateSettings({ mode: 'multiple' })}
                       className={`flex-1 flex items-center justify-center space-x-1.5 py-1 px-2.5 rounded-full text-xs font-bold transition-all ${
                         settings.mode === 'multiple'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-[#EF7F1A] text-[#204563] font-black shadow-xs'
+                          : 'text-[#526A7B] hover:text-[#204563]'
                       }`}
                     >
                       <Layers className="w-3.5 h-3.5 shrink-0" />
@@ -844,8 +844,8 @@ export const App: React.FC = () => {
                       onClick={() => handleUpdateSettings({ mode: 'repeat' })}
                       className={`flex-1 flex items-center justify-center space-x-1.5 py-1 px-2.5 rounded-full text-xs font-bold transition-all ${
                         settings.mode === 'repeat'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-[#EF7F1A] text-[#204563] font-black shadow-xs'
+                          : 'text-[#526A7B] hover:text-[#204563]'
                       }`}
                     >
                       <Copy className="w-3.5 h-3.5 shrink-0" />

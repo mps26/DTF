@@ -15,9 +15,44 @@ export default {
     },
     extend: {
       colors: {
-        // MyPrintStyle (MPS) Official Brand Colors:
-        // Navy Blue: C:91 M:56 Y:21 K:50 -> #204563
-        // Industrial Orange: C:0 M:60 Y:100 K:0 -> #EF7F1A
+        // Core Brand Colors (MyPrintStyle)
+        brand: {
+          primary: '#204563',
+          navy: '#204563',
+          'navy-dark': '#183750',
+          'navy-deep': '#0f2232',
+          accent: '#EF7F1A',
+          orange: '#EF7F1A',
+          'orange-hover': '#d96e12',
+          'orange-light': '#FCE8D5',
+          background: '#F3EBDD',
+          beige: '#F3EBDD',
+          'beige-light': '#FAF7F1',
+          'beige-dark': '#E8DDCA',
+          surface: '#FFFFFF',
+          'surface-muted': '#FAF7F1',
+          border: '#E5D9C8',
+          'text-primary': '#204563',
+          'text-secondary': '#526A7B',
+          'text-inverse': '#FFFFFF',
+        },
+        beige: {
+          DEFAULT: '#F3EBDD',
+          50: '#FAF7F1',
+          100: '#F3EBDD',
+          200: '#E8DDCA',
+          300: '#E5D9C8',
+          400: '#D6C5AD',
+          500: '#C4AF92',
+          surface: '#FAF7F1',
+          border: '#E5D9C8',
+          dark: '#E8DDCA',
+        },
+        muted: {
+          DEFAULT: '#526A7B',
+          blue: '#526A7B',
+          slate: '#526A7B',
+        },
         mps: {
           navy: '#204563',
           'navy-50': '#f0f5fa',
@@ -33,7 +68,7 @@ export default {
           'navy-950': '#0a1622',
           orange: '#EF7F1A',
           'orange-50': '#fff8f0',
-          'orange-100': '#feedd7',
+          'orange-100': '#FCE8D5',
           'orange-200': '#fed4aa',
           'orange-300': '#fdb570',
           'orange-400': '#fb9234',
@@ -43,10 +78,10 @@ export default {
           'orange-800': '#b3550e',
           'orange-900': '#8f410d',
           'orange-950': '#4d1e05',
-          bg: '#edf3f8',
-          card: '#ffffff',
-          'card-header': '#eaf2f8',
-          border: '#cfe0ee',
+          bg: '#F3EBDD',
+          card: '#FFFFFF',
+          'card-header': '#FAF7F1',
+          border: '#E5D9C8',
           dark: '#0b1723',
           darker: '#08121c',
           sidebar: '#0c1a27',
@@ -54,7 +89,7 @@ export default {
           surface: '#162e43'
         },
         indigo: {
-          50: '#f0f5fa',
+          50: '#FAF7F1',
           100: '#dbe7f2',
           200: '#b9d1e4',
           300: '#8cb3d2',
@@ -68,11 +103,11 @@ export default {
         },
         purple: {
           50: '#fff8f0',
-          100: '#feedd7',
+          100: '#FCE8D5',
           200: '#fed4aa',
           300: '#fdb570',
           400: '#fb9234',
-          500: '#f57410',
+          500: '#EF7F1A',
           600: '#EF7F1A',
           700: '#d96e12',
           800: '#b3550e',
@@ -81,13 +116,13 @@ export default {
         },
         dtf: {
           dark: '#0b1723',
-          card: '#ffffff',
+          card: '#FFFFFF',
           primary: '#204563',
           secondary: '#EF7F1A',
           accent: '#EF7F1A',
           slate: '#132c40',
-          border: '#cfe0ee',
-          hover: '#f0f5fa'
+          border: '#E5D9C8',
+          hover: '#FAF7F1'
         }
       },
       fontFamily: {

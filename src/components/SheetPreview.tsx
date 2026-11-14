@@ -101,7 +101,7 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
     }
 
     // 2. Draw Sheet Outer Boundary & Margins
-    ctx.strokeStyle = '#6366f1';
+    ctx.strokeStyle = '#204563';
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, canvasWidth, canvasHeight);
 
@@ -139,14 +139,14 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
         if (img && img.complete) {
           drawImageProportional(ctx, img, 0, 0, hPx, wPx, placement.asset?.aspectLocked !== false);
         } else {
-          ctx.fillStyle = '#e0e7ff';
+          ctx.fillStyle = '#FAF7F1';
           ctx.fillRect(0, 0, hPx, wPx);
         }
       } else {
         if (img && img.complete) {
           drawImageProportional(ctx, img, xPx, yPx, wPx, hPx, placement.asset?.aspectLocked !== false);
         } else {
-          ctx.fillStyle = '#e0e7ff';
+          ctx.fillStyle = '#FAF7F1';
           ctx.fillRect(xPx, yPx, wPx, hPx);
         }
       }
@@ -154,16 +154,16 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
       ctx.restore();
 
       // Item border & selection highlight
-      ctx.strokeStyle = isSelected ? '#4f46e5' : '#94a3b8';
+      ctx.strokeStyle = isSelected ? '#EF7F1A' : '#94a3b8';
       ctx.lineWidth = isSelected ? 3 : 1;
       ctx.setLineDash(isSelected ? [] : [2, 2]);
       ctx.strokeRect(xPx, yPx, wPx, hPx);
       ctx.setLineDash([]);
 
       // Subtle index label badge
-      ctx.fillStyle = isSelected ? '#4f46e5' : 'rgba(30, 41, 59, 0.75)';
+      ctx.fillStyle = isSelected ? '#EF7F1A' : 'rgba(32, 69, 99, 0.85)';
       ctx.fillRect(xPx, yPx, 22, 16);
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = isSelected ? '#204563' : '#ffffff';
       ctx.font = 'bold 10px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -216,40 +216,40 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
   const displayFilmWidth = mmToUnit(settings.filmWidthMm, settings.unit);
 
   return (
-    <div className="bg-white rounded-3xl border border-indigo-100 shadow-md shadow-indigo-900/5 p-5 sm:p-6 flex flex-col h-full">
+    <div className="bg-white rounded-3xl border border-[#E5D9C8] shadow-md shadow-[#204563]/5 p-5 sm:p-6 flex flex-col h-full">
       {/* Top Header: Sheet Length & Unit Selector */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-5 border-b border-slate-100 gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-5 border-b border-[#E5D9C8] gap-4">
         {/* Left: Title & Big Length Callout */}
         <div>
           <div className="flex items-center space-x-2">
-            <h2 className="font-extrabold text-slate-900 text-lg sm:text-xl tracking-tight">
+            <h2 className="font-extrabold text-[#204563] text-lg sm:text-xl tracking-tight">
               Sheet Preview
             </h2>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#FAF7F1] border border-[#E5D9C8] text-[#526A7B]">
               Sheet Length: {settings.lengthMode === 'auto' ? 'Auto' : 'Fixed'}
             </span>
           </div>
 
           <div className="mt-1 flex items-baseline space-x-2">
-            <span className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950 font-mono">
+            <span className="text-3xl sm:text-4xl font-black tracking-tight text-[#204563] font-mono">
               {formatUnit(displayLength, settings.unit, 1)} {settings.unit === 'inch' ? 'in' : settings.unit}
             </span>
-            <span className="text-xs font-medium text-slate-400">
+            <span className="text-xs font-medium text-[#526A7B]">
               ({formatUnit(settings.filmWidth, settings.unit, 1)} {settings.unit === 'inch' ? 'in' : settings.unit} roll width)
             </span>
           </div>
         </div>
 
         {/* Right: Unit Selector Pills [mm, cm, meter, inch] */}
-        <div className="flex items-center space-x-1 p-1 bg-slate-100/80 rounded-2xl border border-slate-200/80 text-xs font-semibold">
+        <div className="flex items-center space-x-1 p-1 bg-[#FAF7F1] rounded-2xl border border-[#E5D9C8] text-xs font-semibold">
           {(['mm', 'cm', 'meter', 'inch'] as Unit[]).map((u) => (
             <button
               key={u}
               onClick={() => onUnitChange(u)}
               className={`px-3 py-1.5 rounded-xl transition-all ${
                 settings.unit === u
-                  ? 'bg-white text-indigo-600 shadow-xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-[#204563] shadow-xs font-black'
+                  : 'text-[#526A7B] hover:text-[#204563]'
               }`}
             >
               {u}
@@ -259,10 +259,10 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
       </div>
 
       {/* Nesting Mode Switcher (Box packing vs True shape) - Exact match for Screenshot 2 */}
-      <div className="py-4 border-b border-slate-100">
-        <div className="text-[11px] font-bold tracking-wider text-slate-400 uppercase mb-2.5 flex items-center justify-between">
+      <div className="py-4 border-b border-[#E5D9C8]">
+        <div className="text-[11px] font-bold tracking-wider text-[#526A7B] uppercase mb-2.5 flex items-center justify-between">
           <span>Nesting Engine</span>
-          <span className="text-[10px] text-indigo-600 lowercase font-medium">
+          <span className="text-[10px] text-[#204563] lowercase font-medium">
             deterministic geometry
           </span>
         </div>
@@ -273,28 +273,28 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
             onClick={() => onNestingModeChange('box')}
             className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
               settings.nestingAlgorithm === 'box'
-                ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-1 ring-indigo-500/30'
-                : 'border-slate-200 hover:border-slate-300 bg-white'
+                ? 'border-[#204563] bg-[#FAF7F1] shadow-xs ring-1 ring-[#204563]/20'
+                : 'border-[#E5D9C8] hover:border-[#204563] bg-white'
             }`}
           >
             <div className="flex items-center space-x-3">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
                   settings.nestingAlgorithm === 'box'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 text-slate-600'
+                    ? 'bg-[#204563] text-white'
+                    : 'bg-[#FAF7F1] text-[#526A7B] border border-[#E5D9C8]'
                 }`}
               >
                 1
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-800">Box packing</div>
-                <div className="text-[10px] text-slate-500">Now on the film • fast</div>
+                <div className="font-bold text-xs text-[#204563]">Box packing</div>
+                <div className="text-[10px] text-[#526A7B]">Now on the film • fast</div>
               </div>
             </div>
 
             <div className="text-right">
-              <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-md">
+              <span className="text-[10px] font-mono font-bold text-[#204563] bg-[#FAF7F1] border border-[#E5D9C8] px-2 py-0.5 rounded-md">
                 FILM {formatUnit(displayLength, settings.unit, 1)} {settings.unit === 'inch' ? 'in' : settings.unit}
               </span>
             </div>
@@ -304,23 +304,23 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
           <div
             className={`p-3 rounded-2xl border transition-all flex items-center justify-between ${
               settings.nestingAlgorithm === 'true-shape'
-                ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-1 ring-indigo-500/30'
-                : 'border-slate-200 hover:border-slate-300 bg-white'
+                ? 'border-[#204563] bg-[#FAF7F1] shadow-xs ring-1 ring-[#204563]/20'
+                : 'border-[#E5D9C8] hover:border-[#204563] bg-white'
             }`}
           >
             <div className="flex items-center space-x-3">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
                   settings.nestingAlgorithm === 'true-shape'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 text-slate-600'
+                    ? 'bg-[#204563] text-white'
+                    : 'bg-[#FAF7F1] text-[#526A7B] border border-[#E5D9C8]'
                 }`}
               >
                 2
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-800">True shape</div>
-                <div className="text-[10px] text-slate-500">Fits closer • about 40 sec</div>
+                <div className="font-bold text-xs text-[#204563]">True shape</div>
+                <div className="text-[10px] text-[#526A7B]">Fits closer • about 40 sec</div>
               </div>
             </div>
 
@@ -328,7 +328,7 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
               <button
                 onClick={handleRunTrueShape}
                 disabled={isSimulatingTrueShape}
-                className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center space-x-1"
+                className="px-3 py-1 bg-[#EF7F1A] hover:bg-[#d97014] disabled:bg-slate-300 text-[#204563] font-black text-xs rounded-xl shadow-xs transition-colors flex items-center space-x-1"
               >
                 {isSimulatingTrueShape ? (
                   <span className="animate-pulse">Optimizing...</span>
@@ -340,7 +340,7 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
           </div>
         </div>
 
-        <p className="text-[11px] text-slate-400 mt-2">
+        <p className="text-[11px] text-[#526A7B] mt-2">
           True shape usually saves film. Press Run to calculate interlocking contour packing.
         </p>
       </div>
@@ -359,28 +359,28 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
       <div className="mt-4 flex-1 flex flex-col min-h-[460px]">
         {/* Canvas Toolbar Header */}
         <div className="flex items-center justify-between mb-2 px-1">
-          <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+          <span className="text-[11px] font-bold tracking-wider text-[#526A7B] uppercase">
             How it will print
           </span>
 
-          <div className="flex items-center space-x-1.5 bg-slate-100/90 p-1 rounded-xl text-slate-600">
+          <div className="flex items-center space-x-1.5 bg-[#FAF7F1] p-1 rounded-xl text-[#526A7B] border border-[#E5D9C8]">
             <button
               onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}
-              className="p-1 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors"
+              className="p-1 hover:text-[#EF7F1A] hover:bg-white rounded-lg transition-colors"
               title="Zoom In"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setZoom((z) => Math.max(0.4, z - 0.15))}
-              className="p-1 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors"
+              className="p-1 hover:text-[#EF7F1A] hover:bg-white rounded-lg transition-colors"
               title="Zoom Out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setZoom(1)}
-              className="p-1 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors"
+              className="p-1 hover:text-[#EF7F1A] hover:bg-white rounded-lg transition-colors"
               title="Reset Zoom"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -391,16 +391,16 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
         {/* Scrollable / Interactive Canvas Container */}
         <div
           ref={containerRef}
-          className="flex-1 bg-slate-50 border border-slate-200 rounded-3xl p-6 overflow-auto flex flex-col items-center justify-start relative shadow-inner select-none"
+          className="flex-1 bg-[#FAF7F1] border border-[#E5D9C8] rounded-3xl p-6 overflow-auto flex flex-col items-center justify-start relative shadow-inner select-none"
         >
           {/* Dimension measurement indicators */}
-          <div className="w-full flex items-center justify-between text-[11px] font-mono text-slate-400 mb-2 px-2">
+          <div className="w-full flex items-center justify-between text-[11px] font-mono text-[#526A7B] mb-2 px-2">
             <span>Roll Width: {formatUnit(displayFilmWidth, settings.unit, 1)} {settings.unit === 'inch' ? 'in' : settings.unit}</span>
             <span>Total Placed: {layout.totalCopies} copies</span>
             <span>Length: {formatUnit(displayLength, settings.unit, 1)} {settings.unit === 'inch' ? 'in' : settings.unit}</span>
           </div>
 
-          <div className="relative shadow-xl rounded-lg overflow-hidden border border-slate-300">
+          <div className="relative shadow-xl rounded-lg overflow-hidden border border-[#E5D9C8]">
             <canvas
               ref={canvasRef}
               onClick={handleCanvasClick}
@@ -409,8 +409,8 @@ export const SheetPreview: React.FC<SheetPreviewProps> = ({
           </div>
 
           {/* Canvas Bottom Callout: "Tap a file to see it big" */}
-          <div className="mt-4 flex items-center space-x-1.5 text-xs text-slate-500 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200 shadow-2xs">
-            <ExternalLink className="w-3.5 h-3.5 text-indigo-500" />
+          <div className="mt-4 flex items-center space-x-1.5 text-xs text-[#204563] bg-white px-3 py-1.5 rounded-full border border-[#E5D9C8] shadow-2xs font-bold">
+            <ExternalLink className="w-3.5 h-3.5 text-[#EF7F1A]" />
             <span>Tap a file on the film to inspect details</span>
           </div>
         </div>

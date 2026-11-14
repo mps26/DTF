@@ -60,7 +60,7 @@ export const ToolsDrawer: React.FC<ToolsDrawerProps> = ({
       name: 'Image Upscaler',
       desc: 'AI Super-resolution 2x/4x for low DPI raster designs',
       badge: 'AI TOOL',
-      badgeColor: 'bg-purple-900/60 text-purple-300 border-purple-700',
+      badgeColor: 'bg-[#EF7F1A]/20 text-[#EF7F1A] border-[#EF7F1A]/40',
       icon: Maximize2,
       action: () => onApplyToolAction('upscale')
     },
@@ -102,7 +102,7 @@ export const ToolsDrawer: React.FC<ToolsDrawerProps> = ({
       name: 'Remove / Replace Color',
       desc: 'Perimeter flood-fill and chroma key knockout',
       badge: 'CORE',
-      badgeColor: 'bg-indigo-900/60 text-indigo-300 border-indigo-700',
+      badgeColor: 'bg-[#204563]/60 text-white border-[#204563]',
       icon: Pipette,
       action: () => onApplyToolAction('remove-color')
     },
@@ -144,7 +144,7 @@ export const ToolsDrawer: React.FC<ToolsDrawerProps> = ({
       name: 'Texture Effects',
       desc: '11 creative color and texture filters with live intensity',
       badge: '11',
-      badgeColor: 'bg-purple-900/60 text-purple-300 border-purple-700',
+      badgeColor: 'bg-[#EF7F1A]/20 text-[#EF7F1A] border-[#EF7F1A]/40',
       icon: Layers,
       action: () => onApplyToolAction('texture')
     },
@@ -186,7 +186,7 @@ export const ToolsDrawer: React.FC<ToolsDrawerProps> = ({
       name: 'Image Vectoriser',
       desc: 'Trace raster artwork to clean SVG and cut contour paths',
       badge: 'AI TOOL',
-      badgeColor: 'bg-purple-900/60 text-purple-300 border-purple-700',
+      badgeColor: 'bg-[#EF7F1A]/20 text-[#EF7F1A] border-[#EF7F1A]/40',
       icon: Sparkles,
       action: () => onApplyToolAction('vectorize')
     },
@@ -244,7 +244,7 @@ export const ToolsDrawer: React.FC<ToolsDrawerProps> = ({
             onClick={() => setActiveCategory(c.id as any)}
             className={`px-2.5 py-1 rounded text-[11px] whitespace-nowrap transition-all ${
               activeCategory === c.id
-                ? 'bg-indigo-600 text-white font-bold'
+                ? 'bg-[#EF7F1A] text-[#204563] font-black'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -263,15 +263,15 @@ export const ToolsDrawer: React.FC<ToolsDrawerProps> = ({
               onClick={() => {
                 t.action();
               }}
-              className="p-3 rounded-lg bg-[#111728] hover:bg-[#182038] border border-slate-800/80 hover:border-indigo-500/60 transition-all cursor-pointer group flex items-start justify-between"
+              className="p-3 rounded-lg bg-[#111728] hover:bg-[#182038] border border-slate-800/80 hover:border-[#EF7F1A]/60 transition-all cursor-pointer group flex items-start justify-between"
             >
               <div className="flex items-start space-x-3 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-[#1b233a] border border-slate-700/80 text-indigo-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 rounded-lg bg-[#1b233a] border border-slate-700/80 text-[#EF7F1A] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-xs text-white group-hover:text-indigo-300 transition-colors">
+                    <span className="font-bold text-xs text-white group-hover:text-[#EF7F1A] transition-colors">
                       {t.name}
                     </span>
                     <span

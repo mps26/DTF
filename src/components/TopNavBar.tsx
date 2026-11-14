@@ -119,8 +119,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       name: 'Fix & Quality',
       subtitle: 'Upscale, color, pixel fix & audit',
       icon: Sparkles,
-      accentColor: 'text-purple-400',
-      activeBg: 'bg-purple-600',
+      accentColor: 'text-[#EF7F1A]',
+      activeBg: 'bg-[#EF7F1A]',
       tools: [
         {
           id: 'upscale',
@@ -128,8 +128,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           desc: 'Sharpen & enlarge resolution',
           icon: Maximize2,
           badge: 'AI',
-          badgeBg: 'bg-purple-600',
-          iconColor: 'text-purple-400'
+          badgeBg: 'bg-[#EF7F1A]',
+          iconColor: 'text-[#EF7F1A]'
         },
         {
           id: 'color-tone',
@@ -159,8 +159,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       name: 'Cut & Adjust',
       subtitle: 'Remove color, crop, erase & border',
       icon: Crop,
-      accentColor: 'text-blue-400',
-      activeBg: 'bg-blue-600',
+      accentColor: 'text-sky-400',
+      activeBg: 'bg-sky-600',
       tools: [
         {
           id: 'bg-remover',
@@ -168,15 +168,15 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           desc: 'Auto cut-out transparent background',
           icon: Scissors,
           badge: 'AUTO',
-          badgeBg: 'bg-blue-600',
-          iconColor: 'text-blue-400'
+          badgeBg: 'bg-[#EF7F1A]',
+          iconColor: 'text-sky-400'
         },
         {
           id: 'remove-color',
           name: 'Remove/Replace Color',
           desc: 'Pick & swap specific color channels',
           icon: Pipette,
-          iconColor: 'text-indigo-400'
+          iconColor: 'text-[#EF7F1A]'
         },
         {
           id: 'crop-clean',
@@ -206,8 +206,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       name: 'Style & Effects',
       subtitle: 'AI styles, texture, halftone & outline',
       icon: Wand2,
-      accentColor: 'text-pink-400',
-      activeBg: 'bg-pink-600',
+      accentColor: 'text-amber-400',
+      activeBg: 'bg-amber-600',
       tools: [
         {
           id: 'texture',
@@ -215,8 +215,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           desc: '11 creative color & texture filters',
           icon: Layers,
           badge: '11',
-          badgeBg: 'bg-purple-600',
-          iconColor: 'text-purple-400'
+          badgeBg: 'bg-[#EF7F1A]',
+          iconColor: 'text-[#EF7F1A]'
         },
         {
           id: 'halftone',
@@ -250,15 +250,15 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           desc: 'W1 underbase + CMYK multi-channel',
           icon: FileStack,
           badge: 'RIP',
-          badgeBg: 'bg-indigo-600',
-          iconColor: 'text-indigo-400'
+          badgeBg: 'bg-[#204563]',
+          iconColor: 'text-[#EF7F1A]'
         },
         {
           id: 'text-number',
           name: 'Text & Number',
           desc: 'Custom jersey typography',
           icon: Type,
-          iconColor: 'text-blue-400'
+          iconColor: 'text-sky-400'
         },
         {
           id: 'vectorize',
@@ -266,8 +266,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           desc: 'Trace raster artwork into vectors',
           icon: Sparkles,
           badge: 'AI',
-          badgeBg: 'bg-purple-600',
-          iconColor: 'text-purple-400'
+          badgeBg: 'bg-[#EF7F1A]',
+          iconColor: 'text-[#EF7F1A]'
         },
         {
           id: 'recreate-ai',
@@ -275,8 +275,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           desc: 'Redraw low-res artwork with AI',
           icon: Cpu,
           badge: 'AI',
-          badgeBg: 'bg-pink-600',
-          iconColor: 'text-pink-400'
+          badgeBg: 'bg-[#EF7F1A]',
+          iconColor: 'text-[#EF7F1A]'
         },
         {
           id: 'guide',
@@ -304,8 +304,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         {/* ================= LEFT SECTION: BRAND & CREATE BUTTON ================= */}
         <div className="flex items-center space-x-3.5 flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30 flex-shrink-0">
-              <Layers className="w-4.5 h-4.5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-[#204563] border border-[#3a6b94] flex items-center justify-center text-white shadow-md flex-shrink-0">
+              <Layers className="w-4.5 h-4.5 text-[#EF7F1A]" />
             </div>
             <div className="flex flex-col justify-center">
               <div className="flex items-center space-x-1.5 leading-none">
@@ -313,15 +313,15 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                   DTF Set Files
                 </span>
               </div>
-              <div className="text-[11px] text-slate-300 font-medium whitespace-nowrap mt-1 leading-none">
-                DTF Gang Sheet Builder
+              <div className="text-[11px] text-[#EF7F1A] font-semibold whitespace-nowrap mt-1 leading-none">
+                Gang Sheet Builder
               </div>
             </div>
           </div>
         </div>
 
         {/* ================= CENTER SECTION: THE 4 PREP OPTIONS ================= */}
-        <div className="flex items-center space-x-1 bg-[#0f2232] p-1 rounded-2xl border border-slate-800/90 text-xs shadow-inner shadow-black/30 mx-2 flex-shrink-0">
+        <div className="flex items-center space-x-1 bg-[#0f2232] p-1 rounded-2xl border border-[#183750] text-xs shadow-inner shadow-black/30 mx-2 flex-shrink-0">
           {categories.map((cat) => {
             const isOpen = activeDropdown === cat.id;
             const Icon = cat.icon;
@@ -340,11 +340,11 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                   }}
                   className={`h-8.5 px-3.5 rounded-xl font-bold text-xs flex items-center space-x-2 whitespace-nowrap transition-all duration-150 cursor-pointer ${
                     isOpen
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/35'
-                      : 'text-slate-300 hover:text-white hover:bg-[#181f38]'
+                      ? 'bg-[#204563] text-white shadow-md border border-[#3a6b94]'
+                      : 'text-slate-300 hover:text-white hover:bg-[#183750]'
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isOpen ? 'text-white' : cat.accentColor}`} />
+                  <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isOpen ? 'text-[#EF7F1A]' : 'text-slate-300'}`} />
                   <span className="leading-none">{cat.name}</span>
                   <ChevronDown
                     className={`w-3 h-3 text-slate-400 flex-shrink-0 transition-transform duration-200 ${
@@ -356,7 +356,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 {/* Floating Dropdown Menu (Opens on hover or click) */}
                 {isOpen && (
                   <div
-                    className="absolute top-full left-0 pt-2 w-84 z-50 text-left animate-in fade-in slide-in-from-top-1 duration-150"
+                    className="absolute top-full left-0 pt-2 w-84 z-50 text-left animate-in fade-in slide-from-top-1 duration-150"
                     onMouseEnter={() => {
                       if (leaveTimerRef.current) {
                         clearTimeout(leaveTimerRef.current);
@@ -365,12 +365,12 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                     }}
                     onMouseLeave={handleMouseLeaveCategory}
                   >
-                    <div className="bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2.5">
+                    <div className="bg-[#0f2232] border border-[#183750] rounded-2xl shadow-2xl p-2.5">
                       {/* Category Header */}
-                      <div className="px-3 py-2 border-b border-slate-800/80 mb-1.5 flex items-center justify-between">
+                      <div className="px-3 py-2 border-b border-[#183750] mb-1.5 flex items-center justify-between">
                         <div>
                           <div className="flex items-center space-x-2">
-                            <Icon className={`w-4 h-4 ${cat.accentColor}`} />
+                            <Icon className="w-4 h-4 text-[#EF7F1A]" />
                             <span className="font-extrabold text-xs text-white">
                               {cat.name}
                             </span>
@@ -389,10 +389,10 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                             <button
                               key={tool.id}
                               onClick={() => handleToolClick(tool.id)}
-                              className="w-full p-2 rounded-xl hover:bg-[#161d36] transition-colors flex items-start space-x-3 text-left group cursor-pointer"
+                              className="w-full p-2 rounded-xl hover:bg-[#183750] transition-colors flex items-start space-x-3 text-left group cursor-pointer"
                             >
-                              <div className="w-8 h-8 rounded-lg bg-[#19223c] border border-slate-800 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform mt-0.5 shadow-xs">
-                                <ToolIcon className={`w-4 h-4 ${tool.iconColor}`} />
+                              <div className="w-8 h-8 rounded-lg bg-[#132c40] border border-[#183750] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform mt-0.5 shadow-xs">
+                                <ToolIcon className="w-4 h-4 text-[#EF7F1A]" />
                               </div>
 
                               <div className="min-w-0 flex-1">
@@ -402,9 +402,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                                   </span>
                                   {tool.badge && (
                                     <span
-                                      className={`text-[9px] font-black uppercase tracking-wider text-white px-1.5 py-0.2 rounded-full ${
-                                        tool.badgeBg || 'bg-purple-600'
-                                      }`}
+                                      className="text-[9px] font-black uppercase tracking-wider text-[#204563] px-1.5 py-0.2 rounded-full bg-[#EF7F1A]"
                                     >
                                       {tool.badge}
                                     </span>
@@ -435,23 +433,23 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 setActiveDropdown(null);
                 setDemoMenuOpen(!demoMenuOpen);
               }}
-              className="h-8.5 px-3 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-xl text-xs font-bold text-slate-200 hover:text-white flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
+              className="h-8.5 px-3 bg-[#132c40] hover:bg-[#183750] border border-[#183750] rounded-xl text-xs font-bold text-slate-200 hover:text-white flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
               title="Load demo samples"
             >
-              <Play className="w-3 h-3 text-indigo-400 fill-indigo-400" />
+              <Play className="w-3 h-3 text-[#EF7F1A] fill-[#EF7F1A]" />
               <span>Demos</span>
               <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${demoMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Demos Dropdown */}
             {demoMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute top-full right-0 mt-2 w-64 bg-[#0f2232] border border-[#183750] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 <button
                   onClick={() => {
                     setDemoMenuOpen(false);
                     onLoadMultiDemo();
                   }}
-                  className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col cursor-pointer"
+                  className="w-full p-2.5 rounded-xl hover:bg-[#183750] text-left transition-colors flex flex-col cursor-pointer"
                 >
                   <div className="font-bold text-xs text-white">Multi-Design Demo</div>
                   <div className="text-[11px] text-slate-400">Load 4 mixed artwork samples</div>
@@ -462,7 +460,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                     setDemoMenuOpen(false);
                     onLoadRepeatDemo();
                   }}
-                  className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col cursor-pointer"
+                  className="w-full p-2.5 rounded-xl hover:bg-[#183750] text-left transition-colors flex flex-col cursor-pointer"
                 >
                   <div className="font-bold text-xs text-white">Repeat 10× Demo</div>
                   <div className="text-[11px] text-slate-400">Load repeated pattern on roll</div>
@@ -483,10 +481,10 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           {/* How to use */}
           <button
             onClick={onOpenGuide}
-            className="h-8.5 px-2.5 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
+            className="h-8.5 px-2.5 bg-[#132c40] hover:bg-[#183750] border border-[#183750] rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
             title="DTF Gang Sheet Production Guide"
           >
-            <HelpCircle className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+            <HelpCircle className="w-3.5 h-3.5 text-[#EF7F1A] flex-shrink-0" />
             <span className="hidden xl:inline">How to use</span>
           </button>
 
@@ -496,7 +494,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               <button
                 type="button"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className={`w-8.5 h-8.5 rounded-full bg-gradient-to-tr ${currentUser.avatarColor || 'from-purple-500 to-indigo-600'} text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-indigo-400/40 hover:scale-105 transition-all cursor-pointer flex-shrink-0`}
+                className={`w-8.5 h-8.5 rounded-full bg-[#204563] text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-[#EF7F1A] hover:scale-105 transition-all cursor-pointer flex-shrink-0`}
                 title={`${currentUser.name} (${currentUser.companyName})`}
               >
                 {currentUser.initials}
@@ -505,7 +503,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenAuth?.('login')}
-                className="h-8.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap"
+                className="h-8.5 px-3 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] rounded-xl text-xs font-extrabold shadow-md shadow-orange-500/25 flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
@@ -514,12 +512,12 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
 
             {/* User Popover Menu */}
             {userMenuOpen && currentUser && (
-              <div className="absolute right-0 top-11 w-64 bg-[#0d1326] border border-[#222c4d] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-2 py-2 border-b border-slate-800">
+              <div className="absolute right-0 top-11 w-64 bg-[#0f2232] border border-[#183750] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2 py-2 border-b border-[#183750]">
                   <div className="font-black text-xs text-white leading-tight">{currentUser.name}</div>
                   <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
                   <div className="mt-1 flex items-center space-x-1.5">
-                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#204563] text-[#EF7F1A] border border-[#EF7F1A]">
                       {currentUser.plan}
                     </span>
                   </div>
@@ -536,7 +534,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                     <span className="truncate">{currentUser.printerModel}</span>
                   </div>
 
-                  <div className="h-px bg-slate-800/80 my-1" />
+                  <div className="h-px bg-[#183750] my-1" />
 
                   <button
                     type="button"
@@ -544,9 +542,9 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                       setUserMenuOpen(false);
                       onOpenProfile?.();
                     }}
-                    className="w-full px-2 py-1.5 hover:bg-indigo-600/20 text-indigo-300 hover:text-white rounded-xl text-left transition-colors flex items-center space-x-2 cursor-pointer font-medium"
+                    className="w-full px-2 py-1.5 hover:bg-[#183750] text-slate-200 hover:text-white rounded-xl text-left transition-colors flex items-center space-x-2 cursor-pointer font-medium"
                   >
-                    <User className="w-3.5 h-3.5" />
+                    <User className="w-3.5 h-3.5 text-[#EF7F1A]" />
                     <span>Operator Profile & Settings</span>
                   </button>
 
@@ -571,17 +569,17 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       {/* ================= MOBILE VIEW (< lg) ================= */}
       <div className="lg:hidden flex flex-col w-full">
         {/* Mobile Top Row: Compact Brand & Quick Actions */}
-        <div className="h-12 px-2.5 sm:px-3 flex items-center justify-between border-b border-[#162e43] bg-[#0b1723]">
+        <div className="h-12 px-2.5 sm:px-3 flex items-center justify-between border-b border-[#183750] bg-[#0b1723]">
           {/* Brand */}
           <div className="flex items-center space-x-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xs flex-shrink-0">
-              <Layers className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 rounded-lg bg-[#204563] border border-[#3a6b94] flex items-center justify-center text-white shadow-xs flex-shrink-0">
+              <Layers className="w-3.5 h-3.5 text-[#EF7F1A]" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-black text-xs tracking-tight text-white leading-tight truncate">
                 DTF Set Files
               </span>
-              <span className="text-[9px] text-indigo-300 font-medium leading-none truncate">
+              <span className="text-[9px] text-[#EF7F1A] font-semibold leading-none truncate">
                 Gang Sheet Builder
               </span>
             </div>
@@ -597,16 +595,16 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                   setActiveDropdown(null);
                   setDemoMenuOpen(!demoMenuOpen);
                 }}
-                className="h-7.5 px-2 bg-[#132c40] hover:bg-[#1a3852] border border-slate-700/80 rounded-lg text-xs font-bold text-slate-200 flex items-center space-x-1 transition-colors"
+                className="h-7.5 px-2 bg-[#132c40] hover:bg-[#183750] border border-[#183750] rounded-lg text-xs font-bold text-slate-200 flex items-center space-x-1 transition-colors"
               >
-                <Play className="w-2.5 h-2.5 text-indigo-400 fill-indigo-400" />
+                <Play className="w-2.5 h-2.5 text-[#EF7F1A] fill-[#EF7F1A]" />
                 <span className="text-[11px]">Demos</span>
                 <ChevronDown className={`w-2.5 h-2.5 text-slate-400 transition-transform ${demoMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {demoMenuOpen && (
                 <div className="fixed inset-x-4 top-16 max-w-xs mx-auto bg-[#0f2232] border border-[#183750] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="p-2 border-b border-slate-800 text-[11px] font-bold text-indigo-300">
+                  <div className="p-2 border-b border-[#183750] text-[11px] font-bold text-[#EF7F1A]">
                     Sample Datasets
                   </div>
                   <button
@@ -614,7 +612,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                       setDemoMenuOpen(false);
                       onLoadMultiDemo();
                     }}
-                    className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col"
+                    className="w-full p-2.5 rounded-xl hover:bg-[#183750] text-left transition-colors flex flex-col"
                   >
                     <div className="font-bold text-xs text-white">Multi-Design Demo</div>
                     <div className="text-[10px] text-slate-400">Load 4 mixed artwork samples</div>
@@ -625,7 +623,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                       setDemoMenuOpen(false);
                       onLoadRepeatDemo();
                     }}
-                    className="w-full p-2.5 rounded-xl hover:bg-[#161d36] text-left transition-colors flex flex-col"
+                    className="w-full p-2.5 rounded-xl hover:bg-[#183750] text-left transition-colors flex flex-col"
                   >
                     <div className="font-bold text-xs text-white">Repeat 10× Demo</div>
                     <div className="text-[10px] text-slate-400">Load repeated pattern on roll</div>
@@ -650,9 +648,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className={`w-7.5 h-7.5 rounded-full bg-gradient-to-tr ${
-                    currentUser.avatarColor || 'from-purple-500 to-indigo-600'
-                  } text-white flex items-center justify-center font-bold text-[11px] shadow-sm border border-indigo-400/50 flex-shrink-0`}
+                  className="w-7.5 h-7.5 rounded-full bg-[#204563] text-white flex items-center justify-center font-bold text-[11px] shadow-sm border border-[#EF7F1A] flex-shrink-0"
                   title={currentUser.name}
                 >
                   {currentUser.initials}
@@ -661,7 +657,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 <button
                   type="button"
                   onClick={() => onOpenAuth?.('login')}
-                  className="h-7.5 px-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-indigo-600/30 flex items-center space-x-1"
+                  className="h-7.5 px-2.5 bg-[#EF7F1A] text-[#204563] rounded-lg text-xs font-black shadow-sm shadow-orange-500/25 flex items-center space-x-1"
                 >
                   <LogIn className="w-3 h-3" />
                   <span className="text-[11px]">Sign In</span>
@@ -669,12 +665,12 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               )}
 
               {userMenuOpen && currentUser && (
-                <div className="fixed inset-x-4 top-16 max-w-xs mx-auto bg-[#0d1326] border border-[#222c4d] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-2 py-2 border-b border-slate-800">
+                <div className="fixed inset-x-4 top-16 max-w-xs mx-auto bg-[#0f2232] border border-[#183750] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-2 py-2 border-b border-[#183750]">
                     <div className="font-black text-xs text-white leading-tight">{currentUser.name}</div>
                     <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
                     <div className="mt-1 flex items-center space-x-1.5">
-                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#204563] text-[#EF7F1A] border border-[#EF7F1A]">
                         {currentUser.plan}
                       </span>
                     </div>
@@ -687,7 +683,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                         setUserMenuOpen(false);
                         onOpenProfile?.();
                       }}
-                      className="w-full px-2 py-2 hover:bg-indigo-600/20 text-indigo-300 hover:text-white rounded-xl text-left transition-colors flex items-center space-x-2"
+                      className="w-full px-2 py-2 hover:bg-[#183750] text-[#EF7F1A] hover:text-white rounded-xl text-left transition-colors flex items-center space-x-2"
                     >
                       <User className="w-3.5 h-3.5" />
                       <span>Operator Profile & Settings</span>
@@ -712,7 +708,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         </div>
 
         {/* Mobile Second Row: Horizontal Scrollable Category Toolbar */}
-        <div className="h-8.5 px-2 flex items-center space-x-1.5 overflow-x-auto no-scrollbar scroll-smooth bg-[#060913] border-b border-[#141b2e]">
+        <div className="h-8.5 px-2 flex items-center space-x-1.5 overflow-x-auto no-scrollbar scroll-smooth bg-[#0a1622] border-b border-[#183750]">
           {categories.map((cat) => {
             const isOpen = activeDropdown === cat.id;
             const Icon = cat.icon;
@@ -728,13 +724,13 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 }}
                 className={`h-6.5 px-2 rounded-md font-semibold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 transition-all ${
                   isOpen
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-300 bg-[#101426] border border-slate-800/80 hover:text-white'
+                    ? 'bg-[#EF7F1A] text-[#204563] font-bold shadow-xs'
+                    : 'text-slate-300 bg-[#132c40] border border-[#183750] hover:text-white'
                 }`}
               >
-                <Icon className={`w-3 h-3 ${isOpen ? 'text-white' : cat.accentColor}`} />
+                <Icon className={`w-3 h-3 ${isOpen ? 'text-[#204563]' : 'text-slate-300'}`} />
                 <span>{cat.name}</span>
-                <ChevronDown className={`w-2.5 h-2.5 transition-transform ${isOpen ? 'rotate-180 text-white' : 'text-slate-500'}`} />
+                <ChevronDown className={`w-2.5 h-2.5 transition-transform ${isOpen ? 'rotate-180 text-[#204563]' : 'text-slate-400'}`} />
               </button>
             );
           })}
@@ -743,9 +739,9 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           <button
             type="button"
             onClick={onOpenGuide}
-            className="h-6.5 px-2 rounded-md font-semibold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 text-slate-300 bg-[#101426] border border-slate-800/80 hover:text-white"
+            className="h-6.5 px-2 rounded-md font-semibold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 text-slate-300 bg-[#132c40] border border-[#183750] hover:text-white"
           >
-            <HelpCircle className="w-3 h-3 text-indigo-400" />
+            <HelpCircle className="w-3 h-3 text-[#EF7F1A]" />
             <span>Guide</span>
           </button>
         </div>
@@ -766,12 +762,12 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               const Icon = activeCat.icon;
 
               return (
-                <div className="relative bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-3 z-10 w-full max-w-sm animate-in fade-in zoom-in-95 duration-150 max-h-[75vh] overflow-y-auto">
+                <div className="relative bg-[#0f2232] border border-[#183750] rounded-2xl shadow-2xl p-3 z-10 w-full max-w-sm animate-in fade-in zoom-in-95 duration-150 max-h-[75vh] overflow-y-auto">
                   {/* Category Header */}
-                  <div className="px-2 py-2 border-b border-slate-800 mb-2 flex items-center justify-between">
+                  <div className="px-2 py-2 border-b border-[#183750] mb-2 flex items-center justify-between">
                     <div>
                       <div className="flex items-center space-x-2">
-                        <Icon className={`w-4 h-4 ${activeCat.accentColor}`} />
+                        <Icon className="w-4 h-4 text-[#EF7F1A]" />
                         <span className="font-extrabold text-xs text-white">{activeCat.name}</span>
                       </div>
                       <p className="text-[10px] text-slate-400 mt-0.5">{activeCat.subtitle}</p>
@@ -779,7 +775,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                     <button
                       type="button"
                       onClick={() => setActiveDropdown(null)}
-                      className="w-6 h-6 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center hover:bg-slate-700"
+                      className="w-6 h-6 rounded-full bg-[#132c40] text-slate-300 flex items-center justify-center hover:bg-[#183750]"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -793,10 +789,10 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                         <button
                           key={tool.id}
                           onClick={() => handleToolClick(tool.id)}
-                          className="w-full p-2.5 rounded-xl hover:bg-[#161d36] active:bg-indigo-600/30 transition-colors flex items-start space-x-3 text-left group"
+                          className="w-full p-2.5 rounded-xl hover:bg-[#183750] active:bg-[#204563] transition-colors flex items-start space-x-3 text-left group"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-[#19223c] border border-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <ToolIcon className={`w-4 h-4 ${tool.iconColor}`} />
+                          <div className="w-8 h-8 rounded-lg bg-[#132c40] border border-[#183750] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <ToolIcon className="w-4 h-4 text-[#EF7F1A]" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between">
@@ -804,7 +800,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                                 {tool.name}
                               </span>
                               {tool.badge && (
-                                <span className="text-[9px] font-black uppercase tracking-wider text-white px-1.5 py-0.2 rounded-full bg-purple-600">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-[#204563] px-1.5 py-0.2 rounded-full bg-[#EF7F1A]">
                                   {tool.badge}
                                 </span>
                               )}

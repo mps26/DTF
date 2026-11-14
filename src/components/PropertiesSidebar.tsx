@@ -106,7 +106,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                 />
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-[#EF7F1A] uppercase tracking-wider">
                   Selected Artwork
                 </span>
                 <h3 className="font-bold text-xs text-white truncate max-w-[150px]">
@@ -117,7 +117,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
 
             <button
               onClick={() => onOpenEditModal(selectedAsset)}
-              className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[11px] font-semibold flex items-center space-x-1"
+              className="px-2 py-1 bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] rounded text-[11px] font-black flex items-center space-x-1"
             >
               <Edit2 className="w-3 h-3" />
               <span>Studio</span>
@@ -163,7 +163,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                     if (isNaN(val) || val <= 0) return;
                     onUpdateAsset(selectedAsset.id, { targetWidth: val });
                   }}
-                  className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-indigo-500"
+                  className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-[#EF7F1A]"
                 />
               </div>
 
@@ -180,7 +180,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                     if (isNaN(val) || val <= 0) return;
                     onUpdateAsset(selectedAsset.id, { targetHeight: val });
                   }}
-                  className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-indigo-500"
+                  className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-[#EF7F1A]"
                 />
               </div>
             </div>
@@ -201,7 +201,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                 }}
                 className="flex items-center space-x-1.5 text-xs text-slate-300 hover:text-white"
               >
-                <Lock className="w-3.5 h-3.5 text-indigo-400" />
+                <Lock className="w-3.5 h-3.5 text-[#EF7F1A]" />
                 <span>Lock Proportions</span>
               </button>
 
@@ -236,7 +236,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                 >
                   -
                 </button>
-                <span className="w-8 text-center font-mono font-bold text-indigo-400 text-xs">
+                <span className="w-8 text-center font-mono font-bold text-[#EF7F1A] text-xs">
                   {selectedAsset.copies}
                 </span>
                 <button
@@ -318,7 +318,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                 className="p-2 rounded bg-[#161d31] hover:bg-[#1f2945] border border-slate-700 text-slate-200 text-left flex items-center space-x-1.5"
                 title="Run background removal"
               >
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <Sparkles className="w-3.5 h-3.5 text-[#EF7F1A]" />
                 <span>Remove BG</span>
               </button>
 
@@ -336,7 +336,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                 className="p-2 rounded bg-[#161d31] hover:bg-[#1f2945] border border-slate-700 text-slate-200 text-left flex items-center space-x-1.5"
                 title="Add white underbase / contour stroke"
               >
-                <PenTool className="w-3.5 h-3.5 text-indigo-400" />
+                <PenTool className="w-3.5 h-3.5 text-[#EF7F1A]" />
                 <span>Underbase</span>
               </button>
             </div>
@@ -354,7 +354,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
         /* ================= 2. SHEET-LEVEL PRODUCTION SETTINGS ================= */
         <div className="p-4 space-y-4">
           <div className="pb-3 border-b border-slate-800">
-            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-[#EF7F1A] uppercase tracking-wider">
               Production Setup
             </span>
             <h3 className="font-bold text-xs text-white">
@@ -374,7 +374,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                   onClick={() => onUnitChange(u)}
                   className={`py-1 rounded transition-all text-center ${
                     settings.unit === u
-                      ? 'bg-indigo-600 text-white font-bold'
+                      ? 'bg-[#EF7F1A] text-[#204563] font-black'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -392,7 +392,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
             <select
               value={settings.filmWidthPreset}
               onChange={(e) => handleWidthPreset(e.target.value)}
-              className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white font-mono focus:border-indigo-500"
+              className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white font-mono focus:border-[#EF7F1A]"
             >
               {presets.map((p) => (
                 <option key={p.value} value={p.value}>
@@ -480,9 +480,9 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
             <div className="grid grid-cols-2 gap-1 p-0.5 bg-[#0b0e1a] rounded border border-slate-800 text-xs">
               <button
                 onClick={() => onUpdateSettings({ lengthMode: 'auto' })}
-                className={`py-1 rounded font-bold transition-all ${
+                className={`py-1 rounded font-black transition-all ${
                   settings.lengthMode === 'auto'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-[#EF7F1A] text-[#204563]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -490,9 +490,9 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
               </button>
               <button
                 onClick={() => onUpdateSettings({ lengthMode: 'fixed' })}
-                className={`py-1 rounded font-bold transition-all ${
+                className={`py-1 rounded font-black transition-all ${
                   settings.lengthMode === 'fixed'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-[#EF7F1A] text-[#204563]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -533,10 +533,10 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
             <div className="space-y-1.5 text-xs">
               <div
                 onClick={() => onUpdateSettings({ nestingAlgorithm: 'box' })}
-                className="p-2 rounded border cursor-pointer flex items-center justify-between bg-indigo-950/60 border-indigo-500 text-white"
+                className="p-2 rounded border cursor-pointer flex items-center justify-between bg-[#132537] border-[#EF7F1A] text-white"
               >
                 <div className="flex items-center space-x-2">
-                  <Box className="w-3.5 h-3.5 text-indigo-400" />
+                  <Box className="w-3.5 h-3.5 text-[#EF7F1A]" />
                   <span className="font-bold">MaxRects BSSF</span>
                 </div>
                 <span className="text-[10px] font-mono text-emerald-400">Fast & Optimal</span>
@@ -548,7 +548,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                 type="checkbox"
                 checked={settings.allowItemRotation}
                 onChange={(e) => onUpdateSettings({ allowItemRotation: e.target.checked })}
-                className="rounded accent-indigo-600"
+                className="rounded accent-[#EF7F1A]"
               />
               <span>Allow 90° Item Rotation to save film</span>
             </label>
@@ -567,7 +567,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Roll Length:</span>
-                <span className="font-bold text-indigo-400">
+                <span className="font-bold text-[#EF7F1A]">
                   {formatUnit(mmToUnit(layout.usedLengthMm, settings.unit), settings.unit, 1)}{' '}
                   {settings.unit === 'inch' ? 'in' : settings.unit}
                 </span>

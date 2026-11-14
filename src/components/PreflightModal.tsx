@@ -64,9 +64,9 @@ export const PreflightModal: React.FC<PreflightModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-3xl border border-indigo-100 shadow-2xl max-w-xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-3xl border border-[#E5D9C8] shadow-2xl max-w-xl w-full max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#E5D9C8] flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <ShieldCheck className="w-5 h-5" />
@@ -125,7 +125,7 @@ export const PreflightModal: React.FC<PreflightModalProps> = ({
           </span>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+            className="px-5 py-2 rounded-xl bg-[#204563] hover:bg-[#18364e] text-white font-bold text-xs transition-colors"
           >
             Done
           </button>
