@@ -7,6 +7,8 @@ import sqlite3
 import hashlib
 import secrets
 import base64
+import json
+import urllib.request
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -35,6 +37,95 @@ app.add_middleware(
 
 MM_PER_INCH = 25.4
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dtf_users.db")
+
+
+def load_env_file():
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for fname in [".env", ".env.local"]:
+        fpath = os.path.join(root_dir, fname)
+        if os.path.exists(fpath):
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            k, v = line.split("=", 1)
+                            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+            except Exception:
+                pass
+
+
+load_env_file()
+
+TURSO_URL = os.environ.get("TURSO_DATABASE_URL") or os.environ.get("SQLITE_URL") or ""
+TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN") or os.environ.get("SQLITE_AUTH_TOKEN") or ""
+
+
+def get_turso_endpoint() -> Optional[str]:
+    url = (os.environ.get("TURSO_DATABASE_URL") or os.environ.get("SQLITE_URL") or TURSO_URL).strip()
+    if not url:
+        return None
+    if url.startswith("libsql://"):
+        url = "https://" + url[9:]
+    if not url.endswith("/v2/pipeline"):
+        url = url.rstrip("/") + "/v2/pipeline"
+    return url
+
+
+def execute_turso_sql(sql: str, args: list = []) -> Optional[list]:
+    endpoint = get_turso_endpoint()
+    if not endpoint:
+        return None
+    try:
+        formatted_args = []
+        for a in args:
+            if a is None:
+                formatted_args.append({"type": "null"})
+            elif isinstance(a, int):
+                formatted_args.append({"type": "integer", "value": str(a)})
+            elif isinstance(a, float):
+                formatted_args.append({"type": "float", "value": a})
+            else:
+                formatted_args.append({"type": "text", "value": str(a)})
+
+        token = os.environ.get("TURSO_AUTH_TOKEN") or os.environ.get("SQLITE_AUTH_TOKEN") or TURSO_TOKEN
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        payload = {
+            "requests": [
+                {
+                    "type": "execute",
+                    "stmt": {
+                        "sql": sql,
+                        "args": formatted_args
+                    }
+                },
+                {"type": "close"}
+            ]
+        }
+        req = urllib.request.Request(
+            endpoint,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            result = data.get("results", [{}])[0].get("response", {}).get("result", {})
+            cols = [c["name"] for c in result.get("cols", [])]
+            rows = result.get("rows", [])
+            output = []
+            for r in rows:
+                row_dict = {}
+                for idx, cell in enumerate(r):
+                    row_dict[cols[idx]] = cell.get("value")
+                output.append(row_dict)
+            return output
+    except Exception as e:
+        print("Turso sync notice:", e)
+        return None
 
 
 def hash_password(password: str, salt: Optional[str] = None) -> str:
@@ -126,6 +217,36 @@ def init_auth_db() -> None:
             default_users,
         )
         conn.commit()
+
+        # Seed Turso Cloud SQLite if endpoint is present
+        if get_turso_endpoint():
+            execute_turso_sql(
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    company_name TEXT NOT NULL,
+                    printer_model TEXT NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'shop_owner',
+                    plan TEXT NOT NULL DEFAULT 'Pro Print House',
+                    initials TEXT NOT NULL,
+                    avatar_color TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    password_hash TEXT NOT NULL
+                )
+                """
+            )
+            for du in default_users:
+                execute_turso_sql(
+                    """
+                    INSERT OR IGNORE INTO users (
+                        id, name, email, company_name, printer_model,
+                        role, plan, initials, avatar_color, created_at, password_hash
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    list(du)
+                )
     finally:
         conn.close()
 
@@ -212,6 +333,15 @@ def auth_register(payload: RegisterRequest):
                 "error": "An account with this email address already exists. Please log in.",
             }
 
+        # Check Turso Cloud SQLite if configured
+        if get_turso_endpoint():
+            turso_existing = execute_turso_sql("SELECT id FROM users WHERE LOWER(email) = ?", [email_norm])
+            if turso_existing and len(turso_existing) > 0:
+                return {
+                    "success": False,
+                    "error": "An account with this email address already exists. Please log in.",
+                }
+
         conn.execute(
             """
             INSERT INTO users (
@@ -234,6 +364,31 @@ def auth_register(payload: RegisterRequest):
             ),
         )
         conn.commit()
+
+        # Replicate to Turso Cloud SQLite
+        if get_turso_endpoint():
+            execute_turso_sql(
+                """
+                INSERT OR IGNORE INTO users (
+                    id, name, email, company_name, printer_model,
+                    role, plan, initials, avatar_color, created_at, password_hash
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    user_id,
+                    name_clean,
+                    email_norm,
+                    company_name,
+                    printer_model,
+                    "shop_owner",
+                    "Pro Print House",
+                    initials,
+                    chosen_color,
+                    created_at,
+                    pw_hash,
+                ]
+            )
+
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         return {"success": True, "user": row_to_user_dict(row)}
     finally:
@@ -248,6 +403,38 @@ def auth_login(payload: LoginRequest):
         row = conn.execute(
             "SELECT * FROM users WHERE LOWER(email) = ?", (email_norm,)
         ).fetchone()
+
+        # If not in local SQLite, query Turso Cloud SQLite if connected
+        if not row and get_turso_endpoint():
+            turso_rows = execute_turso_sql(
+                "SELECT * FROM users WHERE LOWER(email) = ?", [email_norm]
+            )
+            if turso_rows and len(turso_rows) > 0:
+                tu = turso_rows[0]
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO users (
+                        id, name, email, company_name, printer_model,
+                        role, plan, initials, avatar_color, created_at, password_hash
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        tu.get("id"),
+                        tu.get("name"),
+                        tu.get("email"),
+                        tu.get("company_name", ""),
+                        tu.get("printer_model", ""),
+                        tu.get("role", "shop_owner"),
+                        tu.get("plan", "Pro Print House"),
+                        tu.get("initials", "US"),
+                        tu.get("avatar_color", "from-indigo-600 to-purple-600"),
+                        tu.get("created_at", datetime.now(timezone.utc).isoformat()),
+                        tu.get("password_hash", ""),
+                    ),
+                )
+                conn.commit()
+                row = conn.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email_norm,)).fetchone()
+
         if not row:
             return {
                 "success": False,
@@ -286,6 +473,17 @@ def auth_update_profile(payload: UpdateProfileRequest):
             (new_name, new_company, new_printer, new_initials, row["id"]),
         )
         conn.commit()
+
+        if get_turso_endpoint():
+            execute_turso_sql(
+                """
+                UPDATE users
+                SET name = ?, company_name = ?, printer_model = ?, initials = ?
+                WHERE id = ?
+                """,
+                [new_name, new_company, new_printer, new_initials, row["id"]]
+            )
+
         updated = conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
         return {"success": True, "user": row_to_user_dict(updated)}
     finally:
@@ -306,11 +504,20 @@ def auth_change_password(payload: ChangePasswordRequest):
             return {"success": False, "error": "User not found."}
         if not verify_password(payload.currentPassword, row["password_hash"]):
             return {"success": False, "error": "Current password does not match records."}
+
+        new_hash = hash_password(payload.newPassword)
         conn.execute(
             "UPDATE users SET password_hash = ? WHERE id = ?",
-            (hash_password(payload.newPassword), row["id"]),
+            (new_hash, row["id"]),
         )
         conn.commit()
+
+        if get_turso_endpoint():
+            execute_turso_sql(
+                "UPDATE users SET password_hash = ? WHERE id = ?",
+                [new_hash, row["id"]]
+            )
+
         return {"success": True}
     finally:
         conn.close()
