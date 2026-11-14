@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 export interface DbUser {
   id: string;
@@ -12,43 +14,6 @@ export interface DbUser {
   avatar_color: string;
   created_at: string;
   password_hash: string;
-}
-
-// In-memory / process-level SQLite fallback store when Turso is not configured
-const memoryFallbackStore = new Map<string, DbUser>();
-
-// Initialize default demo users into fallback store
-const defaultDemoUsers: DbUser[] = [
-  {
-    id: 'user_ninad_pawar',
-    name: 'Ninad Pawar',
-    email: 'ninad@dtflayout.com',
-    company_name: 'Apex DTF Printworks',
-    printer_model: '24" Dual Epson i3200 (Hoson)',
-    role: 'shop_owner',
-    plan: 'Industrial Enterprise',
-    initials: 'NP',
-    avatar_color: 'from-purple-600 to-indigo-600',
-    created_at: '2026-01-15T08:00:00Z',
-    password_hash: hashPassword('password123', 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4')
-  },
-  {
-    id: 'user_demo_operator',
-    name: 'Alex Turner',
-    email: 'demo@dtflayout.com',
-    company_name: 'Metro Gang Sheets Co.',
-    printer_model: '22" 4-Head DTF Line (Maintop)',
-    role: 'operator',
-    plan: 'Pro Print House',
-    initials: 'AT',
-    avatar_color: 'from-blue-600 to-cyan-600',
-    created_at: '2026-03-01T10:30:00Z',
-    password_hash: hashPassword('demo123', 'f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3')
-  }
-];
-
-for (const u of defaultDemoUsers) {
-  memoryFallbackStore.set(u.email.toLowerCase(), u);
 }
 
 export function hashPassword(password: string, salt?: string): string {
@@ -67,6 +32,59 @@ export function verifyPassword(password: string, storedHash: string): boolean {
   } catch {
     return false;
   }
+}
+
+// In-memory / process-level fallback store
+const memoryFallbackStore = new Map<string, DbUser>();
+
+// Initialize default demo users into fallback store
+const defaultDemoUsers: DbUser[] = [
+  {
+    id: 'user_ninad_pawar',
+    name: 'Ninad Pawar',
+    email: 'ninad@dtflayout.com',
+    company_name: 'Apex DTF Printworks',
+    printer_model: '24" Dual Epson i3200 (Hoson)',
+    role: 'shop_owner',
+    plan: 'Industrial Enterprise',
+    initials: 'NP',
+    avatar_color: 'from-purple-600 to-indigo-600',
+    created_at: '2026-01-15T08:00:00Z',
+    password_hash: 'dc819a008f37f6b13ff717a4171c7641$ab5fb8e3a73782f029e01ec26ba2310596972456379030be1e12c3603e18fa33'
+  },
+  {
+    id: 'user_demo_operator',
+    name: 'Alex Turner',
+    email: 'demo@dtflayout.com',
+    company_name: 'Metro Gang Sheets Co.',
+    printer_model: '22" 4-Head DTF Line (Maintop)',
+    role: 'operator',
+    plan: 'Pro Print House',
+    initials: 'AT',
+    avatar_color: 'from-blue-600 to-cyan-600',
+    created_at: '2026-03-01T10:30:00Z',
+    password_hash: '4ef99f21e8417628f439423557e01c0e$e541e72daa715e7467a03c6661dd28aa721270627e43e291e2e3fe3ff853560b'
+  }
+];
+
+export function loadSeedUsers(): DbUser[] {
+  try {
+    const jsonPath = path.join(process.cwd(), 'server', 'dtf_users.json');
+    if (fs.existsSync(jsonPath)) {
+      const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      if (Array.isArray(data) && data.length > 0) {
+        return data as DbUser[];
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read server/dtf_users.json:', err);
+  }
+  return defaultDemoUsers;
+}
+
+// Seed fallback store with existing DB users
+for (const u of loadSeedUsers()) {
+  memoryFallbackStore.set(u.email.toLowerCase(), u);
 }
 
 export function getInitials(name: string): string {
@@ -199,8 +217,9 @@ export async function initDbSchema(): Promise<void> {
       )
     `);
 
-    // Seed default demo operators into Turso if not present
-    for (const def of defaultDemoUsers) {
+    // Seed default and existing operators into Turso if not present
+    const seedList = loadSeedUsers();
+    for (const def of seedList) {
       const existing = await executeSql('SELECT id FROM users WHERE LOWER(email) = ?', [def.email.toLowerCase()]);
       if (!existing || existing.length === 0) {
         await executeSql(
@@ -304,3 +323,4 @@ export async function updateUser(email: string, updates: Partial<DbUser>): Promi
   memoryFallbackStore.set(email.trim().toLowerCase(), updated);
   return updated;
 }
+

@@ -159,6 +159,19 @@ def get_db_connection() -> sqlite3.Connection:
     return conn
 
 
+def sync_db_to_json() -> None:
+    try:
+        conn = get_db_connection()
+        rows = conn.execute("SELECT * FROM users").fetchall()
+        users_list = [dict(r) for r in rows]
+        conn.close()
+        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dtf_users.json")
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(users_list, f, indent=2)
+    except Exception as e:
+        print("sync_db_to_json warning:", e)
+
+
 def init_auth_db() -> None:
     conn = get_db_connection()
     try:
@@ -217,6 +230,7 @@ def init_auth_db() -> None:
             default_users,
         )
         conn.commit()
+        sync_db_to_json()
 
         # Seed Turso Cloud SQLite if endpoint is present
         if get_turso_endpoint():
@@ -364,6 +378,7 @@ def auth_register(payload: RegisterRequest):
             ),
         )
         conn.commit()
+        sync_db_to_json()
 
         # Replicate to Turso Cloud SQLite
         if get_turso_endpoint():
@@ -473,6 +488,7 @@ def auth_update_profile(payload: UpdateProfileRequest):
             (new_name, new_company, new_printer, new_initials, row["id"]),
         )
         conn.commit()
+        sync_db_to_json()
 
         if get_turso_endpoint():
             execute_turso_sql(
@@ -511,6 +527,7 @@ def auth_change_password(payload: ChangePasswordRequest):
             (new_hash, row["id"]),
         )
         conn.commit()
+        sync_db_to_json()
 
         if get_turso_endpoint():
             execute_turso_sql(
