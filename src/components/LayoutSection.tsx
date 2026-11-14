@@ -113,7 +113,6 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const [sheetWidthInput, setSheetWidthInput] = useState<string | null>(null);
   const [spacingInput, setSpacingInput] = useState<string | null>(null);
   const [collapsedCardIds, setCollapsedCardIds] = useState<Record<string, boolean>>({});
-  const [showStickyPreviewBar, setShowStickyPreviewBar] = useState<boolean>(true);
 
   const toggleCardCollapse = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -174,18 +173,23 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
 
       // Anchor roll display width & height within fixed container
       const isMobile = containerWidth < 640;
-      const availableHeightPx = isMobile ? Math.max(240, containerHeight - 80) : Math.max(220, containerHeight - 130);
-      const targetRollWidthPx = sheetsToDraw.length > 1
-        ? Math.min(isMobile ? 200 : 230, Math.max(120, Math.floor((containerWidth - (isMobile ? 60 : 100)) / sheetsToDraw.length)))
-        : Math.min(isMobile ? 280 : 320, Math.max(160, containerWidth - (isMobile ? 80 : 180)));
+      const availableHeightPx = isMobile ? Math.max(220, containerHeight - 60) : Math.max(220, containerHeight - 130);
+      
+      // On mobile, reserve space for bracket (75px) and padding (24px) so roll NEVER overflows horizontally in Fit mode
+      const maxMobileRollWidth = Math.max(120, containerWidth - 100);
+      const targetRollWidthPx = isMobile
+        ? Math.min(260, maxMobileRollWidth)
+        : (sheetsToDraw.length > 1
+            ? Math.min(230, Math.max(120, Math.floor((containerWidth - 100) / sheetsToDraw.length)))
+            : Math.min(320, Math.max(160, containerWidth - 180)));
 
       const scaleX = targetRollWidthPx / filmWidthMm;
       const scaleY = availableHeightPx / usedLengthMm;
       
       let scale: number;
       if (isFit) {
-        // Fit mode: scales comfortably into view height
-        const baseScale = Math.min(scaleX, Math.max(scaleX * 0.45, scaleY));
+        // Fit mode: scales comfortably into view height and width without overflow
+        const baseScale = Math.min(scaleX, Math.max(scaleX * 0.45, Math.min(scaleX, scaleY)));
         scale = baseScale * sheetZoom;
       } else {
         // 100% mode: full scale print display
@@ -408,33 +412,33 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                         : 'border-[#dcdff9] hover:border-indigo-300'
                     }`}
                   >
-                    {/* Lavender Header with Thumbnail, Filename, DPI Badge & Yellow Circle Badge (Image 2) */}
+                    {/* Lavender Header with Thumbnail, Filename, DPI Badge & Yellow Circle Badge */}
                     <div
-                      className="bg-[#EEF1FE] p-4 pb-3.5 flex items-start space-x-3.5 relative cursor-pointer select-none"
+                      className="bg-[#EEF1FE] p-3 sm:p-4 pb-2.5 sm:pb-3 flex items-start space-x-3 sm:space-x-3.5 relative cursor-pointer select-none"
                       onClick={(e) => toggleCardCollapse(asset.id, e)}
                     >
-                      {/* Yellow Index Badge & Collapse Chevron at top-right (Image 2) */}
-                      <div className="absolute top-3.5 right-3.5 flex items-center space-x-2 z-10">
-                        <span className="w-6 h-6 rounded-full bg-[#EAB308] text-slate-900 font-extrabold text-xs flex items-center justify-center shadow-xs">
+                      {/* Yellow Index Badge & Collapse Chevron at top-right */}
+                      <div className="absolute top-2.5 sm:top-3.5 right-2.5 sm:right-3.5 flex items-center space-x-1.5 sm:space-x-2 z-10">
+                        <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#EAB308] text-slate-900 font-extrabold text-[11px] sm:text-xs flex items-center justify-center shadow-xs">
                           {index + 1}
                         </span>
                         <button
                           type="button"
                           onClick={(e) => toggleCardCollapse(asset.id, e)}
-                          className="w-6 h-6 rounded-full bg-white/80 hover:bg-white text-slate-500 flex items-center justify-center shadow-2xs transition-colors"
+                          className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/80 hover:bg-white text-slate-500 flex items-center justify-center shadow-2xs transition-colors"
                           title={isCollapsed ? 'Expand card' : 'Collapse card'}
                         >
                           {isCollapsed ? (
-                            <ChevronDown className="w-3.5 h-3.5 text-slate-600" />
+                            <ChevronDown className="w-3 h-3 text-slate-600" />
                           ) : (
-                            <ChevronUp className="w-3.5 h-3.5 text-slate-600" />
+                            <ChevronUp className="w-3 h-3 text-slate-600" />
                           )}
                         </button>
                       </div>
 
-                      {/* Large Square Thumbnail with Checkerboard */}
+                      {/* Square Thumbnail with Checkerboard */}
                       <div
-                        className="w-16 h-16 rounded-2xl bg-white border border-slate-200/90 overflow-hidden relative flex-shrink-0 shadow-inner flex items-center justify-center"
+                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 overflow-hidden relative flex-shrink-0 shadow-inner flex items-center justify-center"
                         style={{
                           backgroundImage: `
                             linear-gradient(45deg, #f1f5f9 25%, transparent 25%),
@@ -442,23 +446,23 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                             linear-gradient(45deg, transparent 75%, #f1f5f9 75%),
                             linear-gradient(-45deg, transparent 75%, #f1f5f9 75%)
                           `,
-                          backgroundSize: '10px 10px'
+                          backgroundSize: '8px 8px'
                         }}
                       >
                         <img
                           src={asset.processedUrl || asset.originalUrl}
                           alt={asset.filename}
-                          className="w-full h-full object-contain p-1"
+                          className="w-full h-full object-contain p-0.5 sm:p-1"
                         />
                       </div>
 
                       {/* Filename & DPI Badge with Yellow Info Icon */}
-                      <div className="min-w-0 flex-1 pt-1 pr-16">
-                        <h4 className="font-bold text-sm text-slate-800 truncate leading-snug">
+                      <div className="min-w-0 flex-1 pt-0.5 pr-14">
+                        <h4 className="font-bold text-xs sm:text-sm text-slate-800 truncate leading-snug">
                           {asset.filename}
                         </h4>
-                        <div className="flex items-center space-x-1.5 mt-2">
-                          <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500 text-white shadow-2xs">
+                        <div className="flex items-center space-x-1.5 mt-1 sm:mt-1.5">
+                          <span className="text-[10px] sm:text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-2xs">
                             {asset.effectiveDpi} DPI
                           </span>
                           <span
@@ -469,7 +473,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                           </span>
                         </div>
                         {isCollapsed && (
-                          <div className="text-[11px] text-slate-500 font-semibold mt-1 font-mono">
+                          <div className="text-[10px] sm:text-[11px] text-slate-500 font-semibold mt-1 font-mono">
                             {asset.targetWidth}" × {asset.targetHeight}" • {asset.copies || 1} {asset.copies === 1 ? 'copy' : 'copies'}
                           </div>
                         )}
@@ -478,12 +482,12 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
 
                     {/* White Body Section: Only displayed when not collapsed */}
                     {!isCollapsed && (
-                      <div className="bg-white p-4 pt-3.5 flex flex-col">
-                        {/* Dimensions Section: WIDTH and HEIGHT (Clean manual number input with 'inches' inside, no buttons!) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-1.5">
+                      <div className="bg-white p-3 sm:p-4 pt-2.5 sm:pt-3.5 flex flex-col">
+                        {/* Dimensions Section: WIDTH and HEIGHT (Clean 2-column manual number inputs) */}
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-1.5">
                           {/* WIDTH */}
                           <div>
-                            <label className="block text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">
+                            <label className="block text-[9px] sm:text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-0.5 sm:mb-1">
                               WIDTH
                             </label>
                             <div className="relative flex items-center">
@@ -517,17 +521,17 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                                 }}
-                                className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-14 font-mono shadow-2xs"
+                                className="w-full h-8.5 bg-[#F8FAFC] border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-10 sm:pr-14 font-mono shadow-2xs"
                               />
-                              <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">
-                                {settings.unit === 'inch' ? 'inches' : settings.unit === 'meter' ? 'meters' : settings.unit}
+                              <span className="absolute right-2 sm:right-3 text-[10px] sm:text-xs text-slate-400 font-medium pointer-events-none">
+                                {settings.unit === 'inch' ? 'in' : settings.unit === 'meter' ? 'm' : settings.unit}
                               </span>
                             </div>
                           </div>
 
                           {/* HEIGHT */}
                           <div>
-                            <label className="block text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">
+                            <label className="block text-[9px] sm:text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-0.5 sm:mb-1">
                               HEIGHT
                             </label>
                             <div className="relative flex items-center">
@@ -561,49 +565,49 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                                 }}
-                                className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-14 font-mono shadow-2xs"
+                                className="w-full h-8.5 bg-[#F8FAFC] border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-10 sm:pr-14 font-mono shadow-2xs"
                               />
-                              <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">
-                                {settings.unit === 'inch' ? 'inches' : settings.unit === 'meter' ? 'meters' : settings.unit}
+                              <span className="absolute right-2 sm:right-3 text-[10px] sm:text-xs text-slate-400 font-medium pointer-events-none">
+                                {settings.unit === 'inch' ? 'in' : settings.unit === 'meter' ? 'm' : settings.unit}
                               </span>
                             </div>
                           </div>
                         </div>
 
                         {/* Original Resolution */}
-                        <div className="text-xs text-slate-400 font-medium mb-3">
+                        <div className="text-[11px] sm:text-xs text-slate-400 font-medium mb-2">
                           Original: {asset.originalWidth} × {asset.originalHeight} px
                         </div>
 
                         {/* Divider */}
-                        <div className="border-t border-slate-100 my-2" />
+                        <div className="border-t border-slate-100 my-1.5" />
 
-                        {/* Lock Aspect Ratio Toggle (Permanently Enabled) */}
+                        {/* Lock Aspect Ratio Toggle */}
                         <div
-                          className="flex items-center space-x-2 py-1 mb-2.5 select-none"
+                          className="flex items-center space-x-2 py-0.5 mb-2 select-none"
                           title="Lock Aspect Ratio is permanently enabled"
                         >
                           <button
                             type="button"
                             aria-pressed={true}
                             disabled
-                            className="w-9 h-5 rounded-full transition-colors relative p-0.5 bg-indigo-600 cursor-default opacity-100"
+                            className="w-8 h-4.5 rounded-full transition-colors relative p-0.5 bg-indigo-600 cursor-default opacity-100"
                           >
-                            <div className="w-4 h-4 rounded-full bg-white shadow-xs transition-transform translate-x-4" />
+                            <div className="w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform translate-x-3.5" />
                           </button>
-                          <span className="text-xs font-semibold text-slate-700">
+                          <span className="text-[11px] sm:text-xs font-semibold text-slate-700">
                             Lock Aspect Ratio
                           </span>
                         </div>
 
-                        {/* Copies on sheet row with direct manual editing (Image 2) */}
-                        <div className="flex items-center justify-between bg-[#F8FAFC] border border-slate-200/80 rounded-2xl p-2.5 mb-3.5">
+                        {/* Copies on sheet row */}
+                        <div className="flex items-center justify-between bg-[#F8FAFC] border border-slate-200/80 rounded-xl p-2 mb-2.5">
                           <span className="text-xs font-semibold text-slate-700 flex items-center space-x-1.5">
                             <Copy className="w-3.5 h-3.5 text-slate-400" />
                             <span>Copies on sheet</span>
                           </span>
 
-                          <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-xl p-0.5 shadow-2xs">
+                          <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -612,7 +616,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 setCopiesInputs((prev) => ({ ...prev, [asset.id]: nextVal.toString() }));
                                 onUpdateAsset(asset.id, { copies: nextVal });
                               }}
-                              className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors font-bold text-xs"
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors font-bold text-xs"
                             >
                               –
                             </button>
@@ -641,7 +645,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                   return copy;
                                 });
                               }}
-                              className="w-10 text-center font-bold text-xs text-slate-900 bg-transparent focus:outline-none font-mono"
+                              className="w-9 text-center font-bold text-xs text-slate-900 bg-transparent focus:outline-none font-mono"
                             />
                             <button
                               type="button"
@@ -651,19 +655,19 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                                 setCopiesInputs((prev) => ({ ...prev, [asset.id]: nextVal.toString() }));
                                 onUpdateAsset(asset.id, { copies: nextVal });
                               }}
-                              className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors font-bold text-xs"
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors font-bold text-xs"
                             >
                               +
                             </button>
                           </div>
                         </div>
 
-                        {/* Bottom Action buttons: [✎ Edit] and [🗑] (Image 2) */}
+                        {/* Bottom Action buttons: [✎ Edit] and [🗑] */}
                         <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
                             onClick={() => onEditAsset(asset)}
-                            className="flex-1 py-2 px-3 rounded-2xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-2xs"
+                            className="flex-1 h-8.5 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-2xs"
                           >
                             <Edit2 className="w-3.5 h-3.5 text-slate-500" />
                             <span>Edit</span>
@@ -671,7 +675,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                           <button
                             type="button"
                             onClick={() => onDeleteAsset(asset.id)}
-                            className="w-12 py-2 rounded-2xl border border-slate-200 text-slate-400 bg-white hover:text-rose-600 hover:bg-rose-50 transition-colors shadow-2xs flex items-center justify-center"
+                            className="w-11 h-8.5 rounded-xl border border-slate-200 text-slate-400 bg-white hover:text-rose-600 hover:bg-rose-50 transition-colors shadow-2xs flex items-center justify-center"
                             title="Delete design"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -683,10 +687,10 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 );
               })}
 
-              {/* Upload Dropzone Box seamlessly integrated below all cards with NO OVERLAPPING */}
+              {/* Upload Dropzone Box */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/20 hover:bg-indigo-50/40 rounded-2xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-2"
+                className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/20 hover:bg-indigo-50/40 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-1.5"
               >
                 <input
                   ref={fileInputRef}
@@ -699,8 +703,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                   }}
                 />
 
-                <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-inner">
-                  <UploadCloud className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-inner">
+                  <UploadCloud className="w-4 h-4" />
                 </div>
 
                 <div>
@@ -716,14 +720,14 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-600/25 transition-all"
+                    className="h-8 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-sm shadow-indigo-600/25 transition-all"
                   >
                     Browse Files
                   </button>
                   <button
                     type="button"
                     onClick={onOpenGallery}
-                    className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors shadow-2xs"
+                    className="h-8 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors shadow-2xs"
                   >
                     Add from Gallery
                   </button>
@@ -732,9 +736,9 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             </div>
           </div>
 
-          {/* Card 2: Nesting Engine (Shifted below Uploaded Designs) */}
-          <div className="bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
+          {/* Card 2: Nesting Engine */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-indigo-100/90 shadow-sm p-3.5 sm:p-5">
+            <div className="flex items-center justify-between mb-2.5">
               <span className="font-extrabold text-xs text-slate-900 flex items-center space-x-1.5">
                 <Box className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Nesting Engine</span>
@@ -746,7 +750,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               {/* Option 1: Box Packing */}
               <div
                 onClick={() => onNestingModeChange('box')}
-                className={`p-3 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
+                className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                   settings.nestingAlgorithm === 'box'
                     ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-1 ring-indigo-500/20'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
@@ -765,23 +769,23 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                     )}
                   </div>
                   <div>
-                    <div className="font-bold text-slate-900">Box packing</div>
+                    <div className="font-bold text-xs text-slate-900">Box packing</div>
                     <div className="text-[10px] text-slate-500">Now on the film • fast</div>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">FILM</span>
+                  <span className="text-[9px] text-slate-400 uppercase font-semibold block">FILM</span>
                   <span className="font-mono font-bold text-slate-900 text-xs">
-                    {formatUnit(displayLength, settings.unit, 2)} {settings.unit === 'meter' ? 'meters' : settings.unit}
+                    {formatUnit(displayLength, settings.unit, 2)} {settings.unit === 'meter' ? 'm' : settings.unit === 'inch' ? 'inch' : settings.unit}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Card 3: Sheet Settings (Manual numeric inputs with 'inches' inside, matching requested concept!) */}
-          <div className="bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 sm:p-5 space-y-3.5">
+          {/* Card 3: Sheet Settings (Professional, responsive, consistent heights) */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-indigo-100/90 shadow-sm p-3.5 sm:p-5 space-y-3">
             <div className="flex items-center justify-between pb-1 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <Sliders className="w-4 h-4 text-indigo-600" />
@@ -794,7 +798,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               </span>
             </div>
 
-            {/* Row 1: Sheet Width with 'inches' inside (No increment buttons, direct manual input capped to 22") */}
+            {/* Row 1: Sheet Width */}
             <div className="flex items-center justify-between text-xs">
               <div>
                 <span className="font-bold text-slate-700">Sheet Width</span>
@@ -822,15 +826,15 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                   onBlur={() => {
                     setSheetWidthInput(null);
                   }}
-                  className="w-32 bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-14 font-mono shadow-2xs"
+                  className="w-28 sm:w-32 h-8.5 bg-[#F8FAFC] border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-12 font-mono shadow-2xs"
                 />
-                <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">
+                <span className="absolute right-2.5 text-[11px] sm:text-xs text-slate-400 font-medium pointer-events-none">
                   inches
                 </span>
               </div>
             </div>
 
-            {/* Row 2: Spacing in 'mm' (Always mm as required for gap spacing) */}
+            {/* Row 2: Spacing in mm */}
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-slate-700">Spacing</span>
               <div className="relative flex items-center">
@@ -860,9 +864,9 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                     });
                     setSpacingInput(null);
                   }}
-                  className="w-32 bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-12 font-mono shadow-2xs"
+                  className="w-28 sm:w-32 h-8.5 bg-[#F8FAFC] border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-10 font-mono shadow-2xs"
                 />
-                <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">
+                <span className="absolute right-2.5 text-[11px] sm:text-xs text-slate-400 font-medium pointer-events-none">
                   mm
                 </span>
               </div>
@@ -871,11 +875,11 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             {/* Row 3: Sheet Length */}
             <div className="flex items-center justify-between text-xs pt-0.5">
               <span className="font-bold text-slate-700">Sheet Length</span>
-              <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-bold">
+              <div className="h-8.5 flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-bold">
                 <button
                   type="button"
                   onClick={() => onUpdateSettings({ lengthMode: 'auto' })}
-                  className={`px-3 py-1 rounded-lg transition-all ${
+                  className={`h-7 px-3 rounded-lg transition-all ${
                     settings.lengthMode === 'auto'
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -886,7 +890,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => onUpdateSettings({ lengthMode: 'fixed' })}
-                  className={`px-3 py-1 rounded-lg transition-all ${
+                  className={`h-7 px-3 rounded-lg transition-all ${
                     settings.lengthMode === 'fixed'
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -897,14 +901,14 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               </div>
             </div>
 
-            {/* Row 4: Batch / Target Copies (Matching the copies manual input concept) */}
+            {/* Row 4: Copies for all */}
             <div className="flex items-center justify-between text-xs pt-0.5">
               <span className="font-bold text-slate-700 flex items-center space-x-1.5">
                 <Copy className="w-3.5 h-3.5 text-slate-400" />
                 <span>Copies for all</span>
               </span>
 
-              <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-xl p-0.5 shadow-2xs">
+              <div className="h-8.5 flex items-center space-x-1 bg-white border border-slate-200 rounded-xl p-0.5 shadow-2xs">
                 <button
                   type="button"
                   onClick={() => {
@@ -946,56 +950,56 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             </div>
           </div>
 
-          {/* Card 4: Four Metrics Cards (Image 2) */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Card 4: Four Metrics Cards (Clean 2-Column Responsive Grid) */}
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {/* Card 1: TOTAL COPIES */}
-            <div className="bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 flex flex-col justify-between">
-              <div className="flex items-center space-x-2 text-indigo-600">
-                <Layers className="w-5 h-5 text-indigo-500" />
-                <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-600">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-indigo-100/90 shadow-sm p-3 sm:p-4 flex flex-col justify-between h-22 sm:h-26">
+              <div className="flex items-center space-x-1.5 text-indigo-600">
+                <Layers className="w-4 h-4 text-indigo-500" />
+                <span className="font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-600">
                   Total Copies
                 </span>
               </div>
-              <div className="font-black text-slate-900 text-2xl font-mono mt-3">
+              <div className="font-black text-slate-900 text-xl sm:text-2xl font-mono mt-1">
                 {totalCopies}
               </div>
             </div>
 
             {/* Card 2: SHEET LENGTH */}
-            <div className="bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 flex flex-col justify-between">
-              <div className="flex items-center space-x-2 text-purple-600">
-                <Ruler className="w-5 h-5 text-purple-500" />
-                <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-600">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-indigo-100/90 shadow-sm p-3 sm:p-4 flex flex-col justify-between h-22 sm:h-26">
+              <div className="flex items-center space-x-1.5 text-purple-600">
+                <Ruler className="w-4 h-4 text-purple-500" />
+                <span className="font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-600">
                   Sheet Length
                 </span>
               </div>
-              <div className="font-black text-slate-900 text-2xl font-mono mt-3">
+              <div className="font-black text-slate-900 text-xl sm:text-2xl font-mono mt-1">
                 {layout.usedLengthMeters.toFixed(2)} m
               </div>
             </div>
 
             {/* Card 3: PRINT OUTPUT */}
-            <div className="bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 flex flex-col justify-between">
-              <div className="flex items-center space-x-2 text-emerald-600">
-                <Printer className="w-5 h-5 text-emerald-500" />
-                <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-600">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-indigo-100/90 shadow-sm p-3 sm:p-4 flex flex-col justify-between h-22 sm:h-26">
+              <div className="flex items-center space-x-1.5 text-emerald-600">
+                <Printer className="w-4 h-4 text-emerald-500" />
+                <span className="font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-600">
                   Print Output
                 </span>
               </div>
-              <div className="font-extrabold text-emerald-600 text-sm font-mono mt-4">
+              <div className="font-black text-emerald-600 text-xs sm:text-sm font-mono mt-1">
                 300 DPI RGBA
               </div>
             </div>
 
             {/* Card 4: FILM WASTE */}
-            <div className="bg-white rounded-3xl border border-indigo-100/90 shadow-sm p-4 flex flex-col justify-between">
-              <div className="flex items-center space-x-2 text-teal-600">
-                <Recycle className="w-5 h-5 text-teal-500" />
-                <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-600">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-indigo-100/90 shadow-sm p-3 sm:p-4 flex flex-col justify-between h-22 sm:h-26">
+              <div className="flex items-center space-x-1.5 text-teal-600">
+                <Recycle className="w-4 h-4 text-teal-500" />
+                <span className="font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-600">
                   Film Waste
                 </span>
               </div>
-              <div className="font-black text-slate-900 text-2xl font-mono mt-3">
+              <div className="font-black text-slate-900 text-xl sm:text-2xl font-mono mt-1">
                 {layout.wastePercent}%
               </div>
             </div>
@@ -1067,28 +1071,31 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           {/* Vertical Canvas Container with Dynamic Framing & Blueprint Grid */}
           <div
             ref={canvasContainerRef}
-            className="flex-1 min-h-[240px] sm:min-h-[280px] w-full bg-slate-50/80 border border-slate-200 rounded-3xl p-4 sm:p-6 flex flex-col items-start justify-start overflow-y-auto overflow-x-auto shadow-inner relative select-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent"
+            className="flex-1 min-h-[220px] sm:min-h-[280px] w-full bg-slate-50/80 border border-slate-200 rounded-2xl sm:rounded-3xl p-2.5 sm:p-6 flex flex-col items-center justify-start overflow-y-auto overflow-x-auto shadow-inner relative select-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-transparent"
             style={{
               backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
               backgroundSize: '16px 16px'
             }}
           >
-            {/* Centered / Side-by-side Roll Previews (Beside each other, scrollable without clipping) */}
-            <div className="min-w-full w-max flex items-start justify-center space-x-6 sm:space-x-8 p-2 pb-4 transition-all">
-              {(layout.sheets && layout.sheets.length > 0
-                ? layout.sheets
-                : [{
-                    sheetIndex: 0,
-                    placements: layout.placements,
-                    usedWidthMm: layout.usedWidthMm,
-                    usedLengthMm: layout.usedLengthMm,
-                    usedLengthInches: layout.usedLengthInches,
-                    usedLengthMeters: layout.usedLengthMeters,
-                    totalCopies: layout.totalCopies,
-                    filmAreaMm2: layout.filmAreaMm2,
-                    artworkAreaMm2: layout.artworkAreaMm2,
-                    wastePercent: layout.wastePercent
-                  }]
+            {/* Centered Roll Previews (Beside each other on desktop, active sheet on mobile) */}
+            <div className="w-full flex items-start justify-center space-x-4 sm:space-x-8 p-1 sm:p-2 pb-3 transition-all">
+              {((containerWidth < 640 && layout.sheets && layout.sheets.length > 1)
+                ? layout.sheets.filter((s) => s.sheetIndex === selectedSheetIndex)
+                : (layout.sheets && layout.sheets.length > 0
+                    ? layout.sheets
+                    : [{
+                        sheetIndex: 0,
+                        placements: layout.placements,
+                        usedWidthMm: layout.usedWidthMm,
+                        usedLengthMm: layout.usedLengthMm,
+                        usedLengthInches: layout.usedLengthInches,
+                        usedLengthMeters: layout.usedLengthMeters,
+                        totalCopies: layout.totalCopies,
+                        filmAreaMm2: layout.filmAreaMm2,
+                        artworkAreaMm2: layout.artworkAreaMm2,
+                        wastePercent: layout.wastePercent
+                      }]
+                  )
               ).map((sheet) => {
                 const sheetDisplayLength = mmToUnit(sheet.usedLengthMm, settings.unit);
                 const sheetHeight = renderedCanvasHeights[sheet.sheetIndex] || 180;
@@ -1103,7 +1110,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                   >
                     {/* Top width / sheet label pill */}
                     <div
-                      className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold shadow-2xs mb-3 flex-shrink-0 transition-all ${
+                      className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold shadow-2xs mb-2.5 flex-shrink-0 transition-all ${
                         isSelectedSheet
                           ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-md'
                           : 'bg-white/95 border border-slate-200 text-slate-700 hover:border-indigo-300'
@@ -1133,7 +1140,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                     </div>
 
                     {/* Canvas and Proportional Bracket */}
-                    <div className="flex items-start justify-center space-x-3 transition-all">
+                    <div className="flex items-start justify-center space-x-2.5 transition-all">
                       {/* Canvas with checkerboard border */}
                       <div className={`rounded-xl overflow-hidden flex-shrink-0 transition-all bg-white ${
                         isSelectedSheet
@@ -1149,18 +1156,18 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                       </div>
 
                       {/* Right Bracket & Callout with dynamic proportional height */}
-                      <div className="flex items-center space-x-2 flex-shrink-0 font-mono text-xs ml-1">
+                      <div className="flex items-center space-x-1.5 flex-shrink-0 font-mono text-xs ml-1">
                         <div
-                          className={`w-2.5 border-r-2 border-t-2 border-b-2 rounded-r-md transition-all duration-150 ${
+                          className={`w-2 sm:w-2.5 border-r-2 border-t-2 border-b-2 rounded-r-md transition-all duration-150 ${
                             isSelectedSheet ? 'border-indigo-600' : 'border-indigo-400'
                           }`}
-                          style={{ height: Math.max(48, sheetHeight * 0.95) }}
+                          style={{ height: Math.max(40, sheetHeight * 0.95) }}
                         />
                         <div>
-                          <div className="font-extrabold text-xs text-slate-900 font-mono">
-                            {formatUnit(sheetDisplayLength, settings.unit, 2)} {settings.unit === 'meter' ? 'meters' : settings.unit === 'inch' ? 'in' : settings.unit}
+                          <div className="font-extrabold text-[11px] sm:text-xs text-slate-900 font-mono leading-tight">
+                            {formatUnit(sheetDisplayLength, settings.unit, 2)} {settings.unit === 'meter' ? 'm' : settings.unit === 'inch' ? 'in' : settings.unit}
                           </div>
-                          <div className="text-[10px] text-slate-500 font-medium">
+                          <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium">
                             {Math.round((sheet.usedWidthMm ? sheet.usedWidthMm / 25.4 : settings.filmWidth) * 10) / 10}" wide
                           </div>
                         </div>
@@ -1173,16 +1180,16 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           </div>
 
           {/* Canvas Zoom Toolbar & Active Sheet Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 px-1 text-slate-600 text-xs flex-shrink-0 border-t border-slate-100">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 px-1 text-slate-600 text-xs flex-shrink-0 border-t border-slate-100">
             {/* Sheet Selector Tabs when multiple sheets exist */}
             {layout.sheets && layout.sheets.length > 1 ? (
-              <div className="flex items-center space-x-1 p-1 bg-slate-100 rounded-xl">
-                <span className="text-[10px] font-bold uppercase text-slate-400 px-1.5">Select Sheet:</span>
+              <div className="flex items-center space-x-1 p-1 bg-slate-100 rounded-xl max-w-full overflow-x-auto no-scrollbar">
+                <span className="text-[10px] font-bold uppercase text-slate-400 px-1 shrink-0">Sheet:</span>
                 {layout.sheets.map((s) => (
                   <button
                     key={s.sheetIndex}
                     onClick={() => setSelectedSheetIndex(s.sheetIndex)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${
                       selectedSheetIndex === s.sheetIndex
                         ? 'bg-indigo-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -1195,9 +1202,10 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             ) : <div />}
 
             {/* Selected Sheet Zoom, Fit, 100%, and Download */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto space-x-2">
               <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl font-medium">
                 <button
+                  type="button"
                   onClick={() => {
                     setSheetFitModes((prev) => ({ ...prev, [selectedSheetIndex]: false }));
                     setSheetZooms((prev) => ({
@@ -1216,6 +1224,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 </span>
 
                 <button
+                  type="button"
                   onClick={() => {
                     setSheetFitModes((prev) => ({ ...prev, [selectedSheetIndex]: false }));
                     setSheetZooms((prev) => ({
@@ -1233,6 +1242,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
 
                 {/* Fit Button for Selected Sheet */}
                 <button
+                  type="button"
                   onClick={() => {
                     setSheetFitModes((prev) => ({ ...prev, [selectedSheetIndex]: true }));
                     setSheetZooms((prev) => ({ ...prev, [selectedSheetIndex]: 1 }));
@@ -1249,6 +1259,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
 
                 {/* 100% Button for Selected Sheet */}
                 <button
+                  type="button"
                   onClick={() => {
                     setSheetFitModes((prev) => ({ ...prev, [selectedSheetIndex]: false }));
                     setSheetZooms((prev) => ({ ...prev, [selectedSheetIndex]: 1.0 }));
@@ -1267,61 +1278,19 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               {/* Direct Download for Selected Sheet */}
               {onExportSingleSheet && (
                 <button
+                  type="button"
                   onClick={() => onExportSingleSheet(selectedSheetIndex)}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition-colors"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition-colors shrink-0"
                   title={`Download Sheet ${selectedSheetIndex + 1} PNG`}
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download Sheet {selectedSheetIndex + 1}</span>
+                  <span>Download</span>
                 </button>
               )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Mobile Sticky Preview Access Floating Bar */}
-      {showStickyPreviewBar && (
-        <div className="lg:hidden fixed bottom-16 inset-x-3 z-30 bg-[#0d1326]/95 backdrop-blur-md border border-indigo-500/30 rounded-2xl p-2.5 shadow-2xl flex items-center justify-between animate-in fade-in slide-in-from-bottom-2">
-          <div
-            className="flex items-center space-x-2.5 cursor-pointer flex-1 min-w-0"
-            onClick={() => {
-              const el = document.getElementById('sheet-preview-section');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            <div className="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-400 flex-shrink-0">
-              <Eye className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center space-x-1.5 text-xs text-white font-black truncate">
-                <span>Roll: {formatUnit(displayLength, settings.unit, 2)} {settings.unit === 'meter' ? 'm' : settings.unit === 'inch' ? 'in' : settings.unit}</span>
-                <span className="text-slate-400">•</span>
-                <span className="text-emerald-400 font-extrabold">{layout.wastePercent}% waste</span>
-              </div>
-              <p className="text-[10px] text-indigo-200/70 truncate">Tap to jump to Sheet Preview</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-1.5 flex-shrink-0 pl-2">
-            <button
-              type="button"
-              onClick={onOpenPreviewModal}
-              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-[11px] font-black rounded-xl shadow-xs transition-transform"
-            >
-              Expand
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowStickyPreviewBar(false)}
-              className="p-1 text-slate-400 hover:text-white transition-colors"
-              title="Dismiss"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

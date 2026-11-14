@@ -570,25 +570,25 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
 
       {/* ================= MOBILE VIEW (< lg) ================= */}
       <div className="lg:hidden flex flex-col w-full">
-        {/* Mobile Top Row: Brand & Quick Actions */}
-        <div className="h-14 px-3 flex items-center justify-between border-b border-[#182035]">
+        {/* Mobile Top Row: Compact Brand & Quick Actions */}
+        <div className="h-12 px-2.5 sm:px-3 flex items-center justify-between border-b border-[#182035] bg-[#090d19]">
           {/* Brand */}
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
-              <Layers className="w-4 h-4 text-white" />
+          <div className="flex items-center space-x-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xs flex-shrink-0">
+              <Layers className="w-3.5 h-3.5 text-white" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-black text-xs sm:text-sm tracking-tight text-white leading-tight">
+            <div className="flex flex-col min-w-0">
+              <span className="font-black text-xs tracking-tight text-white leading-tight truncate">
                 DTF Set Files
               </span>
-              <span className="text-[10px] text-indigo-300 font-medium leading-none">
+              <span className="text-[9px] text-indigo-300 font-medium leading-none truncate">
                 Gang Sheet Builder
               </span>
             </div>
           </div>
 
-          {/* Right Action Icons */}
-          <div className="flex items-center space-x-2">
+          {/* Right Action Icons: Consistent Dimensions & Vertical Alignment */}
+          <div className="flex items-center space-x-1.5 flex-shrink-0">
             {/* Demos Button */}
             <div className="relative">
               <button
@@ -597,15 +597,15 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                   setActiveDropdown(null);
                   setDemoMenuOpen(!demoMenuOpen);
                 }}
-                className="h-8 px-2.5 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-xl text-xs font-bold text-slate-200 flex items-center space-x-1"
+                className="h-7.5 px-2 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-lg text-xs font-bold text-slate-200 flex items-center space-x-1 transition-colors"
               >
-                <Play className="w-3 h-3 text-indigo-400 fill-indigo-400" />
+                <Play className="w-2.5 h-2.5 text-indigo-400 fill-indigo-400" />
                 <span className="text-[11px]">Demos</span>
-                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${demoMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-2.5 h-2.5 text-slate-400 transition-transform ${demoMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {demoMenuOpen && (
-                <div className="fixed inset-x-4 top-20 max-w-xs mx-auto bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-x-4 top-16 max-w-xs mx-auto bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="p-2 border-b border-slate-800 text-[11px] font-bold text-indigo-300">
                     Sample Datasets
                   </div>
@@ -638,11 +638,10 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
             <button
               type="button"
               onClick={onOpenAudit}
-              className="h-8 px-2.5 bg-emerald-950/60 border border-emerald-700/60 rounded-xl text-xs font-bold text-emerald-300 flex items-center space-x-1"
+              className="w-7.5 h-7.5 bg-emerald-950/60 border border-emerald-700/60 rounded-lg text-emerald-300 flex items-center justify-center flex-shrink-0 transition-colors"
               title="Preflight & DPI Audit"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-[11px] hidden sm:inline">Audit</span>
             </button>
 
             {/* User Profile Avatar / Sign In */}
@@ -651,9 +650,10 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className={`w-8 h-8 rounded-full bg-gradient-to-tr ${
+                  className={`w-7.5 h-7.5 rounded-full bg-gradient-to-tr ${
                     currentUser.avatarColor || 'from-purple-500 to-indigo-600'
-                  } text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-indigo-400/40`}
+                  } text-white flex items-center justify-center font-bold text-[11px] shadow-sm border border-indigo-400/50 flex-shrink-0`}
+                  title={currentUser.name}
                 >
                   {currentUser.initials}
                 </button>
@@ -661,15 +661,15 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 <button
                   type="button"
                   onClick={() => onOpenAuth?.('login')}
-                  className="h-8 px-3 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center space-x-1"
+                  className="h-7.5 px-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-indigo-600/30 flex items-center space-x-1"
                 >
-                  <LogIn className="w-3.5 h-3.5" />
+                  <LogIn className="w-3 h-3" />
                   <span className="text-[11px]">Sign In</span>
                 </button>
               )}
 
               {userMenuOpen && currentUser && (
-                <div className="fixed inset-x-4 top-20 max-w-xs mx-auto bg-[#0d1326] border border-[#222c4d] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-x-4 top-16 max-w-xs mx-auto bg-[#0d1326] border border-[#222c4d] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-2 py-2 border-b border-slate-800">
                     <div className="font-black text-xs text-white leading-tight">{currentUser.name}</div>
                     <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
@@ -712,7 +712,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         </div>
 
         {/* Mobile Second Row: Horizontal Scrollable Category Toolbar */}
-        <div className="h-10 px-2 flex items-center space-x-1.5 overflow-x-auto no-scrollbar scroll-smooth bg-[#060913]">
+        <div className="h-8.5 px-2 flex items-center space-x-1.5 overflow-x-auto no-scrollbar scroll-smooth bg-[#060913] border-b border-[#141b2e]">
           {categories.map((cat) => {
             const isOpen = activeDropdown === cat.id;
             const Icon = cat.icon;
@@ -726,10 +726,10 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                   setUserMenuOpen(false);
                   setActiveDropdown(isOpen ? null : cat.id);
                 }}
-                className={`h-7 px-2.5 rounded-lg font-bold text-[11px] flex items-center space-x-1.5 whitespace-nowrap flex-shrink-0 transition-all ${
+                className={`h-6.5 px-2 rounded-md font-semibold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 transition-all ${
                   isOpen
                     ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-300 bg-[#101426] border border-slate-800 hover:text-white'
+                    : 'text-slate-300 bg-[#101426] border border-slate-800/80 hover:text-white'
                 }`}
               >
                 <Icon className={`w-3 h-3 ${isOpen ? 'text-white' : cat.accentColor}`} />
@@ -743,7 +743,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           <button
             type="button"
             onClick={onOpenGuide}
-            className="h-7 px-2.5 rounded-lg font-bold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 text-slate-300 bg-[#101426] border border-slate-800 hover:text-white"
+            className="h-6.5 px-2 rounded-md font-semibold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 text-slate-300 bg-[#101426] border border-slate-800/80 hover:text-white"
           >
             <HelpCircle className="w-3 h-3 text-indigo-400" />
             <span>Guide</span>

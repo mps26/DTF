@@ -482,32 +482,35 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
         </div>
 
       {/* ================= MOBILE TOOLBAR (< lg) ================= */}
+      {/* 4-Row Clean Mobile Control Panel matching exact specifications */}
       <div className="lg:hidden flex flex-col bg-[#0b0e1b]/95 backdrop-blur-xl border border-indigo-900/60 rounded-2xl p-2.5 shadow-xl text-white space-y-2 relative z-30">
-        {/* Tier 1: Horizontal Scrollable Settings Strip */}
-        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar scroll-smooth pb-0.5">
-          {/* Mode Pill */}
+        {/* ROW 1: DTF Mode & Sheet Size */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* DTF Mode */}
           <button
             type="button"
             onClick={onSwitchHome}
-            className={`px-2.5 py-1 rounded-xl text-xs font-black tracking-wide uppercase border flex-shrink-0 ${
+            className={`h-9 px-3 rounded-xl text-xs font-bold tracking-wide uppercase border flex items-center justify-between transition-all active:scale-98 ${
               printType === 'uvdtf'
                 ? 'bg-purple-600/20 border-purple-500/60 text-purple-200'
                 : 'bg-indigo-600/20 border-indigo-500/60 text-indigo-200'
             }`}
+            title="Tap to switch between DTF and UVDTF"
           >
-            {printType === 'uvdtf' ? 'UVDTF' : 'DTF'}
+            <span className="text-[10px] text-slate-400 font-sans uppercase font-bold">Mode</span>
+            <span className="font-black text-xs font-mono">{printType === 'uvdtf' ? 'UVDTF' : 'DTF'}</span>
           </button>
 
-          {/* Sheet Size Button */}
-          <div className="relative flex-shrink-0">
+          {/* Sheet Size */}
+          <div className="relative">
             <button
               type="button"
               onClick={() => setPresetMenuOpen(!presetMenuOpen)}
-              className="flex items-center space-x-1 bg-[#161c32] border border-indigo-900/80 rounded-xl px-2.5 py-1 text-xs font-bold text-white font-mono"
+              className="w-full h-9 px-3 bg-[#161c32] border border-indigo-900/80 hover:border-indigo-500 rounded-xl text-xs font-bold text-white font-mono flex items-center justify-between active:scale-98 transition-all"
             >
-              <span className="text-[10px] text-slate-400 font-sans uppercase mr-0.5">Size:</span>
-              <span>{activePreset ? activePreset.shortLabel : `${settings.filmWidth}"`}</span>
-              <ChevronDown className="w-3 h-3 text-slate-300" />
+              <span className="text-[10px] text-slate-400 font-sans uppercase font-bold">Size</span>
+              <span className="truncate mx-1">{activePreset ? activePreset.shortLabel : `${settings.filmWidth}"`}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
 
             {presetMenuOpen && (
@@ -558,90 +561,109 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
               </div>
             )}
           </div>
+        </div>
 
-          {/* Spacing Input */}
-          <div className="flex items-center bg-[#161c32] border border-indigo-900/80 rounded-xl px-2 py-1 flex-shrink-0">
-            <span className="text-[10px] text-slate-400 uppercase font-sans mr-1">Gap:</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={isSpacingFocused ? spacingMmInput : (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()}
-              onFocus={() => {
-                setIsSpacingFocused(true);
-                setSpacingMmInput((Math.round((settings.spacingMm ?? 5) * 100) / 100).toString());
-              }}
-              onChange={(e) => handleSpacingChange(e.target.value)}
-              onBlur={handleSpacingBlur}
-              className="w-8 bg-transparent text-xs font-bold text-white focus:outline-none font-mono text-center"
-            />
-            <span className="text-slate-400 text-[10px] uppercase ml-0.5">mm</span>
+        {/* ROW 2: Gap (Spacing mm) & Sheet Length (Auto / Fixed) */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Gap */}
+          <div className="h-9 flex items-center justify-between bg-[#161c32] border border-indigo-900/80 rounded-xl px-3">
+            <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Gap</span>
+            <div className="flex items-center space-x-1">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={isSpacingFocused ? spacingMmInput : (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()}
+                onFocus={() => {
+                  setIsSpacingFocused(true);
+                  setSpacingMmInput((Math.round((settings.spacingMm ?? 5) * 100) / 100).toString());
+                }}
+                onChange={(e) => handleSpacingChange(e.target.value)}
+                onBlur={handleSpacingBlur}
+                className="w-10 bg-transparent text-xs font-bold text-white focus:outline-none font-mono text-center"
+              />
+              <span className="text-slate-400 text-[10px] uppercase font-bold">mm</span>
+            </div>
           </div>
 
-          {/* Sheet Length Toggle */}
-          <div className="flex items-center bg-[#161c32] p-0.5 rounded-xl border border-indigo-900/80 text-xs font-bold flex-shrink-0">
-            <button
-              onClick={() => onUpdateSettings({ lengthMode: 'auto' })}
-              className={`px-2 py-0.5 rounded-lg text-[11px] ${
-                settings.lengthMode === 'auto' ? 'bg-white text-slate-900' : 'text-slate-300'
-              }`}
-            >
-              Auto
-            </button>
-            <button
-              onClick={() => onUpdateSettings({ lengthMode: 'fixed' })}
-              className={`px-2 py-0.5 rounded-lg text-[11px] ${
-                settings.lengthMode === 'fixed' ? 'bg-white text-slate-900' : 'text-slate-300'
-              }`}
-            >
-              Fixed
-            </button>
+          {/* Sheet Length (Auto / Fixed) */}
+          <div className="h-9 flex items-center justify-between bg-[#161c32] p-1 rounded-xl border border-indigo-900/80">
+            <span className="text-[10px] text-slate-400 uppercase font-sans font-bold px-1.5">Length</span>
+            <div className="flex items-center space-x-1 h-full">
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ lengthMode: 'auto' })}
+                className={`h-7 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                  settings.lengthMode === 'auto' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Auto
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ lengthMode: 'fixed' })}
+                className={`h-7 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                  settings.lengthMode === 'fixed' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Fixed
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Tier 2: Status Summary & Primary Action Buttons */}
-        <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-indigo-950/80">
-          {/* Quick Metrics Badge */}
-          <div className="flex items-center space-x-1.5 text-[10px] font-mono text-slate-300 bg-[#141a2e] px-2 py-1.5 rounded-xl border border-indigo-900/60">
-            <span className="font-bold text-white">{layout.totalCopies} cps</span>
-            <span className="text-slate-600">|</span>
-            <span className="text-indigo-300 font-bold">{layout.usedLengthMeters.toFixed(2)}m</span>
-            <span className="text-slate-600">|</span>
-            <span className="text-emerald-400 font-bold">{layout.wastePercent}% w</span>
+        {/* ROW 3: Copies, Sheet Length, Waste */}
+        <div className="grid grid-cols-3 gap-2">
+          {/* Copies */}
+          <div className="bg-[#141a2e] border border-indigo-900/60 rounded-xl px-2 py-1.5 text-center flex flex-col justify-center">
+            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold leading-tight">Copies</span>
+            <span className="text-xs font-black text-white font-mono mt-0.5">{layout.totalCopies}</span>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-1.5">
-            {/* Preview Button */}
-            <button
-              type="button"
-              onClick={onOpenPreviewModal}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-200 bg-[#161c32] border border-indigo-900/80 flex items-center space-x-1"
-            >
-              <Eye className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Preview</span>
-            </button>
-
-            {/* Download Button */}
-            <button
-              type="button"
-              onClick={onExportPng}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 flex items-center space-x-1"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Save</span>
-            </button>
-
-            {/* Generate Button */}
-            <button
-              type="button"
-              onClick={onGenerateLayout}
-              disabled={isGenerating}
-              className="px-3 py-1.5 rounded-xl text-xs font-black text-white bg-gradient-to-r from-indigo-500 to-purple-600 shadow-md shadow-indigo-600/30 flex items-center space-x-1"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
-              <span>{isGenerating ? 'Packing' : 'Pack'}</span>
-            </button>
+          {/* Sheet Length */}
+          <div className="bg-[#141a2e] border border-indigo-900/60 rounded-xl px-2 py-1.5 text-center flex flex-col justify-center">
+            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold leading-tight">Length</span>
+            <span className="text-xs font-black text-indigo-300 font-mono mt-0.5">{layout.usedLengthMeters.toFixed(2)}m</span>
           </div>
+
+          {/* Waste */}
+          <div className="bg-[#141a2e] border border-indigo-900/60 rounded-xl px-2 py-1.5 text-center flex flex-col justify-center">
+            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold leading-tight">Waste</span>
+            <span className="text-xs font-black text-emerald-400 font-mono mt-0.5">{layout.wastePercent}%</span>
+          </div>
+        </div>
+
+        {/* ROW 4: Preview, Save, Pack */}
+        <div className="grid grid-cols-3 gap-2 pt-0.5">
+          {/* Preview */}
+          <button
+            type="button"
+            onClick={onOpenPreviewModal}
+            className="h-9 px-2 rounded-xl text-xs font-bold text-slate-200 bg-[#161c32] hover:bg-[#1e2644] border border-indigo-900/80 flex items-center justify-center space-x-1.5 active:scale-95 transition-transform"
+          >
+            <Eye className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Preview</span>
+          </button>
+
+          {/* Save / Download */}
+          <button
+            type="button"
+            onClick={onExportPng}
+            className="h-9 px-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-transform shadow-xs flex items-center justify-center space-x-1.5"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Save</span>
+          </button>
+
+          {/* Pack / Generate Layout */}
+          <button
+            type="button"
+            onClick={onGenerateLayout}
+            disabled={isGenerating}
+            className="h-9 px-2 rounded-xl text-xs font-black text-white bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 active:scale-95 transition-transform shadow-md shadow-indigo-600/30 flex items-center justify-center space-x-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
+            <span>{isGenerating ? 'Packing' : 'Pack'}</span>
+          </button>
         </div>
       </div>
       </div>

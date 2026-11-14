@@ -45,9 +45,8 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
           <button
             type="button"
             onClick={() => onTabChange('landing')}
-            className={`w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 font-black cursor-pointer hover:scale-105 transition-all ${
-              activeTab === 'landing' ? 'ring-2 ring-indigo-400' : ''
-            }`}
+            className={`w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 font-black cursor-pointer hover:scale-105 transition-all ${activeTab === 'landing' ? 'ring-2 ring-indigo-400' : ''
+              }`}
             title="DTF Set Files Landing Page"
           >
             <Layers className="w-5 h-5 text-white" />
@@ -58,11 +57,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
             {/* Home (DTF / UVDTF Selector) */}
             <button
               onClick={() => onTabChange('home')}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                activeTab === 'home'
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activeTab === 'home'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+                }`}
               title="Home — Choose DTF or UVDTF"
             >
               <Home className="w-5 h-5" />
@@ -71,11 +69,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
             {/* Grid / Studio */}
             <button
               onClick={() => onTabChange('studio')}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                isStudioActive
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isStudioActive
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+                }`}
               title="Gang Sheet Studio"
             >
               <LayoutGrid className="w-5 h-5" />
@@ -84,11 +81,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
             {/* TIFF Export - RIP Ready W1 & CMYK Channels */}
             <button
               onClick={() => onTabChange('tiff-export')}
-              className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all relative cursor-pointer ${
-                activeTab === 'tiff-export'
+              className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all relative cursor-pointer ${activeTab === 'tiff-export'
                   ? 'bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30 ring-2 ring-purple-400/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+                }`}
               title="TIFF Export - RIP Ready W1 & CMYK Channels"
             >
               <FileStack className="w-4 h-4" />
@@ -101,11 +97,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
             {/* Gallery / Images */}
             <button
               onClick={() => onTabChange('gallery')}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                activeTab === 'gallery'
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activeTab === 'gallery'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+                }`}
               title="Asset Gallery & Media Library"
             >
               <ImageIcon className="w-5 h-5" />
@@ -114,11 +109,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
             {/* Templates / Gang Sheets */}
             <button
               onClick={() => onTabChange('templates')}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                activeTab === 'templates'
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activeTab === 'templates'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+                }`}
               title="Gang Sheet Templates"
             >
               <Copy className="w-5 h-5" />
@@ -127,11 +121,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
             {/* History / Jobs */}
             <button
               onClick={() => onTabChange('history')}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                activeTab === 'history'
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activeTab === 'history'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+                }`}
               title="Production History & Export Logs"
             >
               <Clock className="w-5 h-5" />
@@ -140,11 +133,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
             {/* Settings */}
             <button
               onClick={() => onTabChange('settings')}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                activeTab === 'settings'
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activeTab === 'settings'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+                }`}
               title="Printer Hardware & RIP Settings"
             >
               <Settings className="w-5 h-5" />
@@ -157,9 +149,8 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
           <button
             type="button"
             onClick={() => onTabChange('settings')}
-            className={`w-10 h-10 rounded-full bg-gradient-to-tr ${
-              currentUser.avatarColor || 'from-purple-500 to-indigo-600'
-            } text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-indigo-400/40 hover:scale-105 transition-all cursor-pointer`}
+            className={`w-10 h-10 rounded-full bg-gradient-to-tr ${currentUser.avatarColor || 'from-purple-500 to-indigo-600'
+              } text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-indigo-400/40 hover:scale-105 transition-all cursor-pointer`}
             title={`${currentUser.name} (${currentUser.companyName}) - Settings`}
           >
             {currentUser.initials}
@@ -175,11 +166,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
         <button
           type="button"
           onClick={() => handleMobileNav('studio')}
-          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${
-            isStudioActive
+          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${isStudioActive
               ? 'text-indigo-400 font-bold'
               : 'text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <div className={`p-1 rounded-lg ${isStudioActive ? 'bg-indigo-600/20' : ''}`}>
             <LayoutGrid className="w-5 h-5" />
@@ -191,11 +181,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
         <button
           type="button"
           onClick={() => handleMobileNav('home')}
-          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${
-            activeTab === 'home'
+          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${activeTab === 'home'
               ? 'text-indigo-400 font-bold'
               : 'text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <div className={`p-1 rounded-lg ${activeTab === 'home' ? 'bg-indigo-600/20' : ''}`}>
             <Home className="w-5 h-5" />
@@ -207,11 +196,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
         <button
           type="button"
           onClick={() => handleMobileNav('tiff-export')}
-          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all relative ${
-            activeTab === 'tiff-export'
+          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all relative ${activeTab === 'tiff-export'
               ? 'text-purple-400 font-bold'
               : 'text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <div className={`p-1 rounded-lg relative ${activeTab === 'tiff-export' ? 'bg-purple-600/20' : ''}`}>
             <FileStack className="w-5 h-5" />
@@ -224,11 +212,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
         <button
           type="button"
           onClick={() => handleMobileNav('gallery')}
-          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${
-            activeTab === 'gallery'
+          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${activeTab === 'gallery'
               ? 'text-indigo-400 font-bold'
               : 'text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <div className={`p-1 rounded-lg ${activeTab === 'gallery' ? 'bg-indigo-600/20' : ''}`}>
             <ImageIcon className="w-5 h-5" />
@@ -240,11 +227,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
         <button
           type="button"
           onClick={() => setMobileDrawerOpen(true)}
-          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${
-            mobileDrawerOpen || activeTab === 'templates' || activeTab === 'history' || activeTab === 'settings'
+          className={`flex-1 min-h-[44px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${mobileDrawerOpen || activeTab === 'templates' || activeTab === 'history' || activeTab === 'settings'
               ? 'text-indigo-400 font-bold'
               : 'text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <div className="p-1 rounded-lg">
             <Menu className="w-5 h-5" />
@@ -289,9 +275,8 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
             {currentUser && (
               <div className="mt-3 p-3 bg-indigo-950/40 border border-indigo-800/40 rounded-2xl flex items-center space-x-3">
                 <div
-                  className={`w-10 h-10 rounded-full bg-gradient-to-tr ${
-                    currentUser.avatarColor || 'from-indigo-600 to-purple-600'
-                  } text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md`}
+                  className={`w-10 h-10 rounded-full bg-gradient-to-tr ${currentUser.avatarColor || 'from-indigo-600 to-purple-600'
+                    } text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md`}
                 >
                   {currentUser.initials}
                 </div>
@@ -310,11 +295,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
               <button
                 type="button"
                 onClick={() => handleMobileNav('studio')}
-                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${
-                  isStudioActive
+                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${isStudioActive
                     ? 'bg-indigo-600 text-white font-bold'
                     : 'text-slate-300 hover:bg-slate-800/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <LayoutGrid className="w-4 h-4" />
@@ -326,11 +310,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
               <button
                 type="button"
                 onClick={() => handleMobileNav('home')}
-                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${
-                  activeTab === 'home'
+                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${activeTab === 'home'
                     ? 'bg-indigo-600 text-white font-bold'
                     : 'text-slate-300 hover:bg-slate-800/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <Home className="w-4 h-4" />
@@ -342,11 +325,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
               <button
                 type="button"
                 onClick={() => handleMobileNav('tiff-export')}
-                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${
-                  activeTab === 'tiff-export'
+                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${activeTab === 'tiff-export'
                     ? 'bg-purple-600 text-white font-bold'
                     : 'text-slate-300 hover:bg-slate-800/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <FileStack className="w-4 h-4 text-purple-400" />
@@ -360,11 +342,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
               <button
                 type="button"
                 onClick={() => handleMobileNav('gallery')}
-                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${
-                  activeTab === 'gallery'
+                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${activeTab === 'gallery'
                     ? 'bg-indigo-600 text-white font-bold'
                     : 'text-slate-300 hover:bg-slate-800/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <ImageIcon className="w-4 h-4" />
@@ -376,11 +357,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
               <button
                 type="button"
                 onClick={() => handleMobileNav('templates')}
-                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${
-                  activeTab === 'templates'
+                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${activeTab === 'templates'
                     ? 'bg-indigo-600 text-white font-bold'
                     : 'text-slate-300 hover:bg-slate-800/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <Copy className="w-4 h-4" />
@@ -392,11 +372,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
               <button
                 type="button"
                 onClick={() => handleMobileNav('history')}
-                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${
-                  activeTab === 'history'
+                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${activeTab === 'history'
                     ? 'bg-indigo-600 text-white font-bold'
                     : 'text-slate-300 hover:bg-slate-800/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <Clock className="w-4 h-4" />
@@ -408,11 +387,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
               <button
                 type="button"
                 onClick={() => handleMobileNav('settings')}
-                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${
-                  activeTab === 'settings'
+                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${activeTab === 'settings'
                     ? 'bg-indigo-600 text-white font-bold'
                     : 'text-slate-300 hover:bg-slate-800/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <Settings className="w-4 h-4" />
@@ -424,11 +402,10 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
               <button
                 type="button"
                 onClick={() => handleMobileNav('landing')}
-                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${
-                  activeTab === 'landing'
+                className={`w-full p-3 rounded-xl flex items-center justify-between text-left transition-colors ${activeTab === 'landing'
                     ? 'bg-indigo-600 text-white font-bold'
                     : 'text-slate-300 hover:bg-slate-800/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <Layers className="w-4 h-4" />

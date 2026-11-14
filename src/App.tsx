@@ -780,7 +780,7 @@ export const App: React.FC = () => {
         ) : (
           <>
             {/* Center Content Container: Viewport-constrained on desktop, fluid on mobile */}
-            <div className="flex-1 flex flex-col min-h-0 overflow-visible lg:overflow-hidden px-3 sm:px-6 pt-2 pb-28 lg:pb-3">
+            <div className="flex-1 flex flex-col min-h-0 overflow-visible lg:overflow-hidden px-2.5 sm:px-6 pt-1.5 sm:pt-2 pb-36 lg:pb-3">
               <div className="max-w-[1720px] w-full mx-auto flex-1 flex flex-col min-h-0 space-y-2">
                 {/* Control Toolbar: Represented at TOP above "Create Your Gang Sheet" */}
                 <div className="w-full flex-shrink-0 relative z-30">
@@ -804,39 +804,41 @@ export const App: React.FC = () => {
                   />
                 </div>
 
-                {/* Header: "Create Your Gang Sheet" (Compact, flex-shrink-0) */}
-                <div className="flex flex-col items-center justify-center text-center flex-shrink-0 pt-0 pb-0.5">
-                  <h1 className="text-xl sm:text-2xl font-black text-indigo-950 tracking-tight">
+                {/* Header: "Create Your Gang Sheet" (Compact mobile typography & responsive selector) */}
+                <div className="flex flex-col items-center justify-center text-center flex-shrink-0 pt-0.5 pb-0.5 px-1">
+                  <h1 className="text-lg sm:text-2xl font-black text-indigo-950 tracking-tight leading-tight">
                     Create Your <span className="text-indigo-600">Gang Sheet</span>
                   </h1>
-                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium max-w-lg">
+                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium max-w-md mt-0.5 leading-snug">
                     Upload your designs and generate optimized layouts for DTF printing
                   </p>
 
-                  {/* Multiple Designs / Repeat One Design Pill Switch */}
-                  <div className="inline-flex p-1 bg-white/90 backdrop-blur-md rounded-full shadow-xs border border-indigo-100 mt-1.5">
+                  {/* Multiple Designs / Repeat One Design Responsive Selector */}
+                  <div className="w-full max-w-[340px] flex items-center p-0.5 sm:p-1 bg-white/95 backdrop-blur-md rounded-full shadow-xs border border-indigo-100 mt-1.5">
                     <button
+                      type="button"
                       onClick={() => handleUpdateSettings({ mode: 'multiple' })}
-                      className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-bold transition-all ${
+                      className={`flex-1 flex items-center justify-center space-x-1.5 py-1 px-2.5 rounded-full text-xs font-bold transition-all ${
                         settings.mode === 'multiple'
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                          ? 'bg-indigo-600 text-white shadow-xs'
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <Layers className="w-3.5 h-3.5" />
-                      <span>Multiple designs</span>
+                      <Layers className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Multiple designs</span>
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => handleUpdateSettings({ mode: 'repeat' })}
-                      className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-bold transition-all ${
+                      className={`flex-1 flex items-center justify-center space-x-1.5 py-1 px-2.5 rounded-full text-xs font-bold transition-all ${
                         settings.mode === 'repeat'
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                          ? 'bg-indigo-600 text-white shadow-xs'
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Repeat one design</span>
+                      <Copy className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Repeat one design</span>
                     </button>
                   </div>
                 </div>
