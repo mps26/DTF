@@ -1,6 +1,6 @@
-import { getUserByEmail, updateUser, verifyPassword, hashPassword } from '../_db.ts';
+import { getUserByEmail, updateUser, hashPassword, verifyPassword } from '../_db.js';
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -27,24 +27,16 @@ export default async function handler(req: any, res: any) {
     if (!email) {
       return res.status(200).json({ success: false, error: 'Email address is required.' });
     }
-    if (!currentPassword || !newPassword) {
-      return res.status(200).json({ success: false, error: 'Both current and new passwords are required.' });
-    }
     if (newPassword.length < 6) {
       return res.status(200).json({ success: false, error: 'New password must be at least 6 characters long.' });
     }
 
-    const user = await getUserByEmail(email);
-    if (!user) {
-      return res.status(200).json({ success: false, error: 'User account not found.' });
+    const existing = await getUserByEmail(email);
+    if (!existing) {
+      return res.status(200).json({ success: false, error: 'User not found.' });
     }
 
-    const isValidCurrent =
-      verifyPassword(currentPassword, user.password_hash) ||
-      currentPassword === 'demo' ||
-      currentPassword === 'admin';
-
-    if (!isValidCurrent) {
+    if (!verifyPassword(currentPassword, existing.password_hash)) {
       return res.status(200).json({ success: false, error: 'Current password does not match records.' });
     }
 
@@ -52,11 +44,11 @@ export default async function handler(req: any, res: any) {
     await updateUser(email, { password_hash: newHash });
 
     return res.status(200).json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Password change handler error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Internal server error updating password.'
+      error: 'Internal server error changing password.'
     });
   }
 }

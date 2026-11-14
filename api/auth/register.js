@@ -1,7 +1,8 @@
-import { getUserByEmail, insertUser, hashPassword, getInitials, formatUserResponse, type DbUser } from '../_db.ts';
+import crypto from 'crypto';
+import { getUserByEmail, insertUser, hashPassword, getInitials, formatUserResponse } from '../_db.js';
 
-export default async function handler(req: any, res: any) {
-  // Enable CORS
+export default async function handler(req, res) {
+  // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -21,8 +22,8 @@ export default async function handler(req: any, res: any) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-    const email = (body.email || '').trim().toLowerCase();
     const name = (body.name || '').trim();
+    const email = (body.email || '').trim().toLowerCase();
     const password = body.password || '';
     const companyName = (body.companyName || '').trim() || 'Independent Print Shop';
     const printerModel = (body.printerModel || '').trim() || '22" Direct-to-Film Production Roll';
@@ -30,8 +31,8 @@ export default async function handler(req: any, res: any) {
     if (!name) {
       return res.status(200).json({ success: false, error: 'Full name is required.' });
     }
-    if (!email || !email.includes('@')) {
-      return res.status(200).json({ success: false, error: 'Valid email address is required.' });
+    if (!email) {
+      return res.status(200).json({ success: false, error: 'Email address is required.' });
     }
     if (password.length < 6) {
       return res.status(200).json({ success: false, error: 'Password must be at least 6 characters long.' });
@@ -45,18 +46,20 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    const colors = [
+    const colorGradients = [
       'from-indigo-600 to-purple-600',
       'from-blue-600 to-indigo-600',
       'from-emerald-600 to-teal-600',
       'from-amber-600 to-orange-600',
       'from-rose-600 to-pink-600'
     ];
-    const chosenColor = colors[Math.floor(Math.random() * colors.length)];
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const pwHash = hashPassword(password);
+    const avatarColor = colorGradients[Math.floor(Math.random() * colorGradients.length)];
+    const userId = `user_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const initials = getInitials(name);
+    const passwordHash = hashPassword(password);
+    const createdAt = new Date().toISOString();
 
-    const newUser: DbUser = {
+    const newUser = {
       id: userId,
       name,
       email,
@@ -64,10 +67,10 @@ export default async function handler(req: any, res: any) {
       printer_model: printerModel,
       role: 'shop_owner',
       plan: 'Pro Print House',
-      initials: getInitials(name),
-      avatar_color: chosenColor,
-      created_at: new Date().toISOString(),
-      password_hash: pwHash
+      initials,
+      avatar_color: avatarColor,
+      created_at: createdAt,
+      password_hash: passwordHash
     };
 
     await insertUser(newUser);
@@ -76,8 +79,8 @@ export default async function handler(req: any, res: any) {
       success: true,
       user: formatUserResponse(newUser)
     });
-  } catch (error: any) {
-    console.error('Registration handler error:', error);
+  } catch (error) {
+    console.error('Register handler error:', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error processing registration.'

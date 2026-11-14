@@ -1,6 +1,6 @@
-import { getUserByEmail, updateUser, formatUserResponse } from '../_db.ts';
+import { getUserByEmail, updateUser, getInitials, formatUserResponse } from '../_db.js';
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -26,21 +26,29 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ success: false, error: 'Email address is required.' });
     }
 
-    const updates: any = {};
-    if (body.name) updates.name = body.name.trim();
-    if (body.companyName) updates.company_name = body.companyName.trim();
-    if (body.printerModel) updates.printer_model = body.printerModel.trim();
-
-    const updated = await updateUser(email, updates);
-    if (!updated) {
-      return res.status(200).json({ success: false, error: 'User account not found.' });
+    const existing = await getUserByEmail(email);
+    if (!existing) {
+      return res.status(200).json({ success: false, error: 'User not found.' });
     }
 
+    const updates = {};
+    if (body.name && body.name.trim()) {
+      updates.name = body.name.trim();
+      updates.initials = getInitials(updates.name);
+    }
+    if (body.companyName !== undefined) {
+      updates.company_name = body.companyName.trim();
+    }
+    if (body.printerModel !== undefined) {
+      updates.printer_model = body.printerModel.trim();
+    }
+
+    const updatedUser = await updateUser(email, updates);
     return res.status(200).json({
       success: true,
-      user: formatUserResponse(updated)
+      user: formatUserResponse(updatedUser)
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Profile update handler error:', error);
     return res.status(500).json({
       success: false,

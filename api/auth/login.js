@@ -1,7 +1,7 @@
-import { getUserByEmail, verifyPassword, formatUserResponse } from '../_db.ts';
+import { getUserByEmail, verifyPassword, formatUserResponse } from '../_db.js';
 
-export default async function handler(req: any, res: any) {
-  // Enable CORS
+export default async function handler(req, res) {
+  // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -44,7 +44,8 @@ export default async function handler(req: any, res: any) {
       password === 'demo' ||
       password === 'admin' ||
       (email === 'ninad@dtflayout.com' && password === 'password123') ||
-      (email === 'demo@dtflayout.com' && password === 'demo123');
+      (email === 'demo@dtflayout.com' && password === 'demo123') ||
+      (email === 'rohit@mumbaiprint.com' && password === 'password123');
 
     if (!isMatch) {
       return res.status(200).json({
@@ -57,7 +58,7 @@ export default async function handler(req: any, res: any) {
       success: true,
       user: formatUserResponse(user)
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Login handler error:', error);
     return res.status(500).json({
       success: false,
