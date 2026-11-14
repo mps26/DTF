@@ -37,5 +37,18 @@
     "avatar_color": "from-emerald-600 to-teal-600",
     "created_at": "2026-11-14T07:53:05.203386+00:00",
     "password_hash": "84de2eeefd733c69e25b356788ca7347$31a12dea6047bc8320096d9d03b26bf2aa476965cc5c2094ad0a19f1ea486861"
+  },
+  {
+    "id": "user_1794644036057_f4b582",
+    "name": "Kunal Shah",
+    "email": "kunal@credprint.com",
+    "company_name": "Cred DTF Studio",
+    "printer_model": "24 inch Hoson Dual i3200",
+    "role": "shop_owner",
+    "plan": "Pro Print House",
+    "initials": "KS",
+    "avatar_color": "from-indigo-600 to-purple-600",
+    "created_at": "2026-11-14T08:13:56.057432+00:00",
+    "password_hash": "208c264310df70ad72d13f3afa440a1a$1af7bcc86eebd5e3bccf5a8587eaa54a307128ee2aca3889f7f0a792de50b581"
   }
 ]
