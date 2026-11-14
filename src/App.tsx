@@ -615,11 +615,7 @@ export const App: React.FC = () => {
 
   if (navTab === 'landing') {
     return (
-<<<<<<< HEAD
       <div className="min-h-screen w-full flex flex-col bg-white text-slate-800 overflow-x-hidden font-sans selection:bg-indigo-600 selection:text-white">
-=======
-      <div className="h-screen w-screen flex flex-col bg-[#070a13] text-slate-100 overflow-y-auto font-sans selection:bg-indigo-600 selection:text-white">
->>>>>>> e9a304196ef5c24d43c3b5b853b6af257324c67b
         <LandingPage
           currentUser={currentUser}
           onOpenAuth={(mode) => {
@@ -630,6 +626,7 @@ export const App: React.FC = () => {
           onLaunchStudio={() => setNavTab('home')}
           onOpenTiffStudio={() => setNavTab('tiff-export')}
           onOpenTemplates={() => setNavTab('templates')}
+          onOpenProfile={() => setNavTab('settings')}
         />
 
         {/* Global Toast Notification */}
@@ -656,11 +653,16 @@ export const App: React.FC = () => {
             isOpen={isAuthModalOpen}
             initialMode={authModalMode}
             onClose={() => setIsAuthModalOpen(false)}
-            onSuccess={(user) => {
+            onSuccess={(user, mode) => {
               setCurrentUser(user);
               setIsAuthModalOpen(false);
-              setNavTab('studio');
-              showNotification(`Signed in as ${user.name} (${user.companyName})`, 'success');
+              if (mode === 'register') {
+                setNavTab('settings');
+                showNotification(`Account created! Welcome to your shop profile, ${user.name}.`, 'success');
+              } else {
+                setNavTab('studio');
+                showNotification(`Signed in as ${user.name} (${user.companyName})`, 'success');
+              }
             }}
             onNotification={showNotification}
           />
@@ -691,6 +693,7 @@ export const App: React.FC = () => {
           }}
           onLogout={handleLogout}
           onGoToLanding={() => setNavTab('landing')}
+          onOpenProfile={() => setNavTab('settings')}
         />
 
         {/* Flash Message Toast Notification */}
@@ -933,10 +936,15 @@ export const App: React.FC = () => {
           isOpen={isAuthModalOpen}
           initialMode={authModalMode}
           onClose={() => setIsAuthModalOpen(false)}
-          onSuccess={(user) => {
+          onSuccess={(user, mode) => {
             setCurrentUser(user);
             setIsAuthModalOpen(false);
-            showNotification(`Signed in as ${user.name} (${user.companyName})`, 'success');
+            if (mode === 'register') {
+              setNavTab('settings');
+              showNotification(`Account created! Welcome to your shop profile, ${user.name}.`, 'success');
+            } else {
+              showNotification(`Signed in as ${user.name} (${user.companyName})`, 'success');
+            }
           }}
           onNotification={showNotification}
         />

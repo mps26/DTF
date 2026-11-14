@@ -23,7 +23,7 @@ interface AuthModalProps {
   isOpen: boolean;
   initialMode?: 'login' | 'register';
   onClose: () => void;
-  onSuccess: (user: UserProfile) => void;
+  onSuccess: (user: UserProfile, mode: 'login' | 'register') => void;
   onNotification?: (msg: string, type?: 'info' | 'warning' | 'success') => void;
 }
 
@@ -71,7 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const result = await loginUser(loginData);
       if (result.success && result.user) {
-        onSuccess(result.user);
+        onSuccess(result.user, 'login');
         onNotification?.(`Welcome back, ${result.user.name}!`, 'success');
         onClose();
       } else {
@@ -113,7 +113,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const result = await registerUser(registerData);
       if (result.success && result.user) {
-        onSuccess(result.user);
+        onSuccess(result.user, 'register');
         onNotification?.(`Account created successfully! Welcome to DTF Set Files, ${result.user.name}.`, 'success');
         onClose();
       } else {
@@ -136,7 +136,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-<<<<<<< HEAD
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
         className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-800 overflow-hidden relative max-h-[92vh] flex flex-col"
@@ -144,31 +143,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       >
         {/* Top Accent Stripe */}
         <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shrink-0" />
-=======
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div
-        className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl text-slate-800 overflow-hidden relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Top Accent Stripe */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500" />
->>>>>>> e9a304196ef5c24d43c3b5b853b6af257324c67b
 
         {/* Close Button */}
         <button
           onClick={onClose}
-<<<<<<< HEAD
           className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors border border-slate-200 cursor-pointer z-10"
-=======
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors border border-slate-200 cursor-pointer z-10"
->>>>>>> e9a304196ef5c24d43c3b5b853b6af257324c67b
           title="Close modal"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Modal Header */}
-<<<<<<< HEAD
         <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-3 sm:pb-4 text-center shrink-0">
           <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 shadow-md shadow-indigo-600/20 mb-2.5 sm:mb-3 text-white">
             <Layers className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -177,27 +162,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {mode === 'login' ? 'Print Shop Operator Login' : 'Create Print Shop Account'}
           </h2>
           <p className="text-[11px] sm:text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
-=======
-        <div className="px-8 pt-8 pb-4 text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 shadow-md shadow-indigo-600/20 mb-3 text-white">
-            <Layers className="w-6 h-6 text-white" />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            {mode === 'login' ? 'Print Shop Operator Login' : 'Create Print Shop Account'}
-          </h2>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
->>>>>>> e9a304196ef5c24d43c3b5b853b6af257324c67b
             {mode === 'login'
               ? 'Access your industrial gang sheet engine, RIP TIFF presets, and nest queues'
               : 'Deploy multi-channel DTF & UV-DTF gang nesting for high-speed print roll production'}
           </p>
 
           {/* Mode Tabs */}
-<<<<<<< HEAD
           <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl mt-4 sm:mt-5 border border-slate-200">
-=======
-          <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl mt-5 border border-slate-200">
->>>>>>> e9a304196ef5c24d43c3b5b853b6af257324c67b
             <button
               type="button"
               onClick={() => {
@@ -230,11 +201,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {/* Form Body */}
-<<<<<<< HEAD
         <div className="px-5 sm:px-8 pb-6 sm:pb-8 pt-2 overflow-y-auto flex-1">
-=======
-        <div className="px-8 pb-8 pt-2">
->>>>>>> e9a304196ef5c24d43c3b5b853b6af257324c67b
           {/* Error Alert */}
           {errorMessage && (
             <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start space-x-2.5 text-xs text-rose-800 animate-in slide-in-from-top-1 duration-200">
@@ -332,11 +299,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           ) : (
             /* REGISTER FORM */
             <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
-<<<<<<< HEAD
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-=======
-              <div className="grid grid-cols-2 gap-3">
->>>>>>> e9a304196ef5c24d43c3b5b853b6af257324c67b
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Your Full Name

@@ -63,6 +63,7 @@ interface TopNavBarProps {
   onOpenAuth?: (mode: 'login' | 'register') => void;
   onLogout?: () => void;
   onGoToLanding?: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const TopNavBar: React.FC<TopNavBarProps> = ({
@@ -74,7 +75,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   currentUser = null,
   onOpenAuth,
   onLogout,
-  onGoToLanding
+  onGoToLanding,
+  onOpenProfile
 }) => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [demoMenuOpen, setDemoMenuOpen] = useState<boolean>(false);
@@ -532,6 +534,18 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 </div>
 
                 <div className="h-px bg-slate-800/80 my-1" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    onOpenProfile?.();
+                  }}
+                  className="w-full px-2 py-1.5 hover:bg-indigo-600/20 text-indigo-300 hover:text-white rounded-xl text-left transition-colors flex items-center space-x-2 cursor-pointer font-medium"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>Operator Profile & Settings</span>
+                </button>
 
                 <button
                   type="button"

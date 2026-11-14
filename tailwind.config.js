@@ -5,7 +5,6 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-<<<<<<< HEAD
     screens: {
       xs: '480px',
       sm: '640px',
@@ -14,8 +13,6 @@ export default {
       xl: '1280px',
       '2xl': '1536px',
     },
-=======
->>>>>>> e9a304196ef5c24d43c3b5b853b6af257324c67b
     extend: {
       colors: {
         dtf: {

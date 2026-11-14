@@ -35,13 +35,60 @@ const DEFAULT_USERS: Array<UserProfile & { passwordHash: string }> = [
 function initUsers(): Array<UserProfile & { passwordHash: string }> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_USERS);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(DEFAULT_USERS));
-      return DEFAULT_USERS;
+    let users: Array<UserProfile & { passwordHash: string }> = [];
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          users = parsed;
+        }
+      } catch (e) {
+        console.warn('Failed to parse users from localStorage', e);
+      }
     }
-    return JSON.parse(raw);
+
+    // Always ensure default demo operators are present without overriding existing passwords
+    let modified = false;
+    for (const def of DEFAULT_USERS) {
+      const exists = users.some(
+        (u) => u.email && u.email.trim().toLowerCase() === def.email.toLowerCase()
+      );
+      if (!exists) {
+        users.unshift(def);
+        modified = true;
+      }
+    }
+
+    if (modified || !raw) {
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+    }
+    return users;
   } catch {
-    return DEFAULT_USERS;
+    return [...DEFAULT_USERS];
+  }
+}
+
+export function saveUserToLocalStorage(userWithPassword: UserProfile & { passwordHash: string }): void {
+  try {
+    const users = initUsers();
+    const emailNorm = userWithPassword.email.trim().toLowerCase();
+    const idx = users.findIndex(
+      (u) => (u.email && u.email.trim().toLowerCase() === emailNorm) || u.id === userWithPassword.id
+    );
+
+    if (idx !== -1) {
+      users[idx] = {
+        ...users[idx],
+        ...userWithPassword,
+        // Preserve or update passwordHash
+        passwordHash: userWithPassword.passwordHash || users[idx].passwordHash
+      };
+    } else {
+      users.push(userWithPassword);
+    }
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+  } catch (e) {
+    console.error('Failed to save user to localStorage', e);
   }
 }
 
@@ -76,55 +123,106 @@ export function getInitials(name: string): string {
 
 export async function loginUser(credentials: LoginFormData): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   const emailNorm = credentials.email.trim().toLowerCase();
+  const passwordEntered = credentials.password;
 
-  // 1. Authenticate against SQLite3 backend API
+  if (!emailNorm) {
+    return {
+      success: false,
+      error: 'Please enter your email address.'
+    };
+  }
+
+  if (!passwordEntered) {
+    return {
+      success: false,
+      error: 'Please enter your password.'
+    };
+  }
+
+  // 1. Check local storage first (instant & reliable across reloads, offline, or static Vercel hosting)
+  const users = initUsers();
+  const localMatch = users.find((u) => u.email && u.email.trim().toLowerCase() === emailNorm);
+
+  if (localMatch) {
+    const isPasswordValid =
+      (localMatch.passwordHash && localMatch.passwordHash === passwordEntered) ||
+      passwordEntered === 'demo' ||
+      passwordEntered === 'admin' ||
+      (emailNorm === 'ninad@dtflayout.com' && passwordEntered === 'password123') ||
+      (emailNorm === 'demo@dtflayout.com' && passwordEntered === 'demo123');
+
+    if (isPasswordValid) {
+      const { passwordHash: _p, ...cleanProfile } = localMatch;
+      setCurrentUser(cleanProfile);
+
+      // Best-effort background API sync if backend is active
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailNorm, password: passwordEntered })
+      }).catch(() => {});
+
+      return { success: true, user: cleanProfile };
+    }
+  }
+
+  // 2. If not matched locally or password check failed, authenticate against SQLite3 backend API
   try {
     const resp = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: emailNorm,
-        password: credentials.password
+        password: passwordEntered
       })
     });
     if (resp.ok) {
-      const data = await resp.json();
-      if (data.success && data.user) {
+      const data = await resp.json().catch(() => null);
+      if (data && data.success && data.user) {
+        // Cache user in localStorage WITH the validated password for future sessions
+        const cachedUser: UserProfile & { passwordHash: string } = {
+          ...data.user,
+          passwordHash: passwordEntered
+        };
+        saveUserToLocalStorage(cachedUser);
         setCurrentUser(data.user);
         return { success: true, user: data.user };
       }
-      return {
-        success: false,
-        error: data.error || 'Authentication failed. Please check your credentials.'
-      };
     }
   } catch {
-    // Backend server offline — fall back to local storage
+    // Backend server offline — fall back to local validation result below
   }
 
-  const users = initUsers();
-  const found = users.find((u) => u.email.toLowerCase() === emailNorm);
-  if (!found) {
-    return {
-      success: false,
-      error: 'No account found with this email. Please check your credentials or register.'
-    };
-  }
-
-  if (found.passwordHash !== credentials.password && credentials.password !== 'demo' && credentials.password !== 'admin') {
+  // 3. Fallback error reporting
+  if (localMatch) {
     return {
       success: false,
       error: 'Invalid password. Please re-enter your password or use quick demo login.'
     };
   }
 
-  const { passwordHash, ...cleanProfile } = found;
-  setCurrentUser(cleanProfile);
-  return { success: true, user: cleanProfile };
+  return {
+    success: false,
+    error: 'No account found with this email. Please check your credentials or register.'
+  };
 }
 
 export async function registerUser(formData: RegisterFormData): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   const emailNorm = formData.email.trim().toLowerCase();
+
+  if (!formData.name.trim()) {
+    return {
+      success: false,
+      error: 'Please enter your full name.'
+    };
+  }
+
+  if (!emailNorm || !emailNorm.includes('@')) {
+    return {
+      success: false,
+      error: 'Please enter a valid email address.'
+    };
+  }
 
   if (formData.password.length < 6) {
     return {
@@ -140,37 +238,9 @@ export async function registerUser(formData: RegisterFormData): Promise<{ succes
     };
   }
 
-  // 1. Register in SQLite3 backend database
-  try {
-    const resp = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: formData.name.trim(),
-        email: emailNorm,
-        password: formData.password,
-        companyName: formData.companyName.trim(),
-        printerModel: formData.printerModel || '22" Direct-to-Film Production Roll'
-      })
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data.success && data.user) {
-        setCurrentUser(data.user);
-        return { success: true, user: data.user };
-      }
-      return {
-        success: false,
-        error: data.error || 'Registration failed. Please try again.'
-      };
-    }
-  } catch {
-    // Backend server offline — fall back to local storage
-  }
-
-  const users = initUsers();
-
-  if (users.some((u) => u.email.toLowerCase() === emailNorm)) {
+  // Check if account already exists in localStorage
+  const existingUsers = initUsers();
+  if (existingUsers.some((u) => u.email && u.email.trim().toLowerCase() === emailNorm)) {
     return {
       success: false,
       error: 'An account with this email address already exists. Please log in.'
@@ -186,7 +256,7 @@ export async function registerUser(formData: RegisterFormData): Promise<{ succes
   ];
   const chosenColor = colors[Math.floor(Math.random() * colors.length)];
 
-  const newUserProfile: UserProfile & { passwordHash: string } = {
+  const newUserRecord: UserProfile & { passwordHash: string } = {
     id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     name: formData.name.trim(),
     email: emailNorm,
@@ -200,14 +270,42 @@ export async function registerUser(formData: RegisterFormData): Promise<{ succes
     passwordHash: formData.password
   };
 
-  users.push(newUserProfile);
+  // 1. ALWAYS store account in localStorage IMMEDIATELY so the user can login again and again!
+  saveUserToLocalStorage(newUserRecord);
+
+  // 2. Also register in SQLite3 backend database if running
   try {
-    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
-  } catch (e) {
-    console.error('Failed to store new user', e);
+    const resp = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: formData.name.trim(),
+        email: emailNorm,
+        password: formData.password,
+        companyName: formData.companyName.trim(),
+        printerModel: formData.printerModel || '22" Direct-to-Film Production Roll'
+      })
+    });
+    if (resp.ok) {
+      const data = await resp.json().catch(() => null);
+      if (data && data.success && data.user) {
+        // Sync any server-assigned fields while strictly keeping passwordHash
+        const mergedRecord = {
+          ...newUserRecord,
+          ...data.user,
+          passwordHash: formData.password
+        };
+        saveUserToLocalStorage(mergedRecord);
+        const { passwordHash: _p, ...cleanProfile } = mergedRecord;
+        setCurrentUser(cleanProfile);
+        return { success: true, user: cleanProfile };
+      }
+    }
+  } catch {
+    // Backend offline / static deploy: localStorage already saved the user!
   }
 
-  const { passwordHash, ...cleanProfile } = newUserProfile;
+  const { passwordHash, ...cleanProfile } = newUserRecord;
   setCurrentUser(cleanProfile);
   return { success: true, user: cleanProfile };
 }
@@ -247,8 +345,9 @@ export function updateUserProfile(updates: Partial<UserProfile>): { success: boo
     const raw = localStorage.getItem(STORAGE_KEY_USERS);
     if (raw) {
       const users: Array<UserProfile & { passwordHash?: string }> = JSON.parse(raw);
+      const emailNorm = current.email.trim().toLowerCase();
       const idx = users.findIndex(
-        (u) => u.id === current.id || u.email.toLowerCase() === current.email.toLowerCase()
+        (u) => u.id === current.id || (u.email && u.email.trim().toLowerCase() === emailNorm)
       );
       if (idx !== -1) {
         users[idx] = { ...users[idx], ...updated };
@@ -275,7 +374,7 @@ export function changeUserPassword(currentPassword: string, newPassword: string)
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: current.email,
+      email: current.email.trim().toLowerCase(),
       currentPassword,
       newPassword
     })
@@ -285,9 +384,17 @@ export function changeUserPassword(currentPassword: string, newPassword: string)
     const raw = localStorage.getItem(STORAGE_KEY_USERS);
     if (raw) {
       const users: Array<UserProfile & { passwordHash: string }> = JSON.parse(raw);
-      const idx = users.findIndex((u) => u.id === current.id || u.email.toLowerCase() === current.email.toLowerCase());
+      const emailNorm = current.email.trim().toLowerCase();
+      const idx = users.findIndex(
+        (u) => u.id === current.id || (u.email && u.email.trim().toLowerCase() === emailNorm)
+      );
       if (idx !== -1) {
-        if (users[idx].passwordHash !== currentPassword && currentPassword !== 'demo' && currentPassword !== 'admin') {
+        if (
+          users[idx].passwordHash &&
+          users[idx].passwordHash !== currentPassword &&
+          currentPassword !== 'demo' &&
+          currentPassword !== 'admin'
+        ) {
           return { success: false, error: 'Current password does not match records' };
         }
         users[idx].passwordHash = newPassword;
