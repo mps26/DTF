@@ -1,6 +1,5 @@
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
+import { seedUsers } from './seedUsers.js';
 
 // PBKDF2 Password Hashing
 export function hashPassword(password, salt) {
@@ -44,80 +43,10 @@ export function formatUserResponse(u) {
   };
 }
 
-// Built-in seed operators
-export const defaultUsers = [
-  {
-    id: 'user_ninad_pawar',
-    name: 'Ninad Pawar',
-    email: 'ninad@dtflayout.com',
-    company_name: 'Apex DTF Printworks',
-    printer_model: '24" Dual Epson i3200 (Hoson)',
-    role: 'shop_owner',
-    plan: 'Industrial Enterprise',
-    initials: 'NP',
-    avatar_color: 'from-purple-600 to-indigo-600',
-    created_at: '2026-01-15T08:00:00Z',
-    password_hash: 'dc819a008f37f6b13ff717a4171c7641$ab5fb8e3a73782f029e01ec26ba2310596972456379030be1e12c3603e18fa33'
-  },
-  {
-    id: 'user_demo_operator',
-    name: 'Alex Turner',
-    email: 'demo@dtflayout.com',
-    company_name: 'Metro Gang Sheets Co.',
-    printer_model: '22" 4-Head DTF Line (Maintop)',
-    role: 'operator',
-    plan: 'Pro Print House',
-    initials: 'AT',
-    avatar_color: 'from-blue-600 to-cyan-600',
-    created_at: '2026-03-01T10:30:00Z',
-    password_hash: '4ef99f21e8417628f439423557e01c0e$e541e72daa715e7467a03c6661dd28aa721270627e43e291e2e3fe3ff853560b'
-  },
-  {
-    id: 'user_1794642785203_14ae94',
-    name: 'Rohit Sharma',
-    email: 'rohit@mumbaiprint.com',
-    company_name: 'Mumbai DTF Pro',
-    printer_model: '24 Dual i3200',
-    role: 'shop_owner',
-    plan: 'Pro Print House',
-    initials: 'RS',
-    avatar_color: 'from-emerald-600 to-teal-600',
-    created_at: '2026-11-14T07:53:05.203386+00:00',
-    password_hash: '84de2eeefd733c69e25b356788ca7347$31a12dea6047bc8320096d9d03b26bf2aa476965cc5c2094ad0a19f1ea486861'
-  }
-];
-
-// Fallback in-memory map
+// In-memory fallback map seeded with all users
 const memoryStore = new Map();
 
-export function loadAllSeedUsers() {
-  const users = [...defaultUsers];
-  try {
-    const candidates = [
-      path.join(process.cwd(), 'server', 'dtf_users.json'),
-      path.join(process.cwd(), 'dtf_users.json'),
-      path.join(process.cwd(), 'api', 'dtf_users.json')
-    ];
-    for (const p of candidates) {
-      if (fs.existsSync(p)) {
-        const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
-        if (Array.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item.email && !users.find(u => u.email.toLowerCase() === item.email.toLowerCase())) {
-              users.push(item);
-            }
-          }
-        }
-        break;
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-  return users;
-}
-
-for (const u of loadAllSeedUsers()) {
+for (const u of seedUsers) {
   memoryStore.set(u.email.toLowerCase(), u);
 }
 
@@ -226,7 +155,7 @@ export async function initDbSchema() {
         )
       `);
 
-      for (const def of loadAllSeedUsers()) {
+      for (const def of seedUsers) {
         const existing = await executeSql('SELECT id FROM users WHERE LOWER(email) = ?', [def.email.toLowerCase()]);
         if (!existing || existing.length === 0) {
           await executeSql(

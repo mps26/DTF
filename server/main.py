@@ -165,9 +165,16 @@ def sync_db_to_json() -> None:
         rows = conn.execute("SELECT * FROM users").fetchall()
         users_list = [dict(r) for r in rows]
         conn.close()
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
         json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dtf_users.json")
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(users_list, f, indent=2)
+
+        seed_js_path = os.path.join(root_dir, "api", "seedUsers.js")
+        if os.path.exists(os.path.dirname(seed_js_path)):
+            with open(seed_js_path, "w", encoding="utf-8") as f:
+                f.write("export const seedUsers = " + json.dumps(users_list, indent=2) + ";\n")
     except Exception as e:
         print("sync_db_to_json warning:", e)
 
