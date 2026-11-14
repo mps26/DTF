@@ -30,7 +30,7 @@ export const HomeSelectorView: React.FC<HomeSelectorViewProps> = ({
   const isAuthorized = hasLockedRollAccess(currentUser);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#eff2fc] px-4 sm:px-8 pt-6 pb-36 sm:py-10">
+    <div className="flex-1 overflow-y-auto bg-[#edf3f8] px-4 sm:px-8 pt-6 pb-36 sm:py-10">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">

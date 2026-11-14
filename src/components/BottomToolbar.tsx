@@ -160,7 +160,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
   return (
     <div className="w-full relative z-30">
       {/* ================= DESKTOP TOOLBAR (lg and up) ================= */}
-      <div className="hidden lg:flex bg-[#0b0e1b]/95 backdrop-blur-xl border border-indigo-900/60 rounded-2xl sm:rounded-3xl px-3 sm:px-4 py-2 shadow-xl shadow-indigo-950/50 flex-nowrap items-center justify-between gap-2 text-white relative z-30">
+      <div className="hidden lg:flex bg-[#0b1723]/95 backdrop-blur-xl border border-indigo-900/60 rounded-2xl sm:rounded-3xl px-3 sm:px-4 py-2 shadow-xl shadow-[#0b1723]/60 flex-nowrap items-center justify-between gap-2 text-white relative z-30">
           {/* Left: Mode Badge, Sheet Size, Spacing (mm), Sheet Length */}
           <div className="flex flex-nowrap items-center gap-2.5 xl:gap-3.5 flex-shrink-0">
             {/* PRINT MODE BADGE */}
@@ -190,14 +190,14 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
               <button
                 type="button"
                 onClick={() => setPresetMenuOpen(!presetMenuOpen)}
-                className="flex items-center justify-between space-x-1.5 bg-[#161c32] border border-indigo-900/80 hover:border-indigo-500 rounded-xl px-2.5 py-1 text-xs sm:text-[13px] font-bold text-white focus:outline-none cursor-pointer font-mono min-w-[115px] whitespace-nowrap"
+                className="flex items-center justify-between space-x-1.5 bg-[#132c40] border border-indigo-900/80 hover:border-indigo-500 rounded-xl px-2.5 py-1 text-xs sm:text-[13px] font-bold text-white focus:outline-none cursor-pointer font-mono min-w-[115px] whitespace-nowrap"
               >
                 <span>{activePreset ? activePreset.shortLabel : `${settings.filmWidth}"`}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
               </button>
 
               {presetMenuOpen && (
-                <div className="absolute left-0 top-full mt-2 w-72 bg-[#141830] border border-indigo-800/80 rounded-2xl p-1.5 shadow-2xl z-50 text-left font-sans">
+                <div className="absolute left-0 top-full mt-2 w-72 bg-[#0f2232] border border-indigo-800/80 rounded-2xl p-1.5 shadow-2xl z-50 text-left font-sans">
                   <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-indigo-400">
                     {printType === 'uvdtf' ? 'UVDTF Sheet & Roll Options' : 'DTF Roll Options'}
                   </div>
@@ -251,7 +251,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
               <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 mb-0.5 whitespace-nowrap">
                 Spacing
               </div>
-              <div className="flex items-center bg-[#161c32] border border-indigo-900/80 rounded-xl overflow-hidden px-2.5 py-1">
+              <div className="flex items-center bg-[#132c40] border border-indigo-900/80 rounded-xl overflow-hidden px-2.5 py-1">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -280,12 +280,12 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
                 Sheet Length {isFixedPreset ? '' : settings.lengthMode === 'fixed' ? `(${currentMinLen}"–${currentMaxLen}")` : '(Auto)'}
               </div>
               {isFixedPreset ? (
-                <div className="flex items-center bg-[#161c32] border border-indigo-900/80 rounded-xl px-3 py-1 text-xs sm:text-[13px] font-bold text-indigo-200 font-mono whitespace-nowrap">
+                <div className="flex items-center bg-[#132c40] border border-indigo-900/80 rounded-xl px-3 py-1 text-xs sm:text-[13px] font-bold text-indigo-200 font-mono whitespace-nowrap">
                   <span>{currentMaxLen} in</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <div className="flex items-center bg-[#161c32] p-0.5 rounded-xl border border-indigo-900/80 text-xs sm:text-[13px] font-bold">
+                  <div className="flex items-center bg-[#132c40] p-0.5 rounded-xl border border-indigo-900/80 text-xs sm:text-[13px] font-bold">
                     <button
                       onClick={() => onUpdateSettings({ lengthMode: 'auto' })}
                       className={`px-2.5 py-0.5 rounded-lg transition-all cursor-pointer ${
@@ -308,7 +308,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
                     </button>
                   </div>
                   {settings.lengthMode === 'fixed' && (
-                    <div className="flex items-center bg-[#161c32] border border-indigo-900/80 rounded-xl overflow-hidden px-2.5 py-1">
+                    <div className="flex items-center bg-[#132c40] border border-indigo-900/80 rounded-xl overflow-hidden px-2.5 py-1">
                       <input
                         type="text"
                         inputMode="decimal"
@@ -334,7 +334,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
           </div>
 
           {/* Middle: Status Metrics */}
-          <div className="hidden lg:flex items-center space-x-2.5 xl:space-x-3.5 bg-[#141a2e] px-3 py-1.5 rounded-xl border border-indigo-900/60 font-mono text-xs whitespace-nowrap flex-shrink-0">
+          <div className="hidden lg:flex items-center space-x-2.5 xl:space-x-3.5 bg-[#132c40] px-3 py-1.5 rounded-xl border border-indigo-900/60 font-mono text-xs whitespace-nowrap flex-shrink-0">
             <div className="flex items-center space-x-1 text-slate-200">
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
               <span className="text-[11px] text-slate-300 uppercase">Copies:</span>
@@ -365,7 +365,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
             {/* Preview Button */}
             <button
               onClick={onOpenPreviewModal}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-[13px] font-bold text-slate-100 bg-[#161c32] hover:bg-[#202848] border border-indigo-900/80 hover:text-white transition-all shadow-xs cursor-pointer"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-[13px] font-bold text-slate-100 bg-[#132c40] hover:bg-[#1a3852] border border-indigo-900/80 hover:text-white transition-all shadow-xs cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5 text-indigo-400" />
               <span>Preview</span>
@@ -483,7 +483,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
 
       {/* ================= MOBILE TOOLBAR (< lg) ================= */}
       {/* 4-Row Clean Mobile Control Panel matching exact specifications */}
-      <div className="lg:hidden flex flex-col bg-[#0b0e1b]/95 backdrop-blur-xl border border-indigo-900/60 rounded-2xl p-2.5 shadow-xl text-white space-y-2 relative z-30">
+      <div className="lg:hidden flex flex-col bg-[#0b1723]/95 backdrop-blur-xl border border-indigo-900/60 rounded-2xl p-2.5 shadow-xl text-white space-y-2 relative z-30">
         {/* ROW 1: DTF Mode & Sheet Size */}
         <div className="grid grid-cols-2 gap-2">
           {/* DTF Mode */}
@@ -506,7 +506,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
             <button
               type="button"
               onClick={() => setPresetMenuOpen(!presetMenuOpen)}
-              className="w-full h-9 px-3 bg-[#161c32] border border-indigo-900/80 hover:border-indigo-500 rounded-xl text-xs font-bold text-white font-mono flex items-center justify-between active:scale-98 transition-all"
+              className="w-full h-9 px-3 bg-[#132c40] border border-indigo-900/80 hover:border-indigo-500 rounded-xl text-xs font-bold text-white font-mono flex items-center justify-between active:scale-98 transition-all"
             >
               <span className="text-[10px] text-slate-400 font-sans uppercase font-bold">Size</span>
               <span className="truncate mx-1">{activePreset ? activePreset.shortLabel : `${settings.filmWidth}"`}</span>
@@ -516,7 +516,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
             {presetMenuOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onClick={() => setPresetMenuOpen(false)} />
-                <div className="relative bg-[#141830] border border-indigo-800/80 rounded-2xl p-3 shadow-2xl z-10 w-full max-w-xs max-h-[70vh] overflow-y-auto">
+                <div className="relative bg-[#0f2232] border border-indigo-800/80 rounded-2xl p-3 shadow-2xl z-10 w-full max-w-xs max-h-[70vh] overflow-y-auto">
                   <div className="px-2 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-indigo-400 border-b border-indigo-900/60 mb-2 flex items-center justify-between">
                     <span>{printType === 'uvdtf' ? 'UVDTF Roll Options' : 'DTF Roll Options'}</span>
                     <button type="button" onClick={() => setPresetMenuOpen(false)} className="text-slate-400 hover:text-white font-bold p-1">✕</button>
@@ -566,7 +566,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
         {/* ROW 2: Gap (Spacing mm) & Sheet Length (Auto / Fixed) */}
         <div className="grid grid-cols-2 gap-2">
           {/* Gap */}
-          <div className="h-9 flex items-center justify-between bg-[#161c32] border border-indigo-900/80 rounded-xl px-3">
+          <div className="h-9 flex items-center justify-between bg-[#132c40] border border-indigo-900/80 rounded-xl px-3">
             <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Gap</span>
             <div className="flex items-center space-x-1">
               <input
@@ -586,7 +586,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
           </div>
 
           {/* Sheet Length (Auto / Fixed) */}
-          <div className="h-9 flex items-center justify-between bg-[#161c32] p-1 rounded-xl border border-indigo-900/80">
+          <div className="h-9 flex items-center justify-between bg-[#132c40] p-1 rounded-xl border border-indigo-900/80">
             <span className="text-[10px] text-slate-400 uppercase font-sans font-bold px-1.5">Length</span>
             <div className="flex items-center space-x-1 h-full">
               <button
@@ -608,7 +608,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
                 Fixed
               </button>
               {settings.lengthMode === 'fixed' && (
-                <div className="flex items-center bg-[#0d1222] border border-indigo-700/60 rounded-md px-1 py-0.5 ml-0.5">
+                <div className="flex items-center bg-[#0b1723] border border-indigo-700/60 rounded-md px-1 py-0.5 ml-0.5">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -635,19 +635,19 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
         {/* ROW 3: Copies, Sheet Length, Waste */}
         <div className="grid grid-cols-3 gap-2">
           {/* Copies */}
-          <div className="bg-[#141a2e] border border-indigo-900/60 rounded-xl px-2 py-1.5 text-center flex flex-col justify-center">
+          <div className="bg-[#132c40] border border-indigo-900/60 rounded-xl px-2 py-1.5 text-center flex flex-col justify-center">
             <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold leading-tight">Copies</span>
             <span className="text-xs font-black text-white font-mono mt-0.5">{layout.totalCopies}</span>
           </div>
 
           {/* Sheet Length */}
-          <div className="bg-[#141a2e] border border-indigo-900/60 rounded-xl px-2 py-1.5 text-center flex flex-col justify-center">
+          <div className="bg-[#132c40] border border-indigo-900/60 rounded-xl px-2 py-1.5 text-center flex flex-col justify-center">
             <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold leading-tight">Length</span>
             <span className="text-xs font-black text-indigo-300 font-mono mt-0.5">{layout.usedLengthMeters.toFixed(2)}m</span>
           </div>
 
           {/* Waste */}
-          <div className="bg-[#141a2e] border border-indigo-900/60 rounded-xl px-2 py-1.5 text-center flex flex-col justify-center">
+          <div className="bg-[#132c40] border border-indigo-900/60 rounded-xl px-2 py-1.5 text-center flex flex-col justify-center">
             <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold leading-tight">Waste</span>
             <span className="text-xs font-black text-emerald-400 font-mono mt-0.5">{layout.wastePercent}%</span>
           </div>
@@ -659,7 +659,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
           <button
             type="button"
             onClick={onOpenPreviewModal}
-            className="h-9 px-2 rounded-xl text-xs font-bold text-slate-200 bg-[#161c32] hover:bg-[#1e2644] border border-indigo-900/80 flex items-center justify-center space-x-1.5 active:scale-95 transition-transform"
+            className="h-9 px-2 rounded-xl text-xs font-bold text-slate-200 bg-[#132c40] hover:bg-[#1a3852] border border-indigo-900/80 flex items-center justify-center space-x-1.5 active:scale-95 transition-transform"
           >
             <Eye className="w-3.5 h-3.5 text-indigo-400" />
             <span>Preview</span>
@@ -680,9 +680,9 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
             type="button"
             onClick={onGenerateLayout}
             disabled={isGenerating}
-            className="h-9 px-2 rounded-xl text-xs font-black text-white bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 active:scale-95 transition-transform shadow-md shadow-indigo-600/30 flex items-center justify-center space-x-1.5"
+            className="h-9 px-2 rounded-xl text-xs font-black text-white bg-gradient-to-r from-purple-600 to-purple-700 active:scale-95 transition-transform shadow-md shadow-purple-600/30 flex items-center justify-center space-x-1.5 cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
+            <Sparkles className="w-3.5 h-3.5 text-white" />
             <span>{isGenerating ? 'Packing' : 'Pack'}</span>
           </button>
         </div>

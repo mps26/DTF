@@ -297,7 +297,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   return (
     <header
       ref={navRef}
-      className="bg-[#090d19] border-b border-[#1b2238] text-slate-200 select-none z-50 flex-shrink-0 relative shadow-sm"
+      className="bg-[#0b1723] border-b border-[#162e43] text-slate-200 select-none z-50 flex-shrink-0 relative shadow-sm"
     >
       {/* ================= DESKTOP VIEW (lg and up) ================= */}
       <div className="hidden lg:flex h-16 w-full items-center justify-between px-4 sm:px-6">
@@ -321,7 +321,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         </div>
 
         {/* ================= CENTER SECTION: THE 4 PREP OPTIONS ================= */}
-        <div className="flex items-center space-x-1 bg-[#101426] p-1 rounded-2xl border border-slate-800/90 text-xs shadow-inner shadow-black/30 mx-2 flex-shrink-0">
+        <div className="flex items-center space-x-1 bg-[#0f2232] p-1 rounded-2xl border border-slate-800/90 text-xs shadow-inner shadow-black/30 mx-2 flex-shrink-0">
           {categories.map((cat) => {
             const isOpen = activeDropdown === cat.id;
             const Icon = cat.icon;
@@ -571,7 +571,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       {/* ================= MOBILE VIEW (< lg) ================= */}
       <div className="lg:hidden flex flex-col w-full">
         {/* Mobile Top Row: Compact Brand & Quick Actions */}
-        <div className="h-12 px-2.5 sm:px-3 flex items-center justify-between border-b border-[#182035] bg-[#090d19]">
+        <div className="h-12 px-2.5 sm:px-3 flex items-center justify-between border-b border-[#162e43] bg-[#0b1723]">
           {/* Brand */}
           <div className="flex items-center space-x-2 min-w-0">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xs flex-shrink-0">
@@ -597,7 +597,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                   setActiveDropdown(null);
                   setDemoMenuOpen(!demoMenuOpen);
                 }}
-                className="h-7.5 px-2 bg-[#13192f] hover:bg-[#1b2342] border border-slate-700/80 rounded-lg text-xs font-bold text-slate-200 flex items-center space-x-1 transition-colors"
+                className="h-7.5 px-2 bg-[#132c40] hover:bg-[#1a3852] border border-slate-700/80 rounded-lg text-xs font-bold text-slate-200 flex items-center space-x-1 transition-colors"
               >
                 <Play className="w-2.5 h-2.5 text-indigo-400 fill-indigo-400" />
                 <span className="text-[11px]">Demos</span>
@@ -605,7 +605,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               </button>
 
               {demoMenuOpen && (
-                <div className="fixed inset-x-4 top-16 max-w-xs mx-auto bg-[#0e1324] border border-[#1e2746] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-x-4 top-16 max-w-xs mx-auto bg-[#0f2232] border border-[#183750] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="p-2 border-b border-slate-800 text-[11px] font-bold text-indigo-300">
                     Sample Datasets
                   </div>

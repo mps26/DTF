@@ -411,12 +411,12 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                     className={`rounded-3xl border transition-all shadow-sm overflow-hidden relative ${
                       isSelected
                         ? 'border-indigo-500 ring-2 ring-indigo-500/25'
-                        : 'border-[#dcdff9] hover:border-indigo-300'
+                        : 'border-[#cfe0ee] hover:border-indigo-400'
                     }`}
                   >
-                    {/* Lavender Header with Thumbnail, Filename, DPI Badge & Yellow Circle Badge */}
+                    {/* Soft Steel-Navy Header with Thumbnail, Filename, DPI Badge & Yellow Circle Badge */}
                     <div
-                      className="bg-[#EEF1FE] p-3 sm:p-4 pb-2.5 sm:pb-3 flex items-start space-x-3 sm:space-x-3.5 relative cursor-pointer select-none"
+                      className="bg-[#eaf2f8] p-3 sm:p-4 pb-2.5 sm:pb-3 flex items-start space-x-3 sm:space-x-3.5 relative cursor-pointer select-none"
                       onClick={(e) => toggleCardCollapse(asset.id, e)}
                     >
                       {/* Yellow Index Badge & Collapse Chevron at top-right */}

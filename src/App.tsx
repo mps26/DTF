@@ -668,11 +668,10 @@ export const App: React.FC = () => {
             onSuccess={(user, mode) => {
               setCurrentUser(user);
               setIsAuthModalOpen(false);
+              setNavTab('home');
               if (mode === 'register') {
-                setNavTab('settings');
-                showNotification(`Account created! Welcome to your shop profile, ${user.name}.`, 'success');
+                showNotification(`Account created! Welcome, ${user.name} (${user.companyName})`, 'success');
               } else {
-                setNavTab('studio');
                 showNotification(`Signed in as ${user.name} (${user.companyName})`, 'success');
               }
             }}
@@ -953,9 +952,9 @@ export const App: React.FC = () => {
           onSuccess={(user, mode) => {
             setCurrentUser(user);
             setIsAuthModalOpen(false);
+            setNavTab('home');
             if (mode === 'register') {
-              setNavTab('settings');
-              showNotification(`Account created! Welcome to your shop profile, ${user.name}.`, 'success');
+              showNotification(`Account created! Welcome, ${user.name} (${user.companyName})`, 'success');
             } else {
               showNotification(`Signed in as ${user.name} (${user.companyName})`, 'success');
             }

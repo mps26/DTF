@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply antialiased font-sans text-slate-800 bg-[#f1f0fa];
+    @apply antialiased font-sans text-slate-800 bg-[#edf3f8];
     margin: 0;
     padding: 0;
   }

@@ -39,7 +39,7 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
   return (
     <>
       {/* ================= 1. DESKTOP VERTICAL ICON NAV STRIP (lg and up) ================= */}
-      <aside className="hidden lg:flex w-16 bg-[#0a0d18] border-r border-[#1a2138] flex-col items-center justify-between py-3 flex-shrink-0 z-40 select-none">
+      <aside className="hidden lg:flex w-16 bg-[#0b1723] border-r border-[#162e43] flex-col items-center justify-between py-3 flex-shrink-0 z-40 select-none">
         {/* Top: Brand Icon (Click to view Landing Page) */}
         <div className="flex flex-col items-center space-y-4">
           <button
@@ -161,7 +161,7 @@ export const VerticalNavStrip: React.FC<VerticalNavStripProps> = ({
       </aside>
 
       {/* ================= 2. MOBILE BOTTOM NAVIGATION BAR (< lg) ================= */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0b0e1b]/95 backdrop-blur-xl border-t border-[#1a2138] z-40 px-2 py-1.5 flex items-center justify-around select-none shadow-2xl pb-[max(0.375rem,env(safe-area-inset-bottom))]">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0b1723]/95 backdrop-blur-xl border-t border-[#162e43] z-40 px-2 py-1.5 flex items-center justify-around select-none shadow-2xl pb-[max(0.375rem,env(safe-area-inset-bottom))]">
         {/* Studio Button */}
         <button
           type="button"
