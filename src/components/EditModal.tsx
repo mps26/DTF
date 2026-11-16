@@ -143,9 +143,7 @@ export const EditModal: React.FC<EditModalProps> = ({
       tools: [
         { id: 'bg-remover', name: 'Background Remover', desc: 'Auto cut-out transparent background', badge: 'AUTO', badgeColor: 'bg-blue-100 text-blue-700 border-blue-200' },
         { id: 'remove-replace-color', name: 'Remove / Replace Color', desc: 'Color knockout & swap channels' },
-        { id: 'crop-clean', name: 'Crop & Clean', desc: 'Trim empty padding, rotate & flip' },
-        { id: 'eraser', name: 'Eraser Brush', desc: 'Draw directly on canvas to erase', badge: 'DRAW', badgeColor: 'bg-amber-100 text-amber-700 border-amber-200' },
-        { id: 'border-knockout', name: 'Border Knockout', desc: 'Punch-out borders & frames' }
+        { id: 'crop-clean', name: 'Crop & Clean', desc: 'Trim empty padding, rotate & flip' }
       ]
     },
     {

@@ -36,97 +36,9 @@ app.add_middleware(
 )
 
 MM_PER_INCH = 25.4
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dtf_users.db")
 
-
-def load_env_file():
-    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for fname in [".env", ".env.local"]:
-        fpath = os.path.join(root_dir, fname)
-        if os.path.exists(fpath):
-            try:
-                with open(fpath, "r", encoding="utf-8") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith("#") and "=" in line:
-                            k, v = line.split("=", 1)
-                            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-            except Exception:
-                pass
-
-
-load_env_file()
-
-TURSO_URL = os.environ.get("TURSO_DATABASE_URL") or os.environ.get("SQLITE_URL") or ""
-TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN") or os.environ.get("SQLITE_AUTH_TOKEN") or ""
-
-
-def get_turso_endpoint() -> Optional[str]:
-    url = (os.environ.get("TURSO_DATABASE_URL") or os.environ.get("SQLITE_URL") or TURSO_URL).strip()
-    if not url:
-        return None
-    if url.startswith("libsql://"):
-        url = "https://" + url[9:]
-    if not url.endswith("/v2/pipeline"):
-        url = url.rstrip("/") + "/v2/pipeline"
-    return url
-
-
-def execute_turso_sql(sql: str, args: list = []) -> Optional[list]:
-    endpoint = get_turso_endpoint()
-    if not endpoint:
-        return None
-    try:
-        formatted_args = []
-        for a in args:
-            if a is None:
-                formatted_args.append({"type": "null"})
-            elif isinstance(a, int):
-                formatted_args.append({"type": "integer", "value": str(a)})
-            elif isinstance(a, float):
-                formatted_args.append({"type": "float", "value": a})
-            else:
-                formatted_args.append({"type": "text", "value": str(a)})
-
-        token = os.environ.get("TURSO_AUTH_TOKEN") or os.environ.get("SQLITE_AUTH_TOKEN") or TURSO_TOKEN
-        headers = {"Content-Type": "application/json"}
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-
-        payload = {
-            "requests": [
-                {
-                    "type": "execute",
-                    "stmt": {
-                        "sql": sql,
-                        "args": formatted_args
-                    }
-                },
-                {"type": "close"}
-            ]
-        }
-        req = urllib.request.Request(
-            endpoint,
-            data=json.dumps(payload).encode("utf-8"),
-            headers=headers,
-            method="POST"
-        )
-        with urllib.request.urlopen(req, timeout=4) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            result = data.get("results", [{}])[0].get("response", {}).get("result", {})
-            cols = [c["name"] for c in result.get("cols", [])]
-            rows = result.get("rows", [])
-            output = []
-            for r in rows:
-                row_dict = {}
-                for idx, cell in enumerate(r):
-                    row_dict[cols[idx]] = cell.get("value")
-                output.append(row_dict)
-            return output
-    except Exception as e:
-        print("Turso sync notice:", e)
-        return None
-
+# PostgreSQL connection & helper functions from database.py
+from .database import get_db_connection, fetchone_dict, fetchall_dict
 
 def hash_password(password: str, salt: Optional[str] = None) -> str:
     if salt is None:
@@ -153,36 +65,15 @@ def get_initials(name: str) -> str:
     return (parts[0][0] + parts[-1][0]).upper()
 
 
-def get_db_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def sync_db_to_json() -> None:
-    try:
-        conn = get_db_connection()
-        rows = conn.execute("SELECT * FROM users").fetchall()
-        users_list = [dict(r) for r in rows]
-        conn.close()
-        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        
-        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dtf_users.json")
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(users_list, f, indent=2)
-
-        seed_js_path = os.path.join(root_dir, "api", "seedUsers.js")
-        if os.path.exists(os.path.dirname(seed_js_path)):
-            with open(seed_js_path, "w", encoding="utf-8") as f:
-                f.write("export const seedUsers = " + json.dumps(users_list, indent=2) + ";\n")
-    except Exception as e:
-        print("sync_db_to_json warning:", e)
-
-
 def init_auth_db() -> None:
+    """
+    Initializes the PostgreSQL users table and migrates any existing
+    registered accounts from SQLite (server/dtf_users.db).
+    """
     conn = get_db_connection()
+    cursor = conn.cursor()
     try:
-        conn.execute(
+        cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
@@ -199,6 +90,7 @@ def init_auth_db() -> None:
             )
             """
         )
+
         default_users = [
             (
                 "user_ninad_pawar",
@@ -227,55 +119,69 @@ def init_auth_db() -> None:
                 hash_password("demo123"),
             ),
         ]
-        conn.executemany(
-            """
-            INSERT OR IGNORE INTO users (
-                id, name, email, company_name, printer_model,
-                role, plan, initials, avatar_color, created_at, password_hash
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            default_users,
-        )
-        conn.commit()
-        sync_db_to_json()
-
-        # Seed Turso Cloud SQLite if endpoint is present
-        if get_turso_endpoint():
-            execute_turso_sql(
+        for du in default_users:
+            cursor.execute(
                 """
-                CREATE TABLE IF NOT EXISTS users (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    email TEXT UNIQUE NOT NULL,
-                    company_name TEXT NOT NULL,
-                    printer_model TEXT NOT NULL,
-                    role TEXT NOT NULL DEFAULT 'shop_owner',
-                    plan TEXT NOT NULL DEFAULT 'Pro Print House',
-                    initials TEXT NOT NULL,
-                    avatar_color TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    password_hash TEXT NOT NULL
-                )
-                """
+                INSERT INTO users (
+                    id, name, email, company_name, printer_model,
+                    role, plan, initials, avatar_color, created_at, password_hash
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (email) DO NOTHING
+                """,
+                du,
             )
-            for du in default_users:
-                execute_turso_sql(
-                    """
-                    INSERT OR IGNORE INTO users (
-                        id, name, email, company_name, printer_model,
-                        role, plan, initials, avatar_color, created_at, password_hash
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    list(du)
-                )
+
+        # One-time migration of existing registered accounts from server/dtf_users.db
+        sqlite_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dtf_users.db")
+        if os.path.exists(sqlite_path):
+            try:
+                s_conn = sqlite3.connect(sqlite_path)
+                s_conn.row_factory = sqlite3.Row
+                s_cur = s_conn.cursor()
+                tbl_check = s_cur.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
+                ).fetchone()
+                if tbl_check:
+                    for u in s_cur.execute("SELECT * FROM users").fetchall():
+                        cursor.execute(
+                            """
+                            INSERT INTO users (
+                                id, name, email, company_name, printer_model,
+                                role, plan, initials, avatar_color, created_at, password_hash
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (email) DO NOTHING
+                            """,
+                            (
+                                u["id"],
+                                u["name"],
+                                u["email"].strip().lower(),
+                                u["company_name"],
+                                u["printer_model"],
+                                u["role"],
+                                u["plan"],
+                                u["initials"],
+                                u["avatar_color"],
+                                u["created_at"],
+                                u["password_hash"],
+                            ),
+                        )
+                s_conn.close()
+            except Exception as mig_err:
+                print("SQLite migration check notice:", mig_err)
+
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print("Database initialization notice:", e)
     finally:
+        cursor.close()
         conn.close()
 
 
 init_auth_db()
 
 
-def row_to_user_dict(row: sqlite3.Row) -> dict:
+def row_to_user_dict(row: dict) -> dict:
     return {
         "id": row["id"],
         "name": row["name"],
@@ -344,31 +250,23 @@ def auth_register(payload: RegisterRequest):
     pw_hash = hash_password(payload.password)
 
     conn = get_db_connection()
+    cursor = conn.cursor()
     try:
-        existing = conn.execute(
-            "SELECT id FROM users WHERE LOWER(email) = ?", (email_norm,)
-        ).fetchone()
+        # Check duplicate email in PostgreSQL
+        cursor.execute("SELECT id FROM users WHERE LOWER(email) = LOWER(%s)", (email_norm,))
+        existing = cursor.fetchone()
         if existing:
             return {
                 "success": False,
                 "error": "An account with this email address already exists. Please log in.",
             }
 
-        # Check Turso Cloud SQLite if configured
-        if get_turso_endpoint():
-            turso_existing = execute_turso_sql("SELECT id FROM users WHERE LOWER(email) = ?", [email_norm])
-            if turso_existing and len(turso_existing) > 0:
-                return {
-                    "success": False,
-                    "error": "An account with this email address already exists. Please log in.",
-                }
-
-        conn.execute(
+        cursor.execute(
             """
             INSERT INTO users (
                 id, name, email, company_name, printer_model,
                 role, plan, initials, avatar_color, created_at, password_hash
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 user_id,
@@ -385,35 +283,22 @@ def auth_register(payload: RegisterRequest):
             ),
         )
         conn.commit()
-        sync_db_to_json()
 
-        # Replicate to Turso Cloud SQLite
-        if get_turso_endpoint():
-            execute_turso_sql(
-                """
-                INSERT OR IGNORE INTO users (
-                    id, name, email, company_name, printer_model,
-                    role, plan, initials, avatar_color, created_at, password_hash
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    user_id,
-                    name_clean,
-                    email_norm,
-                    company_name,
-                    printer_model,
-                    "shop_owner",
-                    "Pro Print House",
-                    initials,
-                    chosen_color,
-                    created_at,
-                    pw_hash,
-                ]
-            )
-
-        row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-        return {"success": True, "user": row_to_user_dict(row)}
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user_row = fetchone_dict(cursor)
+        return {"success": True, "user": row_to_user_dict(user_row)}
+    except Exception as e:
+        conn.rollback()
+        err_str = str(e).lower()
+        if "unique" in err_str or "duplicate" in err_str:
+            return {
+                "success": False,
+                "error": "An account with this email address already exists. Please log in.",
+            }
+        print("Registration error:", e)
+        return {"success": False, "error": f"Registration failed: {str(e)}"}
     finally:
+        cursor.close()
         conn.close()
 
 
@@ -421,54 +306,29 @@ def auth_register(payload: RegisterRequest):
 def auth_login(payload: LoginRequest):
     email_norm = payload.email.strip().lower()
     conn = get_db_connection()
+    cursor = conn.cursor()
     try:
-        row = conn.execute(
-            "SELECT * FROM users WHERE LOWER(email) = ?", (email_norm,)
-        ).fetchone()
+        cursor.execute(
+            "SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (email_norm,)
+        )
+        user_row = fetchone_dict(cursor)
 
-        # If not in local SQLite, query Turso Cloud SQLite if connected
-        if not row and get_turso_endpoint():
-            turso_rows = execute_turso_sql(
-                "SELECT * FROM users WHERE LOWER(email) = ?", [email_norm]
-            )
-            if turso_rows and len(turso_rows) > 0:
-                tu = turso_rows[0]
-                conn.execute(
-                    """
-                    INSERT OR IGNORE INTO users (
-                        id, name, email, company_name, printer_model,
-                        role, plan, initials, avatar_color, created_at, password_hash
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        tu.get("id"),
-                        tu.get("name"),
-                        tu.get("email"),
-                        tu.get("company_name", ""),
-                        tu.get("printer_model", ""),
-                        tu.get("role", "shop_owner"),
-                        tu.get("plan", "Pro Print House"),
-                        tu.get("initials", "US"),
-                        tu.get("avatar_color", "from-indigo-600 to-purple-600"),
-                        tu.get("created_at", datetime.now(timezone.utc).isoformat()),
-                        tu.get("password_hash", ""),
-                    ),
-                )
-                conn.commit()
-                row = conn.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email_norm,)).fetchone()
-
-        if not row:
+        if not user_row:
             return {
                 "success": False,
                 "error": "No account found with this email. Please check your credentials or register.",
             }
-        if not verify_password(payload.password, row["password_hash"]):
+        if not verify_password(payload.password, user_row["password_hash"]):
             return {
                 "success": False,
                 "error": "Invalid password. Please re-enter your password.",
             }
-        return {"success": True, "user": row_to_user_dict(row)}
+        return {"success": True, "user": row_to_user_dict(user_row)}
+    except Exception as e:
+        print("Login error:", e)
+        return {"success": False, "error": f"Login failed: {str(e)}"}
     finally:
+        cursor.close()
         conn.close()
 
 
@@ -476,40 +336,39 @@ def auth_login(payload: LoginRequest):
 def auth_update_profile(payload: UpdateProfileRequest):
     email_norm = payload.email.strip().lower()
     conn = get_db_connection()
+    cursor = conn.cursor()
     try:
-        row = conn.execute(
-            "SELECT * FROM users WHERE LOWER(email) = ?", (email_norm,)
-        ).fetchone()
-        if not row:
+        cursor.execute(
+            "SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (email_norm,)
+        )
+        user_row = fetchone_dict(cursor)
+        if not user_row:
             return {"success": False, "error": "User not found."}
-        new_name = payload.name.strip() if payload.name else row["name"]
-        new_company = payload.companyName.strip() if payload.companyName is not None else row["company_name"]
-        new_printer = payload.printerModel.strip() if payload.printerModel is not None else row["printer_model"]
+
+        new_name = payload.name.strip() if payload.name else user_row["name"]
+        new_company = payload.companyName.strip() if payload.companyName is not None else user_row["company_name"]
+        new_printer = payload.printerModel.strip() if payload.printerModel is not None else user_row["printer_model"]
         new_initials = get_initials(new_name)
-        conn.execute(
+
+        cursor.execute(
             """
             UPDATE users
-            SET name = ?, company_name = ?, printer_model = ?, initials = ?
-            WHERE id = ?
+            SET name = %s, company_name = %s, printer_model = %s, initials = %s
+            WHERE id = %s
             """,
-            (new_name, new_company, new_printer, new_initials, row["id"]),
+            (new_name, new_company, new_printer, new_initials, user_row["id"]),
         )
         conn.commit()
-        sync_db_to_json()
 
-        if get_turso_endpoint():
-            execute_turso_sql(
-                """
-                UPDATE users
-                SET name = ?, company_name = ?, printer_model = ?, initials = ?
-                WHERE id = ?
-                """,
-                [new_name, new_company, new_printer, new_initials, row["id"]]
-            )
-
-        updated = conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
-        return {"success": True, "user": row_to_user_dict(updated)}
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_row["id"],))
+        updated_row = fetchone_dict(cursor)
+        return {"success": True, "user": row_to_user_dict(updated_row)}
+    except Exception as e:
+        conn.rollback()
+        print("Profile update error:", e)
+        return {"success": False, "error": f"Failed to update profile: {str(e)}"}
     finally:
+        cursor.close()
         conn.close()
 
 
@@ -519,31 +378,31 @@ def auth_change_password(payload: ChangePasswordRequest):
         return {"success": False, "error": "New password must be at least 6 characters long."}
     email_norm = payload.email.strip().lower()
     conn = get_db_connection()
+    cursor = conn.cursor()
     try:
-        row = conn.execute(
-            "SELECT * FROM users WHERE LOWER(email) = ?", (email_norm,)
-        ).fetchone()
-        if not row:
+        cursor.execute(
+            "SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (email_norm,)
+        )
+        user_row = fetchone_dict(cursor)
+        if not user_row:
             return {"success": False, "error": "User not found."}
-        if not verify_password(payload.currentPassword, row["password_hash"]):
+        if not verify_password(payload.currentPassword, user_row["password_hash"]):
             return {"success": False, "error": "Current password does not match records."}
 
         new_hash = hash_password(payload.newPassword)
-        conn.execute(
-            "UPDATE users SET password_hash = ? WHERE id = ?",
-            (new_hash, row["id"]),
+        cursor.execute(
+            "UPDATE users SET password_hash = %s WHERE id = %s",
+            (new_hash, user_row["id"]),
         )
         conn.commit()
-        sync_db_to_json()
-
-        if get_turso_endpoint():
-            execute_turso_sql(
-                "UPDATE users SET password_hash = ? WHERE id = ?",
-                [new_hash, row["id"]]
-            )
 
         return {"success": True}
+    except Exception as e:
+        conn.rollback()
+        print("Password change error:", e)
+        return {"success": False, "error": f"Failed to change password: {str(e)}"}
     finally:
+        cursor.close()
         conn.close()
 
 class DesignItem(BaseModel):

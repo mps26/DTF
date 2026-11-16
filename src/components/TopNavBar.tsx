@@ -7,20 +7,16 @@ import {
   Cpu,
   ChevronDown,
   Plus,
-  ShieldCheck,
   HelpCircle,
   Sliders,
   Activity,
   CheckCircle2,
   Pipette,
-  Eraser,
-  SquareDashedBottom,
   CircleDot,
   PenTool,
   Type,
   Maximize2,
   BookOpen,
-  Play,
   FileStack,
   Scissors,
   LogOut,
@@ -56,9 +52,9 @@ interface Category {
 interface TopNavBarProps {
   onSelectTool: (toolId: string) => void;
   onCreateLayout?: () => void;
-  onLoadMultiDemo: () => void;
-  onLoadRepeatDemo: () => void;
-  onOpenAudit: () => void;
+  onLoadMultiDemo?: () => void;
+  onLoadRepeatDemo?: () => void;
+  onOpenAudit?: () => void;
   onOpenGuide: () => void;
   currentUser?: UserProfile | null;
   onOpenAuth?: (mode: 'login' | 'register') => void;
@@ -80,7 +76,6 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   onOpenProfile
 }) => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [demoMenuOpen, setDemoMenuOpen] = useState<boolean>(false);
   const [userMenuOpen, setUserMenuOpen] = useState<boolean>(false);
   const navRef = useRef<HTMLDivElement>(null);
   const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -90,7 +85,6 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
         setActiveDropdown(null);
-        setDemoMenuOpen(false);
         setUserMenuOpen(false);
       }
     };
@@ -103,7 +97,6 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       clearTimeout(leaveTimerRef.current);
       leaveTimerRef.current = null;
     }
-    setDemoMenuOpen(false);
     setActiveDropdown(catId);
   };
 
@@ -184,20 +177,6 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           desc: 'Trim transparent padding & rotate',
           icon: Crop,
           iconColor: 'text-sky-400'
-        },
-        {
-          id: 'eraser',
-          name: 'Eraser',
-          desc: 'Manual wipe & cleanup tool',
-          icon: Eraser,
-          iconColor: 'text-slate-400'
-        },
-        {
-          id: 'border-knockout',
-          name: 'Border Knockout',
-          desc: 'Punch-out frames & borders',
-          icon: SquareDashedBottom,
-          iconColor: 'text-rose-400'
         }
       ]
     },
@@ -335,7 +314,6 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               >
                 <button
                   onClick={() => {
-                    setDemoMenuOpen(false);
                     setActiveDropdown(isOpen ? null : cat.id);
                   }}
                   className={`h-8.5 px-3.5 rounded-xl font-bold text-xs flex items-center space-x-2 whitespace-nowrap transition-all duration-150 cursor-pointer ${
@@ -424,60 +402,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           })}
         </div>
 
-        {/* ================= RIGHT SECTION: DEMOS, AUDIT, GUIDE, AVATAR ================= */}
+        {/* ================= RIGHT SECTION: GUIDE, AVATAR ================= */}
         <div className="flex items-center space-x-2 sm:space-x-2.5 flex-shrink-0">
-          {/* Compact Demos Button Group or Pills */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setActiveDropdown(null);
-                setDemoMenuOpen(!demoMenuOpen);
-              }}
-              className="h-8.5 px-3 bg-[#132c40] hover:bg-[#183750] border border-[#183750] rounded-xl text-xs font-bold text-slate-200 hover:text-white flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
-              title="Load demo samples"
-            >
-              <Play className="w-3 h-3 text-[#EF7F1A] fill-[#EF7F1A]" />
-              <span>Demos</span>
-              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${demoMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {/* Demos Dropdown */}
-            {demoMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-[#0f2232] border border-[#183750] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <button
-                  onClick={() => {
-                    setDemoMenuOpen(false);
-                    onLoadMultiDemo();
-                  }}
-                  className="w-full p-2.5 rounded-xl hover:bg-[#183750] text-left transition-colors flex flex-col cursor-pointer"
-                >
-                  <div className="font-bold text-xs text-white">Multi-Design Demo</div>
-                  <div className="text-[11px] text-slate-400">Load 4 mixed artwork samples</div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setDemoMenuOpen(false);
-                    onLoadRepeatDemo();
-                  }}
-                  className="w-full p-2.5 rounded-xl hover:bg-[#183750] text-left transition-colors flex flex-col cursor-pointer"
-                >
-                  <div className="font-bold text-xs text-white">Repeat 10× Demo</div>
-                  <div className="text-[11px] text-slate-400">Load repeated pattern on roll</div>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Print Audit Pill */}
-          <button
-            onClick={onOpenAudit}
-            className="h-8.5 px-3 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-700/60 rounded-xl text-xs font-bold text-emerald-300 flex items-center space-x-1.5 whitespace-nowrap transition-colors shadow-2xs cursor-pointer"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-            <span>Print Audit</span>
-          </button>
-
           {/* How to use */}
           <button
             onClick={onOpenGuide}
@@ -587,61 +513,6 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
 
           {/* Right Action Icons: Consistent Dimensions & Vertical Alignment */}
           <div className="flex items-center space-x-1.5 flex-shrink-0">
-            {/* Demos Button */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveDropdown(null);
-                  setDemoMenuOpen(!demoMenuOpen);
-                }}
-                className="h-7.5 px-2 bg-[#132c40] hover:bg-[#183750] border border-[#183750] rounded-lg text-xs font-bold text-slate-200 flex items-center space-x-1 transition-colors"
-              >
-                <Play className="w-2.5 h-2.5 text-[#EF7F1A] fill-[#EF7F1A]" />
-                <span className="text-[11px]">Demos</span>
-                <ChevronDown className={`w-2.5 h-2.5 text-slate-400 transition-transform ${demoMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {demoMenuOpen && (
-                <div className="fixed inset-x-4 top-16 max-w-xs mx-auto bg-[#0f2232] border border-[#183750] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="p-2 border-b border-[#183750] text-[11px] font-bold text-[#EF7F1A]">
-                    Sample Datasets
-                  </div>
-                  <button
-                    onClick={() => {
-                      setDemoMenuOpen(false);
-                      onLoadMultiDemo();
-                    }}
-                    className="w-full p-2.5 rounded-xl hover:bg-[#183750] text-left transition-colors flex flex-col"
-                  >
-                    <div className="font-bold text-xs text-white">Multi-Design Demo</div>
-                    <div className="text-[10px] text-slate-400">Load 4 mixed artwork samples</div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setDemoMenuOpen(false);
-                      onLoadRepeatDemo();
-                    }}
-                    className="w-full p-2.5 rounded-xl hover:bg-[#183750] text-left transition-colors flex flex-col"
-                  >
-                    <div className="font-bold text-xs text-white">Repeat 10× Demo</div>
-                    <div className="text-[10px] text-slate-400">Load repeated pattern on roll</div>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Print Audit Button */}
-            <button
-              type="button"
-              onClick={onOpenAudit}
-              className="w-7.5 h-7.5 bg-emerald-950/60 border border-emerald-700/60 rounded-lg text-emerald-300 flex items-center justify-center flex-shrink-0 transition-colors"
-              title="Preflight & DPI Audit"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            </button>
-
             {/* User Profile Avatar / Sign In */}
             <div className="relative">
               {currentUser ? (
@@ -718,7 +589,6 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 key={cat.id}
                 type="button"
                 onClick={() => {
-                  setDemoMenuOpen(false);
                   setUserMenuOpen(false);
                   setActiveDropdown(isOpen ? null : cat.id);
                 }}

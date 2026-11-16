@@ -43,11 +43,16 @@ export function formatUserResponse(u) {
   };
 }
 
-// In-memory fallback map seeded with all users
+// In-memory fallback map seeded with default demo users
 const memoryStore = new Map();
 
 for (const u of seedUsers) {
-  memoryStore.set(u.email.toLowerCase(), u);
+  const item = { ...u };
+  if (!item.password_hash) {
+    if (item.email === 'ninad@dtflayout.com') item.password_hash = hashPassword('password123');
+    else if (item.email === 'demo@dtflayout.com') item.password_hash = hashPassword('demo123');
+  }
+  memoryStore.set(u.email.toLowerCase(), item);
 }
 
 function getTursoEndpoint() {
