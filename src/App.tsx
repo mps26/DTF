@@ -268,8 +268,10 @@ export const App: React.FC = () => {
         // Lock Aspect Ratio must always be enabled across the application (user cannot disable it)
         updated.aspectLocked = true;
 
-        // Use original aspect ratio calculated strictly from original uploaded image dimensions
-        const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : (asset.lockedRatio || 1));
+        // Use original aspect ratio calculated strictly from original uploaded image dimensions (or updated after trim)
+        const origRatio = updates.originalAspectRatio !== undefined
+          ? updates.originalAspectRatio
+          : (asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : (asset.lockedRatio || 1)));
         updated.originalAspectRatio = origRatio;
         updated.lockedRatio = origRatio;
 
@@ -348,26 +350,121 @@ export const App: React.FC = () => {
   // 1-Click Trim action for empty margins
   const handleTrimAsset = async (id: string) => {
     const asset = assets.find((a) => a.id === id);
-    if (!asset || !asset.cropBox) return;
+    if (!asset) return;
 
     try {
       const img = await loadImage(asset.processedUrl || asset.originalUrl);
-      const croppedUrl = await cropImageToBoundingBox(img, asset.cropBox);
+      const box = await calculateAlphaBoundingBox(img, 8, 4);
+      if (box.width <= 0 || box.height <= 0 || box.emptyPercent <= 0) {
+        showNotification(`No removable transparent margins detected in ${asset.filename}`, 'info');
+        return;
+      }
+
+      const croppedUrl = await cropImageToBoundingBox(img, box);
       const croppedImg = await loadImage(croppedUrl);
+
+      const oldOrigW = asset.originalWidth;
+      const oldOrigH = asset.originalHeight;
+      const croppedW = croppedImg.naturalWidth;
+      const croppedH = croppedImg.naturalHeight;
+
+      // Scale physical print dimensions proportionally to the cropped pixel region
+      const scaleX = oldOrigW > 0 ? (croppedW / oldOrigW) : 1;
+      const scaleY = oldOrigH > 0 ? (croppedH / oldOrigH) : 1;
+
+      const newTargetWidth = parseFloat((asset.targetWidth * scaleX).toFixed(2));
+      const newTargetHeight = parseFloat((asset.targetHeight * scaleY).toFixed(2));
+      const newTargetWidthMm = unitToMm(newTargetWidth, settings.unit);
+      const newTargetHeightMm = unitToMm(newTargetHeight, settings.unit);
+
+      const newRatio = (croppedW > 0 && croppedH > 0) ? (croppedW / croppedH) : 1;
+      const effectiveDpi = calculateEffectiveDpi(croppedW, newTargetWidthMm);
+      const dpiStatus = getDpiStatus(effectiveDpi);
 
       handleUpdateAsset(id, {
         processedUrl: croppedUrl,
-        trimmedWidth: croppedImg.naturalWidth,
-        trimmedHeight: croppedImg.naturalHeight,
+        trimmedWidth: croppedW,
+        trimmedHeight: croppedH,
+        originalWidth: croppedW,
+        originalHeight: croppedH,
+        originalAspectRatio: newRatio,
+        lockedRatio: newRatio,
+        aspectLocked: true,
+        targetWidth: newTargetWidth,
+        targetHeight: newTargetHeight,
+        targetWidthMm: newTargetWidthMm,
+        targetHeightMm: newTargetHeightMm,
+        effectiveDpi,
+        dpiStatus,
         isTrimmed: true,
         cropBox: {
-          ...asset.cropBox,
+          minX: 0,
+          minY: 0,
+          maxX: croppedW,
+          maxY: croppedH,
+          width: croppedW,
+          height: croppedH,
           emptyPercent: 0
-        }
+        },
+        initialOriginalWidth: asset.initialOriginalWidth || oldOrigW,
+        initialOriginalHeight: asset.initialOriginalHeight || oldOrigH,
+        initialOriginalAspectRatio: asset.initialOriginalAspectRatio || asset.originalAspectRatio,
+        initialTargetWidth: asset.initialTargetWidth || asset.targetWidth,
+        initialTargetHeight: asset.initialTargetHeight || asset.targetHeight,
+        initialTargetWidthMm: asset.initialTargetWidthMm || asset.targetWidthMm,
+        initialTargetHeightMm: asset.initialTargetHeightMm || asset.targetHeightMm,
+        initialCropBox: asset.initialCropBox || asset.cropBox
       });
-      showNotification(`Trimmed empty margins from ${asset.filename}`);
-    } catch (err) {
-      console.error(err);
+      showNotification(`Trimmed empty transparent margins (${box.emptyPercent}% space removed)`);
+    } catch (err: any) {
+      console.error('Trim error:', err);
+      showNotification(`Failed to trim image: ${err?.message || 'Unknown error'}`, 'warning');
+    }
+  };
+
+  // Revert to original untrimmed image
+  const handleRevertAsset = async (id: string) => {
+    const asset = assets.find((a) => a.id === id);
+    if (!asset) return;
+
+    try {
+      const origUrl = asset.originalUrl;
+      const img = await loadImage(origUrl);
+      const origW = asset.initialOriginalWidth || img.naturalWidth;
+      const origH = asset.initialOriginalHeight || img.naturalHeight;
+      const origRatio = asset.initialOriginalAspectRatio || (origW / origH);
+
+      const origTargetW = asset.initialTargetWidth || asset.targetWidth;
+      const origTargetH = asset.initialTargetHeight || asset.targetHeight;
+      const origTargetWMm = asset.initialTargetWidthMm || asset.targetWidthMm;
+      const origTargetHMm = asset.initialTargetHeightMm || asset.targetHeightMm;
+
+      const box = await calculateAlphaBoundingBox(img, 8, 4);
+      const effectiveDpi = calculateEffectiveDpi(origW, origTargetWMm);
+      const dpiStatus = getDpiStatus(effectiveDpi);
+
+      handleUpdateAsset(id, {
+        processedUrl: origUrl,
+        trimmedWidth: origW,
+        trimmedHeight: origH,
+        originalWidth: origW,
+        originalHeight: origH,
+        originalAspectRatio: origRatio,
+        lockedRatio: origRatio,
+        aspectLocked: true,
+        targetWidth: origTargetW,
+        targetHeight: origTargetH,
+        targetWidthMm: origTargetWMm,
+        targetHeightMm: origTargetHMm,
+        effectiveDpi,
+        dpiStatus,
+        isTrimmed: false,
+        cropBox: box
+      });
+      showNotification(`Restored original untrimmed design for ${asset.filename}`);
+    } catch (err: any) {
+      console.error('Revert error:', err);
+      showNotification(`Failed to revert image: ${err?.message || 'Unknown error'}`, 'warning');
     }
   };
 
@@ -976,6 +1073,7 @@ export const App: React.FC = () => {
                       setSelectedAssetForEdit(a);
                     }}
                     onTrimAsset={handleTrimAsset}
+                    onRevertAsset={handleRevertAsset}
                     onRemoveBgAsset={handleRemoveBgAsset}
                     onFilesSelected={handleFilesSelected}
                     onOpenGallery={handleLoadMultiDemo}

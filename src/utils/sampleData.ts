@@ -92,11 +92,37 @@ function createOmLogoSvg(): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+function createWaidonSvg(): string {
+  // Matches WAIDON_AI.pdf from Screenshot 3 (2008 x 2008 px with visible logo 1600 x 470 px, 81% empty space)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="2008" height="2008" viewBox="0 0 2008 2008">
+    <rect width="2008" height="2008" fill="none"/>
+    <g transform="translate(204, 769)">
+      <text x="50" y="340" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="340" fill="#204563">w</text>
+      <text x="350" y="340" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="340" fill="#EF4444">a</text>
+      <text x="540" y="340" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="340" fill="#204563">ld</text>
+      <g transform="translate(890, 80)">
+        <circle cx="130" cy="140" r="110" fill="none" stroke="#204563" stroke-width="48"/>
+        <path d="M 105 210 L 155 210 L 145 250 L 115 250 Z" fill="#204563"/>
+        <line x1="130" y1="90" x2="130" y2="150" stroke="#38BDF8" stroke-width="20" stroke-linecap="round"/>
+        <line x1="100" y1="120" x2="160" y2="120" stroke="#38BDF8" stroke-width="20" stroke-linecap="round"/>
+      </g>
+      <text x="1200" y="340" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="340" fill="#204563">n</text>
+    </g>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export function getSampleArtworkAssets(): ArtworkAsset[] {
+  const waidonUrl = createWaidonSvg();
   const dtfUrl = createDtfLogoSvg();
   const moneyUrl = createMoneyPrayerSvg();
   const dreamsUrl = createDreamsSvg();
   const porscheUrl = createPorsche911Svg();
+
+  const waidonWIn = 6.69;
+  const waidonHIn = 6.69;
+  const waidonWMm = unitToMm(waidonWIn, 'inch');
+  const waidonHMm = unitToMm(waidonHIn, 'inch');
 
   const dtfWIn = 3.84;
   const dtfHIn = 6.83;
@@ -119,6 +145,42 @@ export function getSampleArtworkAssets(): ArtworkAsset[] {
   const porscheHMm = unitToMm(porscheHIn, 'inch');
 
   return [
+    {
+      id: 'asset-waidon',
+      filename: 'WAIDON_AI.pdf',
+      fileType: 'pdf',
+      fileSize: 1024 * 512,
+      originalWidth: 2008,
+      originalHeight: 2008,
+      originalAspectRatio: 1,
+      hasAlpha: true,
+      originalUrl: waidonUrl,
+      processedUrl: waidonUrl,
+      trimmedWidth: 1600,
+      trimmedHeight: 470,
+      cropBox: {
+        minX: 204,
+        minY: 769,
+        maxX: 1804,
+        maxY: 1239,
+        width: 1600,
+        height: 470,
+        emptyPercent: 81
+      },
+      isTrimmed: false,
+      isBgRemoved: false,
+      targetWidth: waidonWIn,
+      targetHeight: waidonHIn,
+      targetWidthMm: waidonWMm,
+      targetHeightMm: waidonHMm,
+      aspectLocked: true,
+      lockedRatio: 1,
+      copies: 2,
+      allowRotation: false,
+      effectiveDpi: 300,
+      dpiStatus: 'green',
+      status: 'ready'
+    },
     {
       id: 'asset-1',
       filename: 'dtf.png',

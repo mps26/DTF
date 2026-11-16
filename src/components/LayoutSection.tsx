@@ -26,7 +26,9 @@ import {
   X,
   Eye,
   Sparkles,
-  Lock
+  Lock,
+  Check,
+  Loader2
 } from 'lucide-react';
 import { ArtworkAsset, SheetSettings, Unit, LayoutResult } from '../types';
 import { formatUnit, mmToUnit, unitToMm } from '../utils/units';
@@ -41,6 +43,7 @@ interface LayoutSectionProps {
   onDeleteAsset: (id: string) => void;
   onEditAsset: (asset: ArtworkAsset) => void;
   onTrimAsset: (id: string) => void;
+  onRevertAsset?: (id: string) => void;
   onRemoveBgAsset: (id: string) => void;
   onFilesSelected: (files: FileList | File[]) => void;
   onOpenGallery: () => void;
@@ -61,6 +64,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   onDeleteAsset,
   onEditAsset,
   onTrimAsset,
+  onRevertAsset,
   onRemoveBgAsset,
   onFilesSelected,
   onOpenGallery,
@@ -82,6 +86,16 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const [keepCloseTogether, setKeepCloseTogether] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({});
+  const [isTrimmingMap, setIsTrimmingMap] = useState<Record<string, boolean>>({});
+
+  const handleTrimClick = async (assetId: string) => {
+    setIsTrimmingMap((prev) => ({ ...prev, [assetId]: true }));
+    try {
+      await onTrimAsset(assetId);
+    } finally {
+      setIsTrimmingMap((prev) => ({ ...prev, [assetId]: false }));
+    }
+  };
 
   // Measure container dimensions to dynamically auto-fit sheet preview
   useEffect(() => {
@@ -618,6 +632,18 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                           Original: {asset.originalWidth} × {asset.originalHeight} px
                         </div>
 
+                        {/* Empty Space Note matching Screenshot 3 */}
+                        {asset.cropBox && asset.cropBox.emptyPercent >= 5 && !asset.isTrimmed && (
+                          <div className="bg-[#FEF9EE] border border-[#FDE68A] rounded-xl p-2.5 mb-2 text-xs text-[#78350F] leading-snug">
+                            <div>
+                              Your design prints <span className="font-bold text-[#9A3412]">{actualPrintW} × {actualPrintH} {settings.unit === 'inch' ? 'inches' : settings.unit}</span>
+                            </div>
+                            <div className="text-[#92400E] text-[11px] mt-0.5">
+                              The rest is empty space in the file.
+                            </div>
+                          </div>
+                        )}
+
                         {/* Divider */}
                         <div className="border-t border-[#E5D9C8] my-1.5" />
 
@@ -701,6 +727,56 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                             </button>
                           </div>
                         </div>
+
+                        {/* Amber Banner if Empty Space Detected (matching Screenshot 3 & 4) */}
+                        {asset.cropBox && asset.cropBox.emptyPercent >= 5 && !asset.isTrimmed && (
+                          <div className="bg-[#FFFDF7] border border-[#FDE68A] rounded-2xl p-2.5 px-3 flex items-center justify-between mb-2.5 shadow-2xs">
+                            <div className="flex items-center space-x-2 text-xs font-bold text-[#78350F] truncate pr-2">
+                              <Scissors className="w-4 h-4 text-[#D97706] flex-shrink-0" />
+                              <span className="truncate">{asset.cropBox.emptyPercent}% of this is empty space</span>
+                            </div>
+                            <button
+                              type="button"
+                              disabled={Boolean(isTrimmingMap[asset.id])}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTrimClick(asset.id);
+                              }}
+                              className="px-4 py-1.5 bg-[#EF7F1A] hover:bg-[#D96E12] active:scale-95 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 flex-shrink-0 cursor-pointer"
+                            >
+                              {isTrimmingMap[asset.id] ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Trimming...</span>
+                                </>
+                              ) : (
+                                <span>Trim it</span>
+                              )}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* If already trimmed, show Trimmed indicator + Revert button */}
+                        {asset.isTrimmed && (
+                          <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-2 px-3 flex items-center justify-between mb-2.5 text-xs">
+                            <span className="text-emerald-800 font-semibold flex items-center space-x-1.5 truncate">
+                              <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                              <span className="truncate">Trimmed ({asset.trimmedWidth} × {asset.trimmedHeight} px)</span>
+                            </span>
+                            {onRevertAsset && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRevertAsset(asset.id);
+                                }}
+                                className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline ml-2 flex-shrink-0 cursor-pointer"
+                              >
+                                Revert
+                              </button>
+                            )}
+                          </div>
+                        )}
 
                         {/* Bottom Action buttons: [✎ Edit] and [🗑] */}
                         <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>

@@ -51,7 +51,7 @@ export async function inspectAlphaTransparency(img: HTMLImageElement): Promise<{
 export async function calculateAlphaBoundingBox(
   img: HTMLImageElement,
   alphaThreshold: number = 8,
-  paddingPx: number = 2
+  paddingPx: number = 4
 ): Promise<CropBox> {
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;

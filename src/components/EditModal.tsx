@@ -650,7 +650,7 @@ export const EditModal: React.FC<EditModalProps> = ({
     setCurrentUrl(newUrl);
   };
 
-  const handleUndo = () => {
+  const handleUndo = async () => {
     if (historyIndex > 0) {
       const prevUrl = history[historyIndex - 1];
       setHistoryIndex(historyIndex - 1);
@@ -659,10 +659,16 @@ export const EditModal: React.FC<EditModalProps> = ({
       setStrokePreviewUrl(null);
       setHalftoneBaseUrl(prevUrl);
       setHalftonePreviewUrl(null);
+      try {
+        const img = await loadImage(prevUrl);
+        setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+        const box = await calculateAlphaBoundingBox(img, 8, paddingPx);
+        setEmptyPercent(box.emptyPercent);
+      } catch (e) {}
     }
   };
 
-  const handleRedo = () => {
+  const handleRedo = async () => {
     if (historyIndex < history.length - 1) {
       const nextIndex = historyIndex + 1;
       const nextUrl = history[nextIndex];
@@ -672,10 +678,16 @@ export const EditModal: React.FC<EditModalProps> = ({
       setStrokePreviewUrl(null);
       setHalftoneBaseUrl(nextUrl);
       setHalftonePreviewUrl(null);
+      try {
+        const img = await loadImage(nextUrl);
+        setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+        const box = await calculateAlphaBoundingBox(img, 8, paddingPx);
+        setEmptyPercent(box.emptyPercent);
+      } catch (e) {}
     }
   };
 
-  const handleRevertOriginal = () => {
+  const handleRevertOriginal = async () => {
     pushHistory(currentAsset.originalUrl);
     setCurrentUrl(currentAsset.originalUrl);
     setStrokeBaseUrl(currentAsset.originalUrl);
@@ -687,10 +699,17 @@ export const EditModal: React.FC<EditModalProps> = ({
     setUpscaledUrl(null);
     setUpscaledDims(null);
     setUpscaleError(null);
-    setImageNaturalSize({
-      width: currentAsset.originalWidth || 1000,
-      height: currentAsset.originalHeight || 1000
-    });
+    try {
+      const img = await loadImage(currentAsset.originalUrl);
+      setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+      const box = await calculateAlphaBoundingBox(img, 8, paddingPx);
+      setEmptyPercent(box.emptyPercent);
+    } catch (e) {
+      setImageNaturalSize({
+        width: currentAsset.originalWidth || 1000,
+        height: currentAsset.originalHeight || 1000
+      });
+    }
   };
 
   // --- ACTIONS ---
@@ -787,14 +806,21 @@ export const EditModal: React.FC<EditModalProps> = ({
     }
   };
 
-  // 6. Auto-Trim
+  // 6. Auto-Trim in Crop & Clean: Snaps crop box to visible artwork boundaries and updates waste %
   const handleAutoTrim = async () => {
     setIsProcessing(true);
     try {
       const img = await loadImage(currentUrl);
       const box = await calculateAlphaBoundingBox(img, 8, paddingPx);
-      const croppedUrl = await cropImageToBoundingBox(img, box);
-      pushHistory(croppedUrl);
+      setEmptyPercent(box.emptyPercent);
+      if (box.width > 0 && box.height > 0 && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        setCropBox({
+          x: Math.max(0, box.minX / img.naturalWidth),
+          y: Math.max(0, box.minY / img.naturalHeight),
+          width: Math.min(1, box.width / img.naturalWidth),
+          height: Math.min(1, box.height / img.naturalHeight)
+        });
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -852,8 +878,8 @@ export const EditModal: React.FC<EditModalProps> = ({
       startX: e.clientX,
       startY: e.clientY,
       box: { ...cropBox },
-      containerWidth: Math.max(10, rect.width - 16),
-      containerHeight: Math.max(10, rect.height - 16)
+      containerWidth: Math.max(10, rect.width),
+      containerHeight: Math.max(10, rect.height)
     };
   };
 
@@ -893,6 +919,50 @@ export const EditModal: React.FC<EditModalProps> = ({
           newY = Math.max(0, Math.min(maxTop, box.y + dy));
           newH = box.height - (newY - box.y);
         }
+
+        // Enforce aspect ratio lock during resize if preset is selected
+        if (cropAspectRatio !== 'free') {
+          const imgW = imageNaturalSize.width || 1;
+          const imgH = imageNaturalSize.height || 1;
+          let targetRatio = 1;
+          if (cropAspectRatio === '1:1') targetRatio = 1;
+          else if (cropAspectRatio === '4:3') targetRatio = 4 / 3;
+          else if (cropAspectRatio === '16:9') targetRatio = 16 / 9;
+          else if (cropAspectRatio === 'orig') targetRatio = imgW / imgH;
+
+          // targetRatio = (newW * imgW) / (newH * imgH) => K = targetRatio * (imgH / imgW)
+          const K = targetRatio * (imgH / imgW);
+
+          if (action === 'e' || action === 'w') {
+            newH = Math.max(minSize, Math.min(1, newW / K));
+            newW = newH * K;
+            newY = Math.max(0, Math.min(1 - newH, box.y + (box.height - newH) / 2));
+          } else if (action === 's' || action === 'n') {
+            newW = Math.max(minSize, Math.min(1, newH * K));
+            newH = newW / K;
+            newX = Math.max(0, Math.min(1 - newW, box.x + (box.width - newW) / 2));
+          } else {
+            // Corner handles
+            const constrainedH = newW / K;
+            if (action.includes('s')) {
+              if (box.y + constrainedH <= 1) {
+                newH = constrainedH;
+              } else {
+                newH = 1 - box.y;
+                newW = newH * K;
+              }
+            } else if (action.includes('n')) {
+              if (box.y + box.height - constrainedH >= 0) {
+                newH = constrainedH;
+                newY = box.y + box.height - newH;
+              } else {
+                newH = box.y + box.height;
+                newY = 0;
+                newW = newH * K;
+              }
+            }
+          }
+        }
       }
 
       setCropBox({ x: newX, y: newY, width: newW, height: newH });
@@ -908,7 +978,7 @@ export const EditModal: React.FC<EditModalProps> = ({
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, []);
+  }, [cropAspectRatio, imageNaturalSize]);
 
   const handleApplyManualCrop = async () => {
     setIsProcessing(true);
@@ -928,7 +998,12 @@ export const EditModal: React.FC<EditModalProps> = ({
       ctx.drawImage(img, pixelX, pixelY, pixelW, pixelH, 0, 0, pixelW, pixelH);
       const croppedUrl = canvas.toDataURL('image/png');
       pushHistory(croppedUrl);
-      setCropBox({ x: 0.04, y: 0.04, width: 0.92, height: 0.92 });
+      setImageNaturalSize({ width: pixelW, height: pixelH });
+      setCropBox({ x: 0, y: 0, width: 1, height: 1 });
+
+      const croppedImg = await loadImage(croppedUrl);
+      const newBox = await calculateAlphaBoundingBox(croppedImg, 8, paddingPx);
+      setEmptyPercent(newBox.emptyPercent);
     } catch (err) {
       console.error(err);
     } finally {
@@ -940,12 +1015,15 @@ export const EditModal: React.FC<EditModalProps> = ({
     try {
       const img = await loadImage(currentUrl);
       const box = await calculateAlphaBoundingBox(img, 8, paddingPx);
-      setCropBox({
-        x: Math.max(0, box.minX / img.naturalWidth),
-        y: Math.max(0, box.minY / img.naturalHeight),
-        width: Math.min(1, box.width / img.naturalWidth),
-        height: Math.min(1, box.height / img.naturalHeight)
-      });
+      setEmptyPercent(box.emptyPercent);
+      if (box.width > 0 && box.height > 0 && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        setCropBox({
+          x: Math.max(0, box.minX / img.naturalWidth),
+          y: Math.max(0, box.minY / img.naturalHeight),
+          width: Math.min(1, box.width / img.naturalWidth),
+          height: Math.min(1, box.height / img.naturalHeight)
+        });
+      }
     } catch (err) {
       console.error(err);
     }
@@ -1341,9 +1419,20 @@ export const EditModal: React.FC<EditModalProps> = ({
       const newWidth = img.naturalWidth;
       const newHeight = img.naturalHeight;
 
-      // Recalculate effective DPI based on physical target print width on gang sheet
-      const targetWidthMm = currentAsset.targetWidthMm || 100;
-      const effectiveDpi = Math.round(newWidth / (targetWidthMm / 25.4));
+      // Scaling factor compared to original uploaded asset so cropped images don't stretch
+      const oldOrigW = currentAsset.originalWidth || newWidth;
+      const oldOrigH = currentAsset.originalHeight || newHeight;
+      const scaleX = oldOrigW > 0 ? (newWidth / oldOrigW) : 1;
+      const scaleY = oldOrigH > 0 ? (newHeight / oldOrigH) : 1;
+
+      // Recalculate target print dimensions so cropped image doesn't stretch or keep empty space
+      const newTargetWidth = parseFloat(((currentAsset.targetWidth || 5) * scaleX).toFixed(2));
+      const newTargetHeight = parseFloat(((currentAsset.targetHeight || 5) * scaleY).toFixed(2));
+      const newTargetWidthMm = (currentAsset.targetWidthMm || 100) * scaleX;
+      const newTargetHeightMm = (currentAsset.targetHeightMm || 100) * scaleY;
+
+      const newRatio = (newWidth > 0 && newHeight > 0) ? (newWidth / newHeight) : 1;
+      const effectiveDpi = currentAsset.effectiveDpi || Math.round(newWidth / (newTargetWidthMm / 25.4));
 
       onSave({
         ...currentAsset,
@@ -1355,13 +1444,25 @@ export const EditModal: React.FC<EditModalProps> = ({
         trimmedHeight: newHeight,
         originalWidth: newWidth,
         originalHeight: newHeight,
-        originalAspectRatio: (newWidth > 0 && newHeight > 0) ? (newWidth / newHeight) : 1,
+        originalAspectRatio: newRatio,
         aspectLocked: true,
-        lockedRatio: (newWidth > 0 && newHeight > 0) ? (newWidth / newHeight) : 1,
+        lockedRatio: newRatio,
+        targetWidth: newTargetWidth,
+        targetHeight: newTargetHeight,
+        targetWidthMm: newTargetWidthMm,
+        targetHeightMm: newTargetHeightMm,
         effectiveDpi: effectiveDpi,
         cropBox: box,
         isTrimmed: finalUrl !== currentAsset.originalUrl && box.emptyPercent < 5,
-        isBgRemoved: currentAsset.isBgRemoved
+        isBgRemoved: currentAsset.isBgRemoved,
+        initialOriginalWidth: currentAsset.initialOriginalWidth || currentAsset.originalWidth,
+        initialOriginalHeight: currentAsset.initialOriginalHeight || currentAsset.originalHeight,
+        initialOriginalAspectRatio: currentAsset.initialOriginalAspectRatio || currentAsset.originalAspectRatio,
+        initialTargetWidth: currentAsset.initialTargetWidth || currentAsset.targetWidth,
+        initialTargetHeight: currentAsset.initialTargetHeight || currentAsset.targetHeight,
+        initialTargetWidthMm: currentAsset.initialTargetWidthMm || currentAsset.targetWidthMm,
+        initialTargetHeightMm: currentAsset.initialTargetHeightMm || currentAsset.targetHeightMm,
+        initialCropBox: currentAsset.initialCropBox || currentAsset.cropBox
       });
       onClose();
     } catch (err) {
@@ -1835,9 +1936,9 @@ export const EditModal: React.FC<EditModalProps> = ({
                     className="max-h-[min(500px,calc(100vh-320px))] max-w-full w-auto h-auto object-contain block pointer-events-none select-none drop-shadow-sm"
                   />
 
-                  {/* Interactive 8-Handle Crop Box Overlay (Exact match to media_1793876290534_2a9a2550.jpg) */}
+                  {/* Interactive 8-Handle Crop Box Overlay */}
                   {activeTool === 'crop-clean' && (
-                    <div className="absolute inset-2 pointer-events-auto select-none">
+                    <div className="absolute inset-0 pointer-events-auto select-none">
                       {/* Dimmed Outside Shading */}
                       <div
                         className="absolute left-0 top-0 right-0 bg-black/40 pointer-events-none transition-all duration-75"

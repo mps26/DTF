@@ -47,6 +47,14 @@ export interface ArtworkAsset {
   status: 'uploaded' | 'processing' | 'ready' | 'review_required' | 'warning' | 'failed';
   warningMessage?: string;
   visible?: boolean;
+  initialOriginalWidth?: number;
+  initialOriginalHeight?: number;
+  initialOriginalAspectRatio?: number;
+  initialTargetWidth?: number;
+  initialTargetHeight?: number;
+  initialTargetWidthMm?: number;
+  initialTargetHeightMm?: number;
+  initialCropBox?: CropBox | null;
 }
 
 export type PrintType = 'dtf' | 'uvdtf';
