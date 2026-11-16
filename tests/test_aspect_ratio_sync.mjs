@@ -24,8 +24,8 @@ function unitToMm(value, unit) {
 function updateAsset(asset, updates, unit = 'inch') {
   const updated = { ...asset, ...updates };
 
-  const isLocked = updates.aspectLocked !== undefined ? updates.aspectLocked : (asset.aspectLocked !== false);
-  updated.aspectLocked = isLocked;
+  // Lock Aspect Ratio must always be enabled across the application (user cannot disable it)
+  updated.aspectLocked = true;
 
   const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : (asset.lockedRatio || 1));
   updated.originalAspectRatio = origRatio;
@@ -49,24 +49,22 @@ function updateAsset(asset, updates, unit = 'inch') {
     updated.targetWidth = clampedW;
     updated.targetWidthMm = unitToMm(clampedW, unit);
 
-    if (isLocked) {
-      const rawH = clampedW / origRatio;
-      const clampedH = Math.max(0.01, parseFloat(rawH.toFixed(precision)));
-      updated.targetHeight = clampedH;
-      updated.targetHeightMm = unitToMm(clampedH, unit);
-    }
+    // newHeight = newWidth / originalAspectRatio (Lock Aspect Ratio always enforced)
+    const rawH = clampedW / origRatio;
+    const clampedH = Math.max(0.01, parseFloat(rawH.toFixed(precision)));
+    updated.targetHeight = clampedH;
+    updated.targetHeightMm = unitToMm(clampedH, unit);
   } else if (updates.targetHeight !== undefined) {
     const rawH = Math.max(0.01, updates.targetHeight);
     const clampedH = parseFloat(rawH.toFixed(precision));
     updated.targetHeight = clampedH;
     updated.targetHeightMm = unitToMm(clampedH, unit);
 
-    if (isLocked) {
-      const rawW = clampedH * origRatio;
-      const clampedW = Math.max(0.01, parseFloat(rawW.toFixed(precision)));
-      updated.targetWidth = clampedW;
-      updated.targetWidthMm = unitToMm(clampedW, unit);
-    }
+    // newWidth = newHeight * originalAspectRatio (Lock Aspect Ratio always enforced)
+    const rawW = clampedH * origRatio;
+    const clampedW = Math.max(0.01, parseFloat(rawW.toFixed(precision)));
+    updated.targetWidth = clampedW;
+    updated.targetWidthMm = unitToMm(clampedW, unit);
   }
 
   return updated;
@@ -115,33 +113,28 @@ for (const tc of testCases) {
   assert.strictEqual(actual, tc.expected, `Mismatch on ${tc.action}: got ${actual}, expected ${tc.expected}`);
 }
 
-// Test Lock OFF behavior
-console.log('\n3. Testing Lock OFF (Independent Dimension Adjustments):');
+// Test Lock Always ON (Cannot be disabled)
+console.log('\n3. Testing Lock Aspect Ratio Permanent Enforcement (User Cannot Disable):');
 asset1 = updateAsset(asset1, { aspectLocked: false });
+console.log(`   Attempted to set aspectLocked: false => asset1.aspectLocked remains: ${asset1.aspectLocked} (Expected: true)`);
+assert.strictEqual(asset1.aspectLocked, true, 'aspectLocked must remain true permanently');
 
-const heightBeforeWidthChange = asset1.targetHeight;
-asset1 = updateAsset(asset1, { targetWidth: 15 });
-console.log(`   Lock OFF, Width changed to 15 => Height remains: ${asset1.targetHeight} (Expected: ${heightBeforeWidthChange})`);
-assert.strictEqual(asset1.targetWidth, 15);
-assert.strictEqual(asset1.targetHeight, heightBeforeWidthChange);
-
-const widthBeforeHeightChange = asset1.targetWidth;
-asset1 = updateAsset(asset1, { targetHeight: 20 });
-console.log(`   Lock OFF, Height changed to 20 => Width remains: ${asset1.targetWidth} (Expected: ${widthBeforeHeightChange})`);
-assert.strictEqual(asset1.targetHeight, 20);
-assert.strictEqual(asset1.targetWidth, widthBeforeHeightChange);
-
-// Re-enabling Lock Aspect Ratio
-console.log('\n4. Testing Lock Re-enable & Subsequent Changes:');
-asset1 = updateAsset(asset1, { aspectLocked: true });
-console.log(`   Re-enabled Lock => Preserves current dimensions: ${asset1.targetWidth}" × ${asset1.targetHeight}"`);
-assert.strictEqual(asset1.targetWidth, 15);
-assert.strictEqual(asset1.targetHeight, 20);
-
-// Subsequent change MUST use original aspect ratio (1296 / 1214 = 1.0675), NOT the resized 15/20!
+// Verify that width change continues to proportionally adjust height
 asset1 = updateAsset(asset1, { targetWidth: 8 });
-console.log(`   Subsequent Width = 8 => Height = ${asset1.targetHeight} (Expected: 7.49 using original aspect ratio)`);
+console.log(`   Width changed to 8 => Height automatically adjusts to: ${asset1.targetHeight} (Expected: 7.49)`);
 assert.strictEqual(asset1.targetHeight, 7.49);
+
+// Verify that height change continues to proportionally adjust width
+asset1 = updateAsset(asset1, { targetHeight: 5 });
+console.log(`   Height changed to 5 => Width automatically adjusts to: ${asset1.targetWidth} (Expected: 5.34)`);
+assert.strictEqual(asset1.targetWidth, 5.34);
+
+// SECTION 4: Original Aspect Ratio Preservation
+console.log('\n4. Testing Original Aspect Ratio Immutability across Repeated Resizes:');
+// Subsequent change MUST use original aspect ratio (1296 / 1214 = 1.0675), NOT the resized dimensions!
+asset1 = updateAsset(asset1, { targetWidth: 4 });
+console.log(`   Subsequent Width = 4 => Height = ${asset1.targetHeight} (Expected: 3.75 using original aspect ratio)`);
+assert.strictEqual(asset1.targetHeight, 3.75);
 
 // SECTION 4: Individual Image State Management
 console.log('\n5. Testing Multiple Uploaded Images Independence:');
@@ -165,8 +158,8 @@ assert.strictEqual(asset2.targetHeight, 6);
 
 // Verify Asset 1 is completely unaffected
 console.log(`   Verify Asset 1 remains unaffected: Width = ${asset1.targetWidth}, Height = ${asset1.targetHeight}`);
-assert.strictEqual(asset1.targetWidth, 8);
-assert.strictEqual(asset1.targetHeight, 7.49);
+assert.strictEqual(asset1.targetWidth, 4);
+assert.strictEqual(asset1.targetHeight, 3.75);
 
 // Change dimensions of Asset 1
 asset1 = updateAsset(asset1, { targetHeight: 5 });

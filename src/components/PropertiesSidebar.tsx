@@ -3,7 +3,6 @@ import {
   Sliders,
   Maximize2,
   Lock,
-  Unlock,
   RotateCw,
   Scissors,
   Sparkles,
@@ -163,13 +162,10 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                     if (isNaN(val) || val <= 0) return;
                     const precision = settings.unit === 'meter' ? 4 : 2;
                     const clampedW = parseFloat(val.toFixed(precision));
-                    if (selectedAsset.aspectLocked !== false) {
-                      const origRatio = selectedAsset.originalAspectRatio || (selectedAsset.originalWidth > 0 && selectedAsset.originalHeight > 0 ? (selectedAsset.originalWidth / selectedAsset.originalHeight) : 1);
-                      const newH = parseFloat((clampedW / origRatio).toFixed(precision));
-                      onUpdateAsset(selectedAsset.id, { targetWidth: clampedW, targetHeight: newH });
-                    } else {
-                      onUpdateAsset(selectedAsset.id, { targetWidth: clampedW });
-                    }
+                    // Lock Aspect Ratio always enforced using original uploaded aspect ratio
+                    const origRatio = selectedAsset.originalAspectRatio || (selectedAsset.originalWidth > 0 && selectedAsset.originalHeight > 0 ? (selectedAsset.originalWidth / selectedAsset.originalHeight) : 1);
+                    const newH = parseFloat((clampedW / origRatio).toFixed(precision));
+                    onUpdateAsset(selectedAsset.id, { targetWidth: clampedW, targetHeight: newH });
                   }}
                   className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-[#EF7F1A]"
                 />
@@ -188,13 +184,10 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                     if (isNaN(val) || val <= 0) return;
                     const precision = settings.unit === 'meter' ? 4 : 2;
                     const clampedH = parseFloat(val.toFixed(precision));
-                    if (selectedAsset.aspectLocked !== false) {
-                      const origRatio = selectedAsset.originalAspectRatio || (selectedAsset.originalWidth > 0 && selectedAsset.originalHeight > 0 ? (selectedAsset.originalWidth / selectedAsset.originalHeight) : 1);
-                      const newW = parseFloat((clampedH * origRatio).toFixed(precision));
-                      onUpdateAsset(selectedAsset.id, { targetHeight: clampedH, targetWidth: newW });
-                    } else {
-                      onUpdateAsset(selectedAsset.id, { targetHeight: clampedH });
-                    }
+                    // Lock Aspect Ratio always enforced using original uploaded aspect ratio
+                    const origRatio = selectedAsset.originalAspectRatio || (selectedAsset.originalWidth > 0 && selectedAsset.originalHeight > 0 ? (selectedAsset.originalWidth / selectedAsset.originalHeight) : 1);
+                    const newW = parseFloat((clampedH * origRatio).toFixed(precision));
+                    onUpdateAsset(selectedAsset.id, { targetHeight: clampedH, targetWidth: newW });
                   }}
                   className="w-full bg-[#0b0e1a] border border-slate-800 rounded px-2 py-1 text-xs text-white font-mono focus:border-[#EF7F1A]"
                 />
@@ -203,21 +196,13 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
 
             {/* Lock Aspect Ratio & 90 Rotation */}
             <div className="flex items-center justify-between pt-1">
-              <button
-                onClick={() => {
-                  onUpdateAsset(selectedAsset.id, {
-                    aspectLocked: selectedAsset.aspectLocked === false
-                  });
-                }}
-                className="flex items-center space-x-1.5 text-xs text-slate-300 hover:text-white"
+              <div
+                className="flex items-center space-x-1.5 text-xs text-[#EF7F1A] font-medium cursor-default select-none"
+                title="Proportions are permanently locked to preserve artwork proportions"
               >
-                {selectedAsset.aspectLocked !== false ? (
-                  <Lock className="w-3.5 h-3.5 text-[#EF7F1A]" />
-                ) : (
-                  <Unlock className="w-3.5 h-3.5 text-slate-500" />
-                )}
-                <span>{selectedAsset.aspectLocked !== false ? 'Lock Proportions' : 'Unlock Proportions'}</span>
-              </button>
+                <Lock className="w-3.5 h-3.5 text-[#EF7F1A]" />
+                <span>Locked Proportions</span>
+              </div>
 
               <button
                 onClick={() =>

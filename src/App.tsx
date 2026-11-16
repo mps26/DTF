@@ -264,9 +264,8 @@ export const App: React.FC = () => {
         if (asset.id !== id) return asset;
         const updated = { ...asset, ...updates };
 
-        // Maintain independent aspectLocked state (defaults to true)
-        const isLocked = updates.aspectLocked !== undefined ? updates.aspectLocked : (asset.aspectLocked !== false);
-        updated.aspectLocked = isLocked;
+        // Lock Aspect Ratio must always be enabled across the application (user cannot disable it)
+        updated.aspectLocked = true;
 
         // Use original aspect ratio calculated strictly from original uploaded image dimensions
         const origRatio = asset.originalAspectRatio || (asset.originalWidth > 0 && asset.originalHeight > 0 ? (asset.originalWidth / asset.originalHeight) : (asset.lockedRatio || 1));
@@ -294,13 +293,11 @@ export const App: React.FC = () => {
           updated.targetWidth = clampedW;
           updated.targetWidthMm = unitToMm(clampedW, settings.unit);
 
-          if (isLocked) {
-            // newHeight = newWidth / originalAspectRatio
-            const rawH = clampedW / origRatio;
-            const clampedH = Math.max(0.01, parseFloat(rawH.toFixed(precision)));
-            updated.targetHeight = clampedH;
-            updated.targetHeightMm = unitToMm(clampedH, settings.unit);
-          }
+          // newHeight = newWidth / originalAspectRatio (Lock Aspect Ratio always enforced)
+          const rawH = clampedW / origRatio;
+          const clampedH = Math.max(0.01, parseFloat(rawH.toFixed(precision)));
+          updated.targetHeight = clampedH;
+          updated.targetHeightMm = unitToMm(clampedH, settings.unit);
         }
         // Scenario B: User changes Height
         else if (updates.targetHeight !== undefined) {
@@ -309,13 +306,11 @@ export const App: React.FC = () => {
           updated.targetHeight = clampedH;
           updated.targetHeightMm = unitToMm(clampedH, settings.unit);
 
-          if (isLocked) {
-            // newWidth = newHeight * originalAspectRatio
-            const rawW = clampedH * origRatio;
-            const clampedW = Math.max(0.01, parseFloat(rawW.toFixed(precision)));
-            updated.targetWidth = clampedW;
-            updated.targetWidthMm = unitToMm(clampedW, settings.unit);
-          }
+          // newWidth = newHeight * originalAspectRatio (Lock Aspect Ratio always enforced)
+          const rawW = clampedH * origRatio;
+          const clampedW = Math.max(0.01, parseFloat(rawW.toFixed(precision)));
+          updated.targetWidth = clampedW;
+          updated.targetWidthMm = unitToMm(clampedW, settings.unit);
         }
 
         const px = updated.trimmedWidth || updated.originalWidth;
