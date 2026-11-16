@@ -831,7 +831,7 @@ export const App: React.FC = () => {
 
   if (navTab === 'landing') {
     return (
-      <div className="min-h-screen w-full flex flex-col bg-[#F3EBDD] text-[#204563] overflow-x-hidden font-sans selection:bg-[#EF7F1A] selection:text-[#204563]">
+      <div className="h-screen w-full flex flex-col bg-[#F3EBDD] text-[#204563] overflow-hidden font-sans selection:bg-[#EF7F1A] selection:text-[#204563]">
         <LandingPage
           currentUser={currentUser}
           onOpenAuth={(mode) => {
