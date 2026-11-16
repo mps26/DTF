@@ -33,6 +33,7 @@ import {
   cropImageToBoundingBox,
   removeImageBackground
 } from './utils/imageProcessing';
+import { isPdfFile, renderPdfPages } from './utils/pdfProcessor';
 import { exportHighResolutionPng, exportSingleSheetPng, exportJobTicketJson } from './utils/exportRenderer';
 import { Layers, Copy } from 'lucide-react';
 import { UserProfile } from './types/auth';
@@ -393,18 +394,108 @@ export const App: React.FC = () => {
     }
   };
 
-  // File Upload Handling
+  // File Upload Handling (Supports PNG, JPG, JPEG, WEBP, SVG, and PDF up to 500 MB)
   const handleFilesSelected = async (fileList: FileList | File[]) => {
     const files = Array.from(fileList);
     const newAssets: ArtworkAsset[] = [];
+    const MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB
 
     for (const file of files) {
+      // 1. Max file size check: 500 MB
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        showNotification(
+          `File "${file.name}" exceeds the maximum allowed size of 500 MB (${(file.size / (1024 * 1024)).toFixed(1)} MB)`,
+          'warning'
+        );
+        continue;
+      }
+
+      // 2. PDF Upload Processing
+      if (isPdfFile(file)) {
+        try {
+          showNotification(`Processing PDF "${file.name}"...`, 'info');
+          const pdfPages = await renderPdfPages(file);
+
+          for (const page of pdfPages) {
+            const processedImg = await loadImage(page.dataUrl);
+            const { hasAlpha } = await inspectAlphaTransparency(processedImg);
+            const cropBox = await calculateAlphaBoundingBox(processedImg, 8, 2);
+
+            const originalWidth = page.widthPx;
+            const originalHeight = page.heightPx;
+            const originalAspectRatio = page.aspectRatio;
+
+            // Determine initial target dimensions in inches:
+            // Use intrinsic physical PDF dimensions if within sensible printable range, else fit within 22" roll
+            let defaultWidthInches = page.intrinsicWidthInches;
+            let defaultHeightInches = page.intrinsicHeightInches;
+
+            const maxRollW = 22;
+            if (defaultWidthInches > maxRollW) {
+              defaultWidthInches = maxRollW;
+              defaultHeightInches = Math.round((maxRollW / originalAspectRatio) * 100) / 100;
+            } else if (defaultWidthInches < 1) {
+              defaultWidthInches = 2.18;
+              defaultHeightInches = Math.round((2.18 / originalAspectRatio) * 100) / 100;
+            }
+
+            const targetWMm = unitToMm(defaultWidthInches, 'inch');
+            const targetHMm = unitToMm(defaultHeightInches, 'inch');
+
+            const effectiveDpi = calculateEffectiveDpi(originalWidth, targetWMm);
+            const dpiStatus = getDpiStatus(effectiveDpi);
+
+            const pageFilename = page.totalPages > 1
+              ? `${file.name.replace(/\.pdf$/i, '')} (Page ${page.pageNumber}).pdf`
+              : file.name;
+
+            const newAsset: ArtworkAsset = {
+              id: `asset-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              filename: pageFilename,
+              fileType: 'pdf',
+              fileSize: file.size,
+              originalWidth,
+              originalHeight,
+              originalAspectRatio,
+              hasAlpha,
+              originalUrl: page.dataUrl,
+              processedUrl: page.dataUrl,
+              trimmedWidth: originalWidth,
+              trimmedHeight: originalHeight,
+              cropBox,
+              isTrimmed: false,
+              isBgRemoved: false,
+              targetWidth: Math.round(mmToUnit(targetWMm, settings.unit) * 100) / 100,
+              targetHeight: Math.round(mmToUnit(targetHMm, settings.unit) * 100) / 100,
+              targetWidthMm: targetWMm,
+              targetHeightMm: targetHMm,
+              aspectLocked: true,
+              lockedRatio: originalAspectRatio,
+              copies: 1,
+              allowRotation: false,
+              effectiveDpi,
+              dpiStatus,
+              status: 'ready'
+            };
+
+            newAssets.push(newAsset);
+          }
+        } catch (err: any) {
+          console.error('Failed to parse uploaded PDF', err);
+          showNotification(`Failed to process PDF "${file.name}": ${err?.message || 'Invalid or corrupted PDF'}`, 'warning');
+        }
+        continue;
+      }
+
+      // 3. Image Upload Processing (PNG, JPG, JPEG, WEBP, SVG)
       try {
         const isJpeg = file.type.includes('jpeg') || file.type.includes('jpg');
         const fileType: ArtworkAsset['fileType'] = file.type.includes('png')
           ? 'png'
           : file.type.includes('webp')
           ? 'webp'
+          : file.type.includes('svg')
+          ? 'svg'
           : 'jpeg';
 
         const dataUrl = await new Promise<string>((resolve) => {

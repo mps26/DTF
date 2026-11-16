@@ -19,7 +19,7 @@ export interface CropBox {
 export interface ArtworkAsset {
   id: string;
   filename: string;
-  fileType: 'png' | 'jpg' | 'jpeg' | 'webp' | 'svg';
+  fileType: 'png' | 'jpg' | 'jpeg' | 'webp' | 'svg' | 'pdf';
   fileSize: number;
   originalWidth: number;
   originalHeight: number;

@@ -151,7 +151,7 @@ export const AssetSidebar: React.FC<AssetSidebarProps> = ({
             ref={fileInputRef}
             type="file"
             multiple={mode === 'multiple'}
-            accept="image/png,image/jpeg,image/jpg,image/webp,.png,.jpg,.jpeg,.webp"
+            accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf,.png,.jpg,.jpeg,.webp,.pdf"
             className="hidden"
             onChange={(e) => {
               if (e.target.files) onFilesSelected(e.target.files);

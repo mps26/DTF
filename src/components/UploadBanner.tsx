@@ -89,7 +89,7 @@ export const UploadBanner: React.FC<UploadBannerProps> = ({
           ref={fileInputRef}
           type="file"
           multiple={mode === 'multiple'}
-          accept="image/png,image/jpeg,image/jpg,image/webp,.png,.jpg,.jpeg,.webp"
+          accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf,.png,.jpg,.jpeg,.webp,.pdf"
           className="hidden"
           onChange={handleFileChange}
         />
@@ -101,10 +101,10 @@ export const UploadBanner: React.FC<UploadBannerProps> = ({
           </div>
           <div>
             <div className="font-bold text-[#204563] text-base group-hover:text-[#EF7F1A] transition-colors">
-              Drop images here or click to browse
+              Drop designs or PDFs here or click to browse
             </div>
             <div className="text-xs text-[#526A7B] mt-0.5 font-medium">
-              PNG, JPG, JPEG • Auto background removal & crop • Max 100 MB each
+              PNG, JPG, JPEG, PDF • Auto background removal & crop • Max 500 MB each
             </div>
           </div>
         </div>

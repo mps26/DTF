@@ -730,13 +730,24 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               {/* Upload Dropzone Box */}
               <div
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (e.dataTransfer?.files?.length) {
+                    onFilesSelected(e.dataTransfer.files);
+                  }
+                }}
                 className="border-2 border-dashed border-[#E5D9C8] hover:border-[#EF7F1A] bg-[#FAF7F1] hover:bg-[#F3EBDD]/60 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-1.5"
               >
                 <input
                   ref={fileInputRef}
                   type="file"
                   multiple={settings.mode === 'multiple'}
-                  accept="image/png,image/jpeg,image/jpg,image/webp,.png,.jpg,.jpeg,.webp"
+                  accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf,.png,.jpg,.jpeg,.webp,.pdf"
                   className="hidden"
                   onChange={(e) => {
                     if (e.target.files) onFilesSelected(e.target.files);
@@ -752,7 +763,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                     Drop more designs here or click to browse
                   </div>
                   <div className="text-[10px] text-[#526A7B] font-medium mt-0.5">
-                    PNG, JPG, JPEG, PDF • Max 100 MB each
+                    PNG, JPG, JPEG, PDF • Max 500 MB each
                   </div>
                 </div>
 

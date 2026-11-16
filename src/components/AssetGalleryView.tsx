@@ -141,7 +141,7 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
           ref={fileInputRef}
           type="file"
           multiple
-          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml,application/pdf,.png,.jpg,.jpeg,.webp,.pdf"
           onChange={(e) => {
             if (e.target.files && e.target.files.length > 0) {
               onAddFiles(e.target.files);
