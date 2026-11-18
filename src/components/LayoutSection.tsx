@@ -418,12 +418,6 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               {assets.map((asset, index) => {
                 const isSelected = selectedAssetId === asset.id;
                 const isCollapsed = collapsedCardIds[asset.id] ?? false;
-                const actualPrintW = asset.cropBox
-                  ? (asset.targetWidth * (asset.cropBox.width / asset.originalWidth)).toFixed(2)
-                  : asset.targetWidth.toFixed(2);
-                const actualPrintH = asset.cropBox
-                  ? (asset.targetHeight * (asset.cropBox.height / asset.originalHeight)).toFixed(2)
-                  : asset.targetHeight.toFixed(2);
 
                 const currentWidthVal = widthInputs[asset.id] !== undefined
                   ? widthInputs[asset.id]
@@ -631,18 +625,6 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                         <div className="text-[11px] sm:text-xs text-[#526A7B] font-medium mb-2">
                           Original: {asset.originalWidth} × {asset.originalHeight} px
                         </div>
-
-                        {/* Empty Space Note matching Screenshot 3 */}
-                        {asset.cropBox && asset.cropBox.emptyPercent >= 5 && !asset.isTrimmed && (
-                          <div className="bg-[#FEF9EE] border border-[#FDE68A] rounded-xl p-2.5 mb-2 text-xs text-[#78350F] leading-snug">
-                            <div>
-                              Your design prints <span className="font-bold text-[#9A3412]">{actualPrintW} × {actualPrintH} {settings.unit === 'inch' ? 'inches' : settings.unit}</span>
-                            </div>
-                            <div className="text-[#92400E] text-[11px] mt-0.5">
-                              The rest is empty space in the file.
-                            </div>
-                          </div>
-                        )}
 
                         {/* Divider */}
                         <div className="border-t border-[#E5D9C8] my-1.5" />
