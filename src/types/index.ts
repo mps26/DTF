@@ -47,6 +47,8 @@ export interface ArtworkAsset {
   status: 'uploaded' | 'processing' | 'ready' | 'review_required' | 'warning' | 'failed';
   warningMessage?: string;
   visible?: boolean;
+  /** false = kept in the Gallery only; undefined/true = placed on the gang sheet. */
+  onSheet?: boolean;
   initialOriginalWidth?: number;
   initialOriginalHeight?: number;
   initialOriginalAspectRatio?: number;

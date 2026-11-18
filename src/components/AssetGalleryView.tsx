@@ -15,7 +15,9 @@ import {
   Layers,
   Sparkles,
   Maximize2,
-  FileImage
+  FileImage,
+  Check,
+  X
 } from 'lucide-react';
 import { ArtworkAsset } from '../types';
 
@@ -27,7 +29,8 @@ interface AssetGalleryViewProps {
   onDeleteAsset: (id: string) => void;
   onBackToStudio: () => void;
   onNotification: (msg: string) => void;
-  onSetFileSheet?: (assetId: string) => void;
+  /** Adds the given designs to the gang sheet (and opens the sheet). */
+  onSetFileSheet?: (assetIds: string[]) => void;
 }
 
 export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
@@ -43,12 +46,38 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [previewAsset, setPreviewAsset] = useState<ArtworkAsset | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filteredAssets = assets.filter((asset) => {
     return asset.filename.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const totalCopiesOnSheet = assets.reduce((sum, a) => sum + (a.copies || 0), 0);
+  const isOnSheet = (a: ArtworkAsset) => a.onSheet !== false;
+  const totalCopiesOnSheet = assets.filter(isOnSheet).reduce((sum, a) => sum + (a.copies || 0), 0);
+
+  // Multi-select: only ids that still exist count as selected.
+  const selected = assets.filter((a) => selectedIds.has(a.id));
+  const allVisibleSelected = filteredAssets.length > 0 && filteredAssets.every((a) => selectedIds.has(a.id));
+  const toggleSelect = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleSelectAll = () =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) filteredAssets.forEach((a) => next.delete(a.id));
+      else filteredAssets.forEach((a) => next.add(a.id));
+      return next;
+    });
+  const addToSheet = (ids: string[]) => {
+    if (ids.length === 0) return;
+    setSelectedIds(new Set());
+    if (onSetFileSheet) onSetFileSheet(ids);
+    else onBackToStudio();
+  };
   const highDpiCount = assets.filter((a) => (a.effectiveDpi || 300) >= 250).length;
 
   const handleDownloadAsset = async (asset: ArtworkAsset) => {
@@ -170,17 +199,20 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
             />
           </div>
 
-          {/* Center: Upload New Artwork Button */}
-          <div className="flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="px-6 py-2.5 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs rounded-full shadow-md shadow-orange-500/25 flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
-            >
-              <UploadCloud className="w-4 h-4 text-[#204563]" />
-              <span>Upload New Artwork</span>
-            </button>
-          </div>
+          {/* Center: Upload New Artwork Button (only once the gallery has designs;
+              an empty gallery shows "Browse Images to Upload" instead) */}
+          {assets.length > 0 && (
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-6 py-2.5 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs rounded-full shadow-md shadow-orange-500/25 flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
+              >
+                <UploadCloud className="w-4 h-4 text-[#204563]" />
+                <span>Upload New Artwork</span>
+              </button>
+            </div>
+          )}
 
           {/* Quick Stats Pill */}
           <div className="hidden lg:flex items-center space-x-3 text-xs font-bold text-[#526A7B]">
@@ -197,6 +229,52 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
 
         </div>
 
+        {/* Multi-select bar: pick several designs and add them in one step */}
+        {filteredAssets.length > 0 && (
+          <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md rounded-2xl border border-[#E5D9C8] px-4 py-3 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="flex items-center gap-2 text-xs font-bold text-[#204563] cursor-pointer"
+              >
+                <span
+                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                    allVisibleSelected ? 'bg-[#EF7F1A] border-[#EF7F1A]' : 'bg-white border-[#C9B9A0]'
+                  }`}
+                >
+                  {allVisibleSelected && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                </span>
+                <span>{allVisibleSelected ? 'Deselect all' : 'Select all'}</span>
+              </button>
+              <span className="text-xs text-[#526A7B] font-semibold">
+                {selected.length > 0 ? `${selected.length} selected` : 'Tap designs to select them'}
+              </span>
+              {selected.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="flex items-center gap-1 text-[11px] font-bold text-[#526A7B] hover:text-[#204563] cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Clear</span>
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              disabled={selected.length === 0}
+              onClick={() => addToSheet(selected.map((a) => a.id))}
+              className="px-5 py-2.5 bg-[#EF7F1A] hover:bg-[#d96e12] disabled:bg-[#E8DDCA] disabled:text-[#8A9AA8] disabled:shadow-none disabled:cursor-not-allowed text-[#204563] font-black text-xs rounded-xl shadow-md shadow-orange-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <Layers className="w-4 h-4" />
+              <span>
+                {selected.length > 1 ? `Add ${selected.length} Designs to Gang Sheet` : 'Add to Gang Sheet'}
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Artwork Grid */}
         {filteredAssets.length === 0 ? (
           <div className="bg-white rounded-3xl border border-[#E5D9C8] p-12 text-center max-w-xl mx-auto my-12 shadow-xs">
@@ -211,28 +289,37 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
                 ? `No files matching "${searchQuery}". Try a different search query.`
                 : 'Upload transparent PNGs or graphics to start organizing your DTF gang sheet assets.'}
             </p>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="mt-5 px-4 py-2 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs rounded-xl shadow-md shadow-orange-500/25 inline-flex items-center space-x-2 transition-all cursor-pointer"
-            >
-              <UploadCloud className="w-4 h-4 text-[#204563]" />
-              <span>Browse Images to Upload</span>
-            </button>
+            {assets.length === 0 && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-5 px-4 py-2 bg-[#EF7F1A] hover:bg-[#d96e12] text-[#204563] font-black text-xs rounded-xl shadow-md shadow-orange-500/25 inline-flex items-center space-x-2 transition-all cursor-pointer"
+              >
+                <UploadCloud className="w-4 h-4 text-[#204563]" />
+                <span>Browse Images to Upload</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
             {filteredAssets.map((asset) => {
               const isHighDpi = (asset.effectiveDpi || 300) >= 250;
               const isLowDpi = (asset.effectiveDpi || 300) < 150;
+              const isSelected = selectedIds.has(asset.id);
+              const onSheet = isOnSheet(asset);
 
               return (
                 <div
                   key={asset.id}
-                  className="bg-white rounded-2xl border border-[#E5D9C8] overflow-hidden shadow-2xs hover:shadow-md hover:border-[#EF7F1A] transition-all flex flex-col justify-between group"
+                  className={`bg-white rounded-2xl border overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group ${
+                    isSelected ? 'border-[#EF7F1A] ring-2 ring-[#EF7F1A]/40' : 'border-[#E5D9C8] hover:border-[#EF7F1A]'
+                  }`}
                 >
-                  {/* Card Thumbnail Section */}
-                  <div className="relative aspect-square w-full bg-slate-100 flex items-center justify-center p-4 overflow-hidden border-b border-slate-100">
+                  {/* Card Thumbnail Section (click to select) */}
+                  <div
+                    onClick={() => toggleSelect(asset.id)}
+                    className="relative aspect-square w-full bg-slate-100 flex items-center justify-center p-4 overflow-hidden border-b border-slate-100 cursor-pointer"
+                  >
                     {/* Checkerboard Backdrop */}
                     <div
                       className="absolute inset-0"
@@ -268,13 +355,38 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
                       >
                         {asset.effectiveDpi || 300} DPI
                       </span>
+                      {onSheet && (
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border shadow-2xs bg-[#FCE8D5] text-[#204563] border-[#EF7F1A]/40">
+                          On sheet
+                        </span>
+                      )}
                     </div>
+
+                    {/* Selection Checkbox */}
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      aria-label={`Select ${asset.filename}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSelect(asset.id);
+                      }}
+                      className={`absolute top-2.5 right-2.5 z-20 w-6 h-6 rounded-md border-2 flex items-center justify-center shadow-xs transition-colors cursor-pointer ${
+                        isSelected ? 'bg-[#EF7F1A] border-[#EF7F1A]' : 'bg-white/95 border-[#C9B9A0] hover:border-[#EF7F1A]'
+                      }`}
+                    >
+                      {isSelected && <Check className="w-4 h-4 text-white" strokeWidth={3} />}
+                    </button>
 
                     {/* Quick Preview Eye Button */}
                     <button
                       type="button"
-                      onClick={() => setPreviewAsset(asset)}
-                      className="absolute top-2.5 right-2.5 z-20 w-7 h-7 rounded-lg bg-white/90 backdrop-blur-md hover:bg-white text-slate-700 flex items-center justify-center shadow-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewAsset(asset);
+                      }}
+                      className="absolute bottom-2.5 right-2.5 z-20 w-7 h-7 rounded-lg bg-white/90 backdrop-blur-md hover:bg-white text-slate-700 flex items-center justify-center shadow-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                       title="Inspect full image"
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -352,7 +464,14 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
 
                         <button
                           type="button"
-                          onClick={() => onDeleteAsset(asset.id)}
+                          onClick={() => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              next.delete(asset.id);
+                              return next;
+                            });
+                            onDeleteAsset(asset.id);
+                          }}
                           className="w-7 h-7 rounded-lg bg-[#FAF7F1] hover:bg-rose-50 hover:text-rose-600 text-[#526A7B] flex items-center justify-center transition-colors cursor-pointer"
                           title="Remove design"
                         >
@@ -361,19 +480,10 @@ export const AssetGalleryView: React.FC<AssetGalleryViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Set File Sheet Button */}
+                    {/* Set File Sheet Button (single design) */}
                     <button
                       type="button"
-                      onClick={() => {
-                        if ((asset.copies || 0) < 1) {
-                          onUpdateAssetCopies(asset.id, 1);
-                        }
-                        if (onSetFileSheet) {
-                          onSetFileSheet(asset.id);
-                        } else {
-                          onBackToStudio();
-                        }
-                      }}
+                      onClick={() => addToSheet([asset.id])}
                       className="w-full mt-2.5 py-2 px-3 bg-[#FAF7F1] hover:bg-[#EF7F1A] text-[#204563] border border-[#E5D9C8] hover:border-[#EF7F1A] font-black text-xs rounded-xl shadow-2xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer group/btn"
                     >
                       <Layers className="w-3.5 h-3.5 text-[#204563]" />

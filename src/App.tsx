@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import {
   ArtworkAsset,
@@ -40,6 +40,7 @@ import { exportHighResolutionPng, exportSingleSheetPng, exportJobTicketJson } fr
 import { Layers, Copy } from 'lucide-react';
 import { UserProfile } from './types/auth';
 import { getCurrentUser, logoutUser } from './utils/auth';
+import { loadGallery, saveGallery, requestPersistentStorage } from './utils/galleryStore';
 import { LandingPage } from './components/LandingPage';
 import { AuthModal } from './components/AuthModal';
 import { HomeSelectorView } from './components/HomeSelectorView';
@@ -68,6 +69,54 @@ export const App: React.FC = () => {
 
   // START CLEAN: Do not add any demo files by default (Instruction 3)
   const [assets, setAssets] = useState<ArtworkAsset[]>([]);
+
+  // --- Persistent per-user Gallery (IndexedDB in this browser) -----------------
+  // Designs are restored into the Gallery when the user signs in and saved as they
+  // change. Nothing is written until that user's saved gallery has been loaded,
+  // so a slow or failed load can never overwrite what is stored.
+  const assetsRef = useRef(assets);
+  assetsRef.current = assets;
+  const galleryUserRef = useRef<string | null>(null); // user whose gallery is loaded
+  const lastSavedRef = useRef<Map<string, ArtworkAsset>>(new Map());
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
+
+  const persistGallery = useCallback((userId: string, list: ArtworkAsset[]) => {
+    saveChainRef.current = saveChainRef.current
+      .then(() => saveGallery(userId, list, lastSavedRef.current))
+      .catch((err) => console.warn('Could not save gallery', err));
+    return saveChainRef.current;
+  }, []);
+
+  useEffect(() => {
+    const userId = currentUser?.id ?? null;
+    if (!userId || galleryUserRef.current === userId) return;
+    let cancelled = false;
+    requestPersistentStorage();
+    loadGallery(userId)
+      .then((saved) => {
+        if (cancelled) return;
+        // Restored designs go to the Gallery; anything already open stays as it is,
+        // unless it belonged to a different account that was signed in before.
+        const open = galleryUserRef.current && galleryUserRef.current !== userId ? [] : assetsRef.current;
+        const openIds = new Set(open.map((a) => a.id));
+        const restored = saved.filter((a) => !openIds.has(a.id)).map((a) => ({ ...a, onSheet: false }));
+        const merged = [...restored, ...open];
+        lastSavedRef.current = new Map(restored.map((a) => [a.id, a]));
+        galleryUserRef.current = userId;
+        setAssets(merged);
+      })
+      .catch((err) => console.warn('Could not load saved gallery', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    const userId = currentUser?.id;
+    if (!userId || galleryUserRef.current !== userId) return;
+    const timer = setTimeout(() => persistGallery(userId, assets), 400);
+    return () => clearTimeout(timer);
+  }, [assets, currentUser?.id, persistGallery]);
 
   // Sheet Settings state
   const [settings, setSettings] = useState<SheetSettings>({
@@ -108,6 +157,16 @@ export const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    // Save the gallery one last time, then clear it so the next person on this
+    // computer does not see this account's designs.
+    const userId = currentUser?.id;
+    if (userId && galleryUserRef.current === userId) {
+      void persistGallery(userId, assetsRef.current);
+    }
+    galleryUserRef.current = null;
+    lastSavedRef.current = new Map();
+    setAssets([]);
+    setSelectedAssetId(null);
     logoutUser();
     setCurrentUser(null);
     // Revert any locked preset back to default unlocked preset for the active print mode
@@ -153,12 +212,15 @@ export const App: React.FC = () => {
   };
 
   // Re-run packing algorithm whenever assets or layout settings change
+  // Designs on the gang sheet (the Gallery can also hold designs not yet added).
+  const sheetAssets = useMemo(() => assets.filter((a) => a.onSheet !== false), [assets]);
+
   // Transparent margins of each design's image (measured once per image URL), so the
   // DTF spacing is kept between visible artwork rather than between image boxes.
   const [inkBoundsByUrl, setInkBoundsByUrl] = useState<Record<string, InkBounds | null>>({});
   useEffect(() => {
     let cancelled = false;
-    const urls = Array.from(new Set(assets.map((a) => a.processedUrl || a.originalUrl)))
+    const urls = Array.from(new Set(sheetAssets.map((a) => a.processedUrl || a.originalUrl)))
       .filter((u) => u && !(u in inkBoundsByUrl));
     urls.forEach((url) => {
       loadInkBounds(url).then((b) => {
@@ -168,13 +230,13 @@ export const App: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [assets, inkBoundsByUrl]);
+  }, [sheetAssets, inkBoundsByUrl]);
 
   const layout: LayoutResult = useMemo(() => {
     const byAsset: Record<string, InkBounds | null | undefined> = {};
-    for (const a of assets) byAsset[a.id] = inkBoundsByUrl[a.processedUrl || a.originalUrl];
-    return packGangSheet(assets, settings, byAsset);
-  }, [assets, settings, inkBoundsByUrl]);
+    for (const a of sheetAssets) byAsset[a.id] = inkBoundsByUrl[a.processedUrl || a.originalUrl];
+    return packGangSheet(sheetAssets, settings, byAsset);
+  }, [sheetAssets, settings, inkBoundsByUrl]);
 
   // Unit switcher
   const handleUnitChange = useCallback((newUnit: Unit) => {
@@ -528,7 +590,7 @@ export const App: React.FC = () => {
   };
 
   // File Upload Handling (Supports PNG, JPG, JPEG, WEBP, SVG, and PDF up to 500 MB)
-  const handleFilesSelected = async (fileList: FileList | File[]) => {
+  const handleFilesSelected = async (fileList: FileList | File[], addToSheet: boolean = true) => {
     const files = Array.from(fileList);
     const newAssets: ArtworkAsset[] = [];
     const MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB
@@ -702,10 +764,21 @@ export const App: React.FC = () => {
     }
 
     if (newAssets.length > 0) {
+      if (!addToSheet) {
+        // Uploaded from the Gallery page: keep in the Gallery until the user adds it.
+        setAssets((prev) => [...prev, ...newAssets.map((a) => ({ ...a, onSheet: false }))]);
+        showNotification(`Added ${newAssets.length} design(s) to your gallery`);
+        return;
+      }
       if (settings.mode === 'repeat') {
-        setAssets([newAssets[0]]);
+        // Repeat mode shows one design: keep the rest in the Gallery instead of discarding them.
+        setAssets((prev) => [
+          ...prev.map((a) => ({ ...a, onSheet: false })),
+          { ...newAssets[0], onSheet: true },
+          ...newAssets.slice(1).map((a) => ({ ...a, onSheet: false }))
+        ]);
       } else {
-        setAssets((prev) => [...prev, ...newAssets]);
+        setAssets((prev) => [...prev, ...newAssets.map((a) => ({ ...a, onSheet: true }))]);
       }
       showNotification(`Added ${newAssets.length} image(s) to gang sheet`);
     }
@@ -776,7 +849,7 @@ export const App: React.FC = () => {
     }
 
     // Strictly enforce image upload requirement: NO random images, flash warning message instead
-    if (assets.length === 0) {
+    if (sheetAssets.length === 0) {
       const toolLabel = toolNameMap[toolId] || toolId.replace('-', ' ');
       showNotification(`Please upload an image first to use ${toolLabel}`, 'warning');
       return;
@@ -788,7 +861,7 @@ export const App: React.FC = () => {
     }
 
     setActiveToolForEdit(toolId);
-    const target = assets.find((a) => a.id === selectedAssetId) || assets[0];
+    const target = sheetAssets.find((a) => a.id === selectedAssetId) || sheetAssets[0];
     setSelectedAssetForEdit(target);
   };
 
@@ -977,7 +1050,7 @@ export const App: React.FC = () => {
           />
         ) : navTab === 'tiff-export' ? (
           <TiffExportStudio
-            currentAssets={assets}
+            currentAssets={sheetAssets}
             currentSettings={settings}
             currentLayout={layout}
             onBackToStudio={() => setNavTab('studio')}
@@ -986,7 +1059,7 @@ export const App: React.FC = () => {
         ) : navTab === 'gallery' ? (
           <AssetGalleryView
             assets={assets}
-            onAddFiles={handleFilesSelected}
+            onAddFiles={(files) => handleFilesSelected(files, false)}
             onUpdateAssetCopies={(id, copies) => handleUpdateAsset(id, { copies })}
             onEditAsset={(a) => {
               setSelectedAssetForEdit(a);
@@ -994,10 +1067,19 @@ export const App: React.FC = () => {
             onDeleteAsset={handleDeleteAsset}
             onBackToStudio={() => setNavTab('studio')}
             onNotification={showNotification}
-            onSetFileSheet={(assetId) => {
-              setSelectedAssetId(assetId);
+            onSetFileSheet={(assetIds) => {
+              if (assetIds.length === 0) return;
+              const ids = new Set(assetIds);
+              setAssets((prev) =>
+                prev.map((a) => (ids.has(a.id) ? { ...a, onSheet: true, copies: Math.max(1, a.copies || 1) } : a))
+              );
+              setSelectedAssetId(assetIds[0]);
               setNavTab('studio');
-              showNotification('Switched to Sheet Preview — set dimensions in the left panel.');
+              showNotification(
+                assetIds.length === 1
+                  ? 'Design added to your gang sheet'
+                  : `${assetIds.length} designs added to your gang sheet`
+              );
             }}
           />
         ) : navTab === 'templates' ? (
@@ -1097,7 +1179,7 @@ export const App: React.FC = () => {
                 {/* Main Layout Section: Fixed height within viewport on desktop, fluid on mobile */}
                 <div className="flex-1 min-h-0 w-full h-auto lg:h-full">
                   <LayoutSection
-                    assets={assets}
+                    assets={sheetAssets}
                     settings={settings}
                     layout={layout}
                     selectedAssetId={selectedAssetId}
@@ -1112,7 +1194,7 @@ export const App: React.FC = () => {
                     onRevertAsset={handleRevertAsset}
                     onRemoveBgAsset={handleRemoveBgAsset}
                     onFilesSelected={handleFilesSelected}
-                    onOpenGallery={handleLoadMultiDemo}
+                    onOpenGallery={() => setNavTab('gallery')}
                     onUnitChange={handleUnitChange}
                     onUpdateSettings={handleUpdateSettings}
                     onNestingModeChange={(mode) => handleUpdateSettings({ nestingAlgorithm: mode })}
@@ -1173,7 +1255,7 @@ export const App: React.FC = () => {
 
       {isPreflightOpen && (
         <PreflightModal
-          assets={assets}
+          assets={sheetAssets}
           settings={settings}
           layout={layout}
           onClose={() => setIsPreflightOpen(false)}
