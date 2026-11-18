@@ -39,6 +39,7 @@ import {
   Copy
 } from 'lucide-react';
 import { ArtworkAsset } from '../types';
+import { removeBackgroundAI, BackgroundRemovalError } from '../utils/aiBackgroundRemoval';
 import { vectorizeImage, downloadSvgFile } from '../utils/vectorizer';
 import {
   TEXTURE_EFFECTS_LIST,
@@ -219,6 +220,11 @@ export const EditModal: React.FC<EditModalProps> = ({
 
   // 2. Cut & Adjust -> BG Remover
   const [bgTolerance, setBgTolerance] = useState<number>(25);
+  // 'ai' = AI subject segmentation (default, photos/products/illustrations);
+  // 'colour' = flood fill of a solid backdrop colour (logos, flat artwork).
+  const [bgMethod, setBgMethod] = useState<'ai' | 'colour'>('ai');
+  const [bgStatus, setBgStatus] = useState<string | null>(null);
+  const [bgError, setBgError] = useState<string | null>(null);
 
   // 2. Cut & Adjust -> Replace Color
   const [targetColorHex, setTargetColorHex] = useState<string>('#ffffff');
@@ -773,13 +779,36 @@ export const EditModal: React.FC<EditModalProps> = ({
   // 4. Background Removal
   const handleRemoveBackground = async () => {
     setIsProcessing(true);
+    setBgError(null);
     try {
-      const img = await loadImage(currentUrl);
-      const transparentDataUrl = await removeImageBackground(img, { tolerance: bgTolerance });
-      pushHistory(transparentDataUrl);
+      if (bgMethod === 'ai') {
+        setBgStatus('Preparing AI…');
+        const res = await removeBackgroundAI(currentUrl, (p) => {
+          if (p.stage === 'loading') {
+            setBgStatus(
+              p.percent !== null
+                ? `Downloading AI model (first time only)… ${p.percent}%${p.totalMb ? ` of ${p.totalMb} MB` : ''}`
+                : 'Downloading AI model (first time only)…'
+            );
+          } else {
+            setBgStatus('Removing background…');
+          }
+        });
+        pushHistory(res.dataUrl); // preview only; applied on "Save & Apply", undo/revert keep working
+      } else {
+        const img = await loadImage(currentUrl);
+        const transparentDataUrl = await removeImageBackground(img, { tolerance: bgTolerance });
+        pushHistory(transparentDataUrl);
+      }
     } catch (err) {
       console.error(err);
+      setBgError(
+        err instanceof BackgroundRemovalError
+          ? err.message
+          : 'Background removal failed. Your image was not changed.'
+      );
     } finally {
+      setBgStatus(null);
       setIsProcessing(false);
     }
   };
@@ -2446,20 +2475,47 @@ export const EditModal: React.FC<EditModalProps> = ({
               {/* 2. Cut & Adjust -> BG Remover */}
               {activeTool === 'bg-remover' && (
                 <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
-                      <span>Tolerance Threshold</span>
-                      <span className="text-[#204563] font-extrabold">{bgTolerance}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="5"
-                      max="80"
-                      value={bgTolerance}
-                      onChange={(e) => setBgTolerance(Number(e.target.value))}
-                      className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
-                    />
+                  {/* Method: AI subject detection (default) or solid backdrop colour */}
+                  <div className="flex p-0.5 bg-[#FAF7F1] border border-[#E5D9C8] rounded-xl">
+                    {([
+                      ['ai', 'AI — keep the subject'],
+                      ['colour', 'Solid colour']
+                    ] as const).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setBgMethod(id)}
+                        disabled={isProcessing}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-black transition-all ${
+                          bgMethod === id ? 'bg-[#204563] text-white shadow-xs' : 'text-[#526A7B] hover:text-[#204563]'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
+                  <p className="text-[11px] text-[#526A7B] leading-snug -mt-2">
+                    {bgMethod === 'ai'
+                      ? 'Detects the person or object and removes everything else — best for photos, even when clothing matches the background.'
+                      : 'Removes one solid backdrop colour touching the edges — best for logos and flat artwork.'}
+                  </p>
+
+                  {bgMethod === 'colour' && (
+                    <div>
+                      <div className="flex justify-between text-xs font-bold text-[#204563] mb-1">
+                        <span>Tolerance Threshold</span>
+                        <span className="text-[#204563] font-extrabold">{bgTolerance}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="5"
+                        max="80"
+                        value={bgTolerance}
+                        onChange={(e) => setBgTolerance(Number(e.target.value))}
+                        className="w-full accent-[#EF7F1A] bg-slate-200 h-2 rounded-lg cursor-pointer"
+                      />
+                    </div>
+                  )}
 
                   <button
                     onClick={handleRemoveBackground}
@@ -2467,8 +2523,19 @@ export const EditModal: React.FC<EditModalProps> = ({
                     className="w-full py-2.5 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] text-xs font-black shadow-md shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2"
                   >
                     <Scissors className="w-4 h-4 text-[#204563]" />
-                    <span>Auto Remove Background</span>
+                    <span>{isProcessing && bgStatus ? 'Working…' : 'Auto Remove Background'}</span>
                   </button>
+                  {bgStatus && (
+                    <div className="flex items-center gap-2 text-[11px] font-bold text-[#204563] bg-[#FAF7F1] border border-[#E5D9C8] rounded-xl px-3 py-2">
+                      <span className="w-3 h-3 rounded-full border-2 border-[#EF7F1A] border-t-transparent animate-spin flex-shrink-0" />
+                      <span>{bgStatus}</span>
+                    </div>
+                  )}
+                  {bgError && (
+                    <div className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+                      {bgError}
+                    </div>
+                  )}
                 </div>
               )}
 

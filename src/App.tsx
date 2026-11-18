@@ -32,8 +32,7 @@ import {
   loadImage,
   inspectAlphaTransparency,
   calculateAlphaBoundingBox,
-  cropImageToBoundingBox,
-  removeImageBackground
+  cropImageToBoundingBox
 } from './utils/imageProcessing';
 import { isPdfFile, renderPdfPages } from './utils/pdfProcessor';
 import { exportHighResolutionPng, exportSingleSheetPng, exportJobTicketJson } from './utils/exportRenderer';
@@ -41,6 +40,7 @@ import { Layers, Copy } from 'lucide-react';
 import { UserProfile } from './types/auth';
 import { getCurrentUser, logoutUser } from './utils/auth';
 import { loadGallery, saveGallery, requestPersistentStorage } from './utils/galleryStore';
+import { removeBackgroundAI, BackgroundRemovalError } from './utils/aiBackgroundRemoval';
 import { LandingPage } from './components/LandingPage';
 import { AuthModal } from './components/AuthModal';
 import { HomeSelectorView } from './components/HomeSelectorView';
@@ -572,8 +572,19 @@ export const App: React.FC = () => {
     if (!asset) return;
 
     try {
-      const img = await loadImage(asset.originalUrl);
-      const transparentUrl = await removeImageBackground(img, { tolerance: 28 });
+      // AI subject segmentation on the original upload; the original stays stored
+      // separately, so Revert restores it.
+      let lastNote = '';
+      const { dataUrl: transparentUrl } = await removeBackgroundAI(asset.originalUrl, (p) => {
+        const note =
+          p.stage === 'loading'
+            ? `Downloading AI model (first time only)${p.percent !== null ? ` ${Math.floor(p.percent / 10) * 10}%` : ''}…`
+            : `Removing background from ${asset.filename}…`;
+        if (note !== lastNote) {
+          lastNote = note;
+          showNotification(note, 'info');
+        }
+      });
       const transparentImg = await loadImage(transparentUrl);
       const cropBox = await calculateAlphaBoundingBox(transparentImg, 8, 2);
 
@@ -586,6 +597,10 @@ export const App: React.FC = () => {
       showNotification(`Background removed from ${asset.filename}`);
     } catch (err) {
       console.error(err);
+      showNotification(
+        err instanceof BackgroundRemovalError ? err.message : `Background removal failed for ${asset.filename}. The image was not changed.`,
+        'warning'
+      );
     }
   };
 
@@ -684,7 +699,6 @@ export const App: React.FC = () => {
 
       // 3. Image Upload Processing (PNG, JPG, JPEG, WEBP, SVG)
       try {
-        const isJpeg = file.type.includes('jpeg') || file.type.includes('jpg');
         const fileType: ArtworkAsset['fileType'] = file.type.includes('png')
           ? 'png'
           : file.type.includes('webp')
@@ -702,16 +716,14 @@ export const App: React.FC = () => {
         const img = await loadImage(dataUrl);
         const { hasAlpha } = await inspectAlphaTransparency(img);
 
-        let processedUrl = dataUrl;
-        let isBgRemoved = false;
+        // Keep the upload exactly as the file is: no automatic background removal
+        // and no automatic trimming. Both only happen when the user explicitly
+        // applies Remove BG / Trim / Crop. (cropBox below is only measured, to
+        // show the "x% empty space" hint; it never changes the image.)
+        const processedUrl = dataUrl;
+        const isBgRemoved = false;
 
-        // Auto background removal for JPG/JPEG or non-alpha images
-        if (!hasAlpha && (isJpeg || !file.type.includes('png'))) {
-          processedUrl = await removeImageBackground(img, { tolerance: 28 });
-          isBgRemoved = true;
-        }
-
-        const processedImg = await loadImage(processedUrl);
+        const processedImg = img;
         const cropBox = await calculateAlphaBoundingBox(processedImg, 8, 2);
 
         const originalWidth = img.naturalWidth;

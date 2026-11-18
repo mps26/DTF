@@ -1,4 +1,5 @@
 import { CropBox } from '../types';
+import { removeBackgroundPixels } from './backgroundRemoval';
 export * from './textureEffects';
 
 /**
@@ -336,10 +337,9 @@ export async function recreateImageAi(
 
 
 /**
- * Intelligent background removal:
- * Detects background color by sampling perimeter pixels (corners and edges).
- * Flood fills outer matching regions to transparent while strictly preserving
- * internal foreground colors (such as white letters inside a design).
+ * Background removal (Background Remover tool and the card's "Remove BG" button).
+ * Works for JPEG/JPG photos and artwork on plain, studio or gradient backgrounds;
+ * see backgroundRemoval.ts for the algorithm. Only runs when the user asks for it.
  */
 export async function removeImageBackground(
   img: HTMLImageElement,
@@ -352,143 +352,15 @@ export async function removeImageBackground(
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return img.src;
 
   ctx.drawImage(img, 0, 0);
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const { data, width, height } = imageData;
-
-  // Determine background color by sampling the 4 corners
-  let bgR = 255;
-  let bgG = 255;
-  let bgB = 255;
-
-  if (options.targetColor) {
-    bgR = options.targetColor.r;
-    bgG = options.targetColor.g;
-    bgB = options.targetColor.b;
-  } else {
-    // Sample corners: top-left, top-right, bottom-left, bottom-right
-    const corners = [
-      0,
-      (width - 1) * 4,
-      ((height - 1) * width) * 4,
-      ((height - 1) * width + (width - 1)) * 4
-    ];
-    let sumR = 0, sumG = 0, sumB = 0;
-    for (const idx of corners) {
-      sumR += data[idx];
-      sumG += data[idx + 1];
-      sumB += data[idx + 2];
-    }
-    bgR = Math.round(sumR / 4);
-    bgG = Math.round(sumG / 4);
-    bgB = Math.round(sumB / 4);
-  }
-
-  const tolerance = options.tolerance ?? 25;
-  const toleranceSq = tolerance * tolerance * 3;
-
-  // Mask array: 1 = background to remove, 0 = keep
-  const mask = new Uint8Array(width * height);
-  const visited = new Uint8Array(width * height);
-
-  function colorDiffSq(idx: number): number {
-    const dr = data[idx] - bgR;
-    const dg = data[idx + 1] - bgG;
-    const db = data[idx + 2] - bgB;
-    return dr * dr + dg * dg + db * db;
-  }
-
-  // Edge-seeded Flood Fill / BFS starting from the image border only!
-  // This guarantees that white text/elements inside the artwork NEVER get erased!
-  const queue: number[] = [];
-
-  // Seed with all edge pixels that match background color within tolerance
-  for (let x = 0; x < width; x++) {
-    // Top row
-    let idx = (0 * width + x) * 4;
-    let pIdx = 0 * width + x;
-    if (colorDiffSq(idx) <= toleranceSq) {
-      queue.push(pIdx);
-      visited[pIdx] = 1;
-      mask[pIdx] = 1;
-    }
-    // Bottom row
-    idx = ((height - 1) * width + x) * 4;
-    pIdx = (height - 1) * width + x;
-    if (colorDiffSq(idx) <= toleranceSq) {
-      queue.push(pIdx);
-      visited[pIdx] = 1;
-      mask[pIdx] = 1;
-    }
-  }
-
-  for (let y = 0; y < height; y++) {
-    // Left column
-    let idx = (y * width + 0) * 4;
-    let pIdx = y * width + 0;
-    if (!visited[pIdx] && colorDiffSq(idx) <= toleranceSq) {
-      queue.push(pIdx);
-      visited[pIdx] = 1;
-      mask[pIdx] = 1;
-    }
-    // Right column
-    idx = (y * width + (width - 1)) * 4;
-    pIdx = y * width + (width - 1);
-    if (!visited[pIdx] && colorDiffSq(idx) <= toleranceSq) {
-      queue.push(pIdx);
-      visited[pIdx] = 1;
-      mask[pIdx] = 1;
-    }
-  }
-
-  let head = 0;
-  while (head < queue.length) {
-    const curr = queue[head++];
-    const cx = curr % width;
-    const cy = Math.floor(curr / width);
-
-    // 4-neighborhood
-    const neighbors = [
-      cy > 0 ? (cy - 1) * width + cx : -1,
-      cy < height - 1 ? (cy + 1) * width + cx : -1,
-      cx > 0 ? cy * width + (cx - 1) : -1,
-      cx < width - 1 ? cy * width + (cx + 1) : -1
-    ];
-
-    for (const n of neighbors) {
-      if (n !== -1 && !visited[n]) {
-        visited[n] = 1;
-        const nDataIdx = n * 4;
-        if (colorDiffSq(nDataIdx) <= toleranceSq) {
-          mask[n] = 1;
-          queue.push(n);
-        }
-      }
-    }
-  }
-
-  // Apply alpha mask and soft antialiasing feathering on border
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const pIdx = y * width + x;
-      const dIdx = pIdx * 4;
-
-      if (mask[pIdx] === 1) {
-        data[dIdx + 3] = 0; // Completely transparent
-      } else {
-        // Check if neighbor is transparent to provide soft anti-aliased edge
-        const diff = Math.sqrt(colorDiffSq(dIdx));
-        if (diff < tolerance * 1.5) {
-          const factor = Math.min(1, Math.max(0, (diff - tolerance * 0.7) / (tolerance * 0.8)));
-          data[dIdx + 3] = Math.round(data[dIdx + 3] * factor);
-        }
-      }
-    }
-  }
-
+  removeBackgroundPixels(imageData.data, canvas.width, canvas.height, {
+    targetColor: options.targetColor,
+    tolerance: options.tolerance
+  });
   ctx.putImageData(imageData, 0, 0);
   return canvas.toDataURL('image/png');
 }
