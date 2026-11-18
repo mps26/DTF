@@ -1,6 +1,7 @@
 import { LayoutResult, SheetSettings, PackedPlacement } from '../types';
 import { loadImage, drawImageProportional } from './imageProcessing';
 import { MM_PER_INCH } from './units';
+import { validateLayout } from './dtfNesting';
 
 /**
  * CRC32 lookup table for PNG chunk calculation
@@ -222,6 +223,20 @@ export async function exportHighResolutionPng(
   onProgress?: (progressPercent: number, statusText?: string) => void,
   singleSheetIndex?: number
 ): Promise<string> {
+  // Standard DTF: never write a print file from a layout that fails the
+  // collision / spacing / boundary check (same rules the nesting engine uses).
+  if ((settings.printType || 'dtf') !== 'uvdtf') {
+    const errors = layout.validationErrors?.length
+      ? layout.validationErrors
+      : validateLayout(layout, {
+          spacingMm: Math.max(5, settings.spacingMm ?? 5),
+          marginMm: Math.max(0, settings.marginMm ?? 5)
+        });
+    if (errors.length > 0) {
+      throw new Error(`Layout failed the print-safety check: ${errors.slice(0, 3).join('; ')}`);
+    }
+  }
+
   const exportDpi = settings.exportDpi || 300;
   const filmWidthInches = settings.filmWidthMm / MM_PER_INCH;
 
@@ -291,9 +306,14 @@ export async function exportHighResolutionPng(
       1200
     );
 
-    const targetLengthMm = settings.lengthMode === 'fixed'
-      ? Math.min(2540, settings.fixedLengthMm)
-      : (sheet.usedLengthMm > 0 ? sheet.usedLengthMm : settings.fixedLengthMm);
+    // Standard DTF: the nesting engine already resolved each sheet's exact length
+    // (auto: clamp(extent, 39", 100"); fixed: the selected length) — use it verbatim
+    // so the exported file matches the preview exactly.
+    const targetLengthMm = (settings.printType || 'dtf') !== 'uvdtf' && sheet.usedLengthMm > 0
+      ? sheet.usedLengthMm
+      : settings.lengthMode === 'fixed'
+        ? Math.min(2540, settings.fixedLengthMm)
+        : (sheet.usedLengthMm > 0 ? sheet.usedLengthMm : settings.fixedLengthMm);
     const sheetLengthInches = Math.min(100, Math.max(1, targetLengthMm / MM_PER_INCH));
 
     // Maximum hardware canvas limit supported by Chromium & WebKit (16,384 px)

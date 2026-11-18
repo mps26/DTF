@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import {
   ArtworkAsset,
@@ -26,6 +26,8 @@ import {
 } from './utils/sampleData';
 import { unitToMm, mmToUnit, calculateEffectiveDpi, getDpiStatus } from './utils/units';
 import { packGangSheet } from './utils/packing';
+import { loadInkBounds } from './utils/inkBounds';
+import type { InkBounds } from './utils/dtfNesting';
 import {
   loadImage,
   inspectAlphaTransparency,
@@ -83,6 +85,7 @@ export const App: React.FC = () => {
     fixedLengthMm: 39 * 25.4,
     exportDpi: 300,
     allowItemRotation: false,
+    keepDesignsTogether: true,
     nestingAlgorithm: 'box',
     mode: 'multiple'
   });
@@ -150,9 +153,28 @@ export const App: React.FC = () => {
   };
 
   // Re-run packing algorithm whenever assets or layout settings change
+  // Transparent margins of each design's image (measured once per image URL), so the
+  // DTF spacing is kept between visible artwork rather than between image boxes.
+  const [inkBoundsByUrl, setInkBoundsByUrl] = useState<Record<string, InkBounds | null>>({});
+  useEffect(() => {
+    let cancelled = false;
+    const urls = Array.from(new Set(assets.map((a) => a.processedUrl || a.originalUrl)))
+      .filter((u) => u && !(u in inkBoundsByUrl));
+    urls.forEach((url) => {
+      loadInkBounds(url).then((b) => {
+        if (!cancelled) setInkBoundsByUrl((prev) => (url in prev ? prev : { ...prev, [url]: b }));
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [assets, inkBoundsByUrl]);
+
   const layout: LayoutResult = useMemo(() => {
-    return packGangSheet(assets, settings);
-  }, [assets, settings]);
+    const byAsset: Record<string, InkBounds | null | undefined> = {};
+    for (const a of assets) byAsset[a.id] = inkBoundsByUrl[a.processedUrl || a.originalUrl];
+    return packGangSheet(assets, settings, byAsset);
+  }, [assets, settings, inkBoundsByUrl]);
 
   // Unit switcher
   const handleUnitChange = useCallback((newUnit: Unit) => {
@@ -199,11 +221,25 @@ export const App: React.FC = () => {
       updates.filmWidthMm = Math.min(24 * 25.4, Math.max(25.4, updates.filmWidthMm));
     }
 
+    // Standard DTF: the roll width is fixed by the selected DTF preset (22", or the locked 22.5" roll).
+    // Ignore free-form widths so the nesting engine, preview and export always use the same width.
+    if ((updates.printType ?? settings.printType ?? 'dtf') === 'dtf' &&
+        (updates.filmWidth !== undefined || updates.filmWidthMm !== undefined || updates.filmWidthPreset !== undefined)) {
+      const requested = findPresetById(updates.filmWidthPreset ?? settings.filmWidthPreset);
+      const current = findPresetById(settings.filmWidthPreset);
+      const dtfPreset = requested?.printType === 'dtf'
+        ? requested
+        : (current?.printType === 'dtf' ? current : DTF_PRESETS[0]);
+      updates.filmWidthPreset = dtfPreset.id;
+      updates.filmWidthMm = dtfPreset.widthIn * 25.4;
+      updates.filmWidth = parseFloat(mmToUnit(updates.filmWidthMm, updates.unit ?? settings.unit).toFixed(2));
+    }
+
     // Evaluate height constraints from active preset or width
     const effPresetId = updates.filmWidthPreset ?? settings.filmWidthPreset;
     const effPreset = findPresetById(effPresetId);
     const isFixedPreset = Boolean(effPreset?.isFixedLength);
-    const minLen = isFixedPreset && effPreset ? effPreset.minLengthIn : 1;
+    const minLen = effPreset ? effPreset.minLengthIn : 1;
     const maxLen = isFixedPreset && effPreset ? effPreset.maxLengthIn : (effPreset?.maxLengthIn || 100);
 
     // If preset is fixed-length (e.g. UVDTF A4 11x8, A3 11x17, Meter 22x39), keep length fixed
@@ -783,7 +819,7 @@ export const App: React.FC = () => {
       );
     } catch (err) {
       console.error(err);
-      alert('Export failed.');
+      alert(err instanceof Error && err.message.startsWith('Layout failed') ? err.message : 'Export failed.');
     } finally {
       setIsExporting(false);
       setExportProgress(0);
@@ -816,7 +852,7 @@ export const App: React.FC = () => {
       showNotification(`Sheet ${sheetIndex + 1} PNG downloaded (Print-Ready)!`);
     } catch (err) {
       console.error(err);
-      alert('Export failed for this sheet.');
+      alert(err instanceof Error && err.message.startsWith('Layout failed') ? err.message : 'Export failed for this sheet.');
     } finally {
       setIsExporting(false);
       setExportProgress(0);

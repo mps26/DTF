@@ -22,12 +22,12 @@ export const DTF_PRESETS: RollPreset[] = [
     label: '22" × 100"',
     shortLabel: '22 × 100',
     widthIn: 22,
-    minLengthIn: 1,
+    minLengthIn: 39,
     maxLengthIn: 100,
-    defaultLengthIn: 24,
+    defaultLengthIn: 39,
     isFixedLength: false,
     isLocked: false,
-    description: 'Standard DTF roll, 22" wide'
+    description: 'Standard DTF roll, 22" wide (length 39"–100")'
   },
   {
     id: 'dtf-22.5x100',

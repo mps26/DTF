@@ -1,6 +1,7 @@
 import { ArtworkAsset, SheetSettings, PackedPlacement, SheetInfo, LayoutResult } from '../types';
 import { MM_PER_INCH } from './units';
 import { findPresetById } from './sheetPresets';
+import { packDtfGangSheet, InkBounds } from './dtfNesting';
 
 export const MAX_PRINT_WIDTH_INCHES = 23;
 export const MAX_PRINT_HEIGHT_INCHES = 100;
@@ -18,13 +19,29 @@ interface ItemToPack {
 }
 
 /**
- * Packs designs onto a continuous DTF film roll.
+ * Gang-sheet packing entry point used by the preview, the preview modal and all exports.
+ * - Standard DTF  -> MaxRects nesting engine (./dtfNesting.ts).
+ * - UVDTF         -> original sequential shelf packer below (unchanged).
+ */
+export function packGangSheet(
+  assets: ArtworkAsset[],
+  settings: SheetSettings,
+  inkBounds?: Record<string, InkBounds | null | undefined>
+): LayoutResult {
+  if ((settings.printType || 'dtf') === 'uvdtf') {
+    return packShelfLegacy(assets, settings);
+  }
+  return packDtfGangSheet(assets, settings, { inkBounds });
+}
+
+/**
+ * Packs designs onto a continuous film roll (UVDTF).
  * Enforces industrial DTF printing rules:
  * 1. ZERO ROTATION: Artwork maintains upright 0° orientation so logos & text never print sideways.
  * 2. ZERO OVERLAP: Orderly row-by-row shelf alignment with guaranteed inter-artwork spacing and edge margins.
  * 3. Exact physical roll constraints (max 22" width x 100" length).
  */
-export function packGangSheet(
+function packShelfLegacy(
   assets: ArtworkAsset[],
   settings: SheetSettings
 ): LayoutResult {

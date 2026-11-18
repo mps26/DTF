@@ -83,7 +83,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const [selectedSheetIndex, setSelectedSheetIndex] = useState<number>(0);
   const [sheetZooms, setSheetZooms] = useState<Record<number, number>>({});
   const [sheetFitModes, setSheetFitModes] = useState<Record<number, boolean>>({});
-  const [keepCloseTogether, setKeepCloseTogether] = useState<boolean>(true);
+  const keepCloseTogether = settings.keepDesignsTogether ?? true;
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({});
   const [isTrimmingMap, setIsTrimmingMap] = useState<Record<string, boolean>>({});
@@ -400,7 +400,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               </span>
 
               <button
-                onClick={() => setKeepCloseTogether(!keepCloseTogether)}
+                onClick={() => onUpdateSettings({ keepDesignsTogether: !keepCloseTogether })}
                 className={`w-10 h-5 rounded-full transition-colors relative p-0.5 ${
                   keepCloseTogether ? 'bg-[#EF7F1A]' : 'bg-[#E5D9C8]'
                 }`}

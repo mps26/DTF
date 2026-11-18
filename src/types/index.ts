@@ -74,6 +74,8 @@ export interface SheetSettings {
   fixedLengthMm: number;
   exportDpi: number;
   allowItemRotation: boolean;
+  /** DTF nesting: prefer keeping copies of the same design near each other (default true). */
+  keepDesignsTogether?: boolean;
   nestingAlgorithm: NestingAlgorithm;
   mode: 'multiple' | 'repeat';
   showGrid?: boolean;
@@ -91,6 +93,8 @@ export interface PackedPlacement {
   widthMm: number;
   heightMm: number;
   rotated: boolean;
+  /** Fully transparent margin inside each edge of the placed box (mm), as measured by the nesting engine. */
+  inkInsetMm?: { l: number; t: number; r: number; b: number };
   asset: ArtworkAsset;
   customX?: number; // manual drag override
   customY?: number;
@@ -107,6 +111,8 @@ export interface SheetInfo {
   filmAreaMm2: number;
   artworkAreaMm2: number;
   wastePercent: number;
+  utilizationPercent?: number;
+  unusedAreaMm2?: number;
 }
 
 export interface LayoutResult {
@@ -120,6 +126,12 @@ export interface LayoutResult {
   filmAreaMm2: number;
   artworkAreaMm2: number;
   wastePercent: number;
+  requestedCopies?: number;
+  unusedAreaMm2?: number;
+  utilizationPercent?: number;
+  scaledToFitCount?: number;
+  /** Non-empty only if no collision-free layout could be produced; exports refuse such layouts. */
+  validationErrors?: string[];
   overflow: boolean;
   overflowCount: number;
   calculationTimeMs: number;
