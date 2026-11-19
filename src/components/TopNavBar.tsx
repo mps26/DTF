@@ -25,8 +25,10 @@ import {
   Building2,
   Printer,
   LogIn,
-  X
+  X,
+  Lock
 } from 'lucide-react';
+import { isCategoryLocked } from '../utils/lockedTools';
 import { UserProfile } from '../types/auth';
 
 interface ToolItem {
@@ -61,6 +63,8 @@ interface TopNavBarProps {
   onLogout?: () => void;
   onGoToLanding?: () => void;
   onOpenProfile?: () => void;
+  /** Called when someone clicks a locked category (e.g. to show a notice). */
+  onLockedCategory?: (categoryName: string) => void;
 }
 
 export const TopNavBar: React.FC<TopNavBarProps> = ({
@@ -73,7 +77,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   onOpenAuth,
   onLogout,
   onGoToLanding,
-  onOpenProfile
+  onOpenProfile,
+  onLockedCategory
 }) => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState<boolean>(false);
@@ -93,6 +98,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   }, []);
 
   const handleMouseEnterCategory = (catId: string) => {
+    if (isCategoryLocked(catId)) return; // locked menus never open
     if (leaveTimerRef.current) {
       clearTimeout(leaveTimerRef.current);
       leaveTimerRef.current = null;
@@ -302,7 +308,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         {/* ================= CENTER SECTION: THE 4 PREP OPTIONS ================= */}
         <div className="flex items-center space-x-1 bg-[#0f2232] p-1 rounded-2xl border border-[#183750] text-xs shadow-inner shadow-black/30 mx-2 flex-shrink-0">
           {categories.map((cat) => {
-            const isOpen = activeDropdown === cat.id;
+            const locked = isCategoryLocked(cat.id);
+            const isOpen = !locked && activeDropdown === cat.id;
             const Icon = cat.icon;
 
             return (
@@ -314,21 +321,34 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               >
                 <button
                   onClick={() => {
+                    if (locked) {
+                      setActiveDropdown(null);
+                      onLockedCategory?.(cat.name);
+                      return;
+                    }
                     setActiveDropdown(isOpen ? null : cat.id);
                   }}
-                  className={`h-8.5 px-3.5 rounded-xl font-bold text-xs flex items-center space-x-2 whitespace-nowrap transition-all duration-150 cursor-pointer ${
-                    isOpen
-                      ? 'bg-[#204563] text-white shadow-md border border-[#3a6b94]'
-                      : 'text-slate-300 hover:text-white hover:bg-[#183750]'
+                  aria-disabled={locked}
+                  title={locked ? `${cat.name} is locked` : undefined}
+                  className={`h-8.5 px-3.5 rounded-xl font-bold text-xs flex items-center space-x-2 whitespace-nowrap transition-all duration-150 ${
+                    locked
+                      ? 'text-slate-500 cursor-not-allowed'
+                      : isOpen
+                        ? 'bg-[#204563] text-white shadow-md border border-[#3a6b94] cursor-pointer'
+                        : 'text-slate-300 hover:text-white hover:bg-[#183750] cursor-pointer'
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isOpen ? 'text-[#EF7F1A]' : 'text-slate-300'}`} />
+                  <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isOpen ? 'text-[#EF7F1A]' : locked ? 'text-slate-500' : 'text-slate-300'}`} />
                   <span className="leading-none">{cat.name}</span>
-                  <ChevronDown
-                    className={`w-3 h-3 text-slate-400 flex-shrink-0 transition-transform duration-200 ${
-                      isOpen ? 'rotate-180 text-white' : ''
-                    }`}
-                  />
+                  {locked ? (
+                    <Lock className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                  ) : (
+                    <ChevronDown
+                      className={`w-3 h-3 text-slate-400 flex-shrink-0 transition-transform duration-200 ${
+                        isOpen ? 'rotate-180 text-white' : ''
+                      }`}
+                    />
+                  )}
                 </button>
 
                 {/* Floating Dropdown Menu (Opens on hover or click) */}
@@ -581,7 +601,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         {/* Mobile Second Row: Horizontal Scrollable Category Toolbar */}
         <div className="h-8.5 px-2 flex items-center space-x-1.5 overflow-x-auto no-scrollbar scroll-smooth bg-[#0a1622] border-b border-[#183750]">
           {categories.map((cat) => {
-            const isOpen = activeDropdown === cat.id;
+            const locked = isCategoryLocked(cat.id);
+            const isOpen = !locked && activeDropdown === cat.id;
             const Icon = cat.icon;
 
             return (
@@ -590,17 +611,30 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 type="button"
                 onClick={() => {
                   setUserMenuOpen(false);
+                  if (locked) {
+                    setActiveDropdown(null);
+                    onLockedCategory?.(cat.name);
+                    return;
+                  }
                   setActiveDropdown(isOpen ? null : cat.id);
                 }}
+                aria-disabled={locked}
+                title={locked ? `${cat.name} is locked` : undefined}
                 className={`h-6.5 px-2 rounded-md font-semibold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 transition-all ${
-                  isOpen
-                    ? 'bg-[#EF7F1A] text-[#204563] font-bold shadow-xs'
-                    : 'text-slate-300 bg-[#132c40] border border-[#183750] hover:text-white'
+                  locked
+                    ? 'text-slate-500 bg-[#132c40] border border-[#183750] cursor-not-allowed'
+                    : isOpen
+                      ? 'bg-[#EF7F1A] text-[#204563] font-bold shadow-xs'
+                      : 'text-slate-300 bg-[#132c40] border border-[#183750] hover:text-white'
                 }`}
               >
-                <Icon className={`w-3 h-3 ${isOpen ? 'text-[#204563]' : 'text-slate-300'}`} />
+                <Icon className={`w-3 h-3 ${isOpen ? 'text-[#204563]' : locked ? 'text-slate-500' : 'text-slate-300'}`} />
                 <span>{cat.name}</span>
-                <ChevronDown className={`w-2.5 h-2.5 transition-transform ${isOpen ? 'rotate-180 text-[#204563]' : 'text-slate-400'}`} />
+                {locked ? (
+                  <Lock className="w-2.5 h-2.5 text-slate-500" />
+                ) : (
+                  <ChevronDown className={`w-2.5 h-2.5 transition-transform ${isOpen ? 'rotate-180 text-[#204563]' : 'text-slate-400'}`} />
+                )}
               </button>
             );
           })}

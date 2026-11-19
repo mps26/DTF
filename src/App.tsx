@@ -26,6 +26,7 @@ import {
 } from './utils/sampleData';
 import { unitToMm, mmToUnit, calculateEffectiveDpi, getDpiStatus } from './utils/units';
 import { packGangSheet } from './utils/packing';
+import { isToolLocked } from './utils/lockedTools';
 import { loadInkBounds } from './utils/inkBounds';
 import type { InkBounds } from './utils/dtfNesting';
 import {
@@ -851,6 +852,11 @@ export const App: React.FC = () => {
 
   // Tool Selection handler from Tools Sidebar / Palette / Top Navigation Bar
   const handleSelectTool = (toolId: string) => {
+    // Locked categories (Style & Effects, Create & Convert): never open their tools.
+    if (isToolLocked(toolId)) {
+      showNotification('This option is locked.', 'warning');
+      return;
+    }
     if (toolId === 'tiff-export') {
       setNavTab('tiff-export');
       return;
@@ -1030,6 +1036,7 @@ export const App: React.FC = () => {
           onLogout={handleLogout}
           onGoToLanding={() => setNavTab('landing')}
           onOpenProfile={() => setNavTab('settings')}
+          onLockedCategory={(name) => showNotification(`${name} is locked.`, 'warning')}
         />
 
         {/* Flash Message Toast Notification */}

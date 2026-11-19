@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
+  Lock,
   Sparkles,
   Scissors,
   Activity,
@@ -39,6 +40,7 @@ import {
   Copy
 } from 'lucide-react';
 import { ArtworkAsset } from '../types';
+import { isCategoryLocked, isToolLocked } from '../utils/lockedTools';
 import { removeBackgroundAI, BackgroundRemovalError } from '../utils/aiBackgroundRemoval';
 import { vectorizeImage, downloadSvgFile } from '../utils/vectorizer';
 import {
@@ -177,12 +179,14 @@ export const EditModal: React.FC<EditModalProps> = ({
     return 'fix';
   };
 
-  const initialNorm = normalizeTool(initialTool);
+  // A locked tool can never be the starting tool (falls back to the first open one).
+  const initialNorm = isToolLocked(normalizeTool(initialTool)) ? 'upscaler' : normalizeTool(initialTool);
   const [activeCategory, setActiveCategory] = useState<string>(getCategoryForTool(initialNorm));
   const [activeTool, setActiveTool] = useState<string>(initialNorm);
 
   useEffect(() => {
-    const norm = normalizeTool(initialTool);
+    const requested = normalizeTool(initialTool);
+    const norm = isToolLocked(requested) ? 'upscaler' : requested;
     setActiveTool(norm);
     setActiveCategory(getCategoryForTool(norm));
   }, [initialTool]);
@@ -1620,11 +1624,16 @@ export const EditModal: React.FC<EditModalProps> = ({
         <div className="bg-[#FAF7F1] border-b border-[#E5D9C8] px-6 py-2 flex items-center space-x-2 overflow-x-auto flex-shrink-0">
           {categories.map((cat) => {
             const Icon = cat.icon;
-            const isCatActive = activeCategory === cat.id;
+            const catLocked = isCategoryLocked(cat.id);
+            const isCatActive = !catLocked && activeCategory === cat.id;
             return (
               <button
                 key={cat.id}
+                disabled={catLocked}
+                aria-disabled={catLocked}
+                title={catLocked ? `${cat.name} is locked` : undefined}
                 onClick={() => {
+                  if (catLocked) return;
                   setActiveCategory(cat.id);
                   // Automatically activate first tool in category if current tool isn't in it
                   if (!cat.tools.some((t) => t.id === activeTool)) {
@@ -1639,18 +1648,24 @@ export const EditModal: React.FC<EditModalProps> = ({
                   }
                 }}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${
-                  isCatActive
-                    ? 'bg-[#204563] text-white shadow-md shadow-[#204563]/25 ring-2 ring-[#204563]/20'
-                    : 'bg-white text-[#204563] hover:bg-[#FAF7F1] border border-[#E5D9C8]'
+                  catLocked
+                    ? 'bg-white text-[#526A7B]/60 border border-[#E5D9C8] cursor-not-allowed'
+                    : isCatActive
+                      ? 'bg-[#204563] text-white shadow-md shadow-[#204563]/25 ring-2 ring-[#204563]/20'
+                      : 'bg-white text-[#204563] hover:bg-[#FAF7F1] border border-[#E5D9C8]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isCatActive ? 'text-[#EF7F1A]' : 'text-[#204563]'}`} />
+                <Icon className={`w-4 h-4 ${isCatActive ? 'text-[#EF7F1A]' : catLocked ? 'text-[#526A7B]/60' : 'text-[#204563]'}`} />
                 <span>{cat.name}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  isCatActive ? 'bg-white/20 text-white' : 'bg-[#FAF7F1] text-[#526A7B]'
-                }`}>
-                  {cat.tools.length}
-                </span>
+                {catLocked ? (
+                  <Lock className="w-3 h-3 text-[#526A7B]/60" />
+                ) : (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    isCatActive ? 'bg-white/20 text-white' : 'bg-[#FAF7F1] text-[#526A7B]'
+                  }`}>
+                    {cat.tools.length}
+                  </span>
+                )}
               </button>
             );
           })}
