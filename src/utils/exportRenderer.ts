@@ -223,9 +223,9 @@ export async function exportHighResolutionPng(
   onProgress?: (progressPercent: number, statusText?: string) => void,
   singleSheetIndex?: number
 ): Promise<string> {
-  // Standard DTF: never write a print file from a layout that fails the
+  // DTF and UVDTF: never write a print file from a layout that fails the
   // collision / spacing / boundary check (same rules the nesting engine uses).
-  if ((settings.printType || 'dtf') !== 'uvdtf') {
+  {
     const errors = layout.validationErrors?.length
       ? layout.validationErrors
       : validateLayout(layout, {
@@ -238,7 +238,8 @@ export async function exportHighResolutionPng(
   }
 
   const exportDpi = settings.exportDpi || 300;
-  const filmWidthInches = settings.filmWidthMm / MM_PER_INCH;
+  // Sheet width as laid out by the nesting engine (same for preview and export).
+  const filmWidthInches = (layout.usedWidthMm || settings.filmWidthMm) / MM_PER_INCH;
 
   const allSheets = layout.sheets && layout.sheets.length > 0
     ? layout.sheets
@@ -309,7 +310,7 @@ export async function exportHighResolutionPng(
     // Standard DTF: the nesting engine already resolved each sheet's exact length
     // (auto: clamp(extent, 39", 100"); fixed: the selected length) — use it verbatim
     // so the exported file matches the preview exactly.
-    const targetLengthMm = (settings.printType || 'dtf') !== 'uvdtf' && sheet.usedLengthMm > 0
+    const targetLengthMm = sheet.usedLengthMm > 0
       ? sheet.usedLengthMm
       : settings.lengthMode === 'fixed'
         ? Math.min(2540, settings.fixedLengthMm)

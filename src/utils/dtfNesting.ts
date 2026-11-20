@@ -3,7 +3,7 @@ import { MM_PER_INCH } from './units';
 import { findPresetById } from './sheetPresets';
 
 /**
- * DTF gang-sheet nesting engine (standard DTF only — UVDTF keeps its own packer).
+ * Gang-sheet nesting engine for DTF and UVDTF sheets (each uses its own sheet size).
  *
  * Why this exists: the previous DTF packer laid designs out in upload order on
  * horizontal "shelves". Every shelf was as tall as its tallest design, so the
@@ -104,12 +104,13 @@ interface Orient {
 interface Candidate {
   order: NestItem[];
   heuristic: Heuristic;
-  rotate: boolean; // whether 90° rotation was allowed for this candidate
+  plan: OrientPlan; // which orientations each design may use in this candidate
   sheets: Placed[][];
   sheetCount: number;
   filmLengthMm: number; // film that will actually be consumed (after min-length clamp)
   extentMm: number; // raw used vertical extent across sheets (tie-breaker)
   groupScore: number;
+  rotatedCount: number; // designs placed at 90°
 }
 
 export interface DtfNestingOptions {
@@ -271,6 +272,9 @@ class MaxRectsBin {
 /* Packing helpers                                                          */
 /* ------------------------------------------------------------------------ */
 
+/** Orientations a design may take in one candidate layout (see the plans in nestDtf). */
+type OrientPlan = (it: NestItem) => Orient[];
+
 function orientsFor(it: NestItem, allowRotate: boolean): Orient[] {
   const o: Orient[] = [{ w: it.w, h: it.h, e: it.ext, rotated: false }];
   if (allowRotate && it.canRotate && Math.abs(it.w - it.h) > EPS) {
@@ -305,7 +309,7 @@ function packSequence(
   binW: number,
   binH: number,
   geo: Geo,
-  allowRotate: boolean
+  plan: OrientPlan
 ): Placed[][] {
   const sheets: Placed[][] = [];
   let remaining = order;
@@ -314,7 +318,7 @@ function packSequence(
     const placed: Placed[] = [];
     const left: NestItem[] = [];
     for (const it of remaining) {
-      const pos = bin.find(orientsFor(it, allowRotate), heur, geo);
+      const pos = bin.find(plan(it), heur, geo);
       if (!pos) {
         left.push(it);
         continue;
@@ -392,7 +396,7 @@ function repositionSheet(
   binW: number,
   binH: number,
   geo: Geo,
-  allowRotate: boolean,
+  plan: OrientPlan,
   deadline: number
 ): void {
   for (let pass = 0; pass < 3; pass++) {
@@ -406,12 +410,14 @@ function repositionSheet(
         const f = footprint(b);
         bin.place(f.x, f.y, f.w, f.h);
       }
-      const pos = bin.find(orientsFor(a.item, allowRotate), 'BL', geo);
+      const pos = bin.find(plan(a.item), 'BL', geo);
       if (!pos) continue;
       const np = toPlaced(a.item, pos);
+      // Turning a design 90° must clearly pay off (>= 2 mm); otherwise keep its orientation.
+      const gain = np.rotated !== a.rotated ? 2 : 0.05;
       const improves =
-        np.y + np.h < a.y + a.h - 0.05 ||
-        (Math.abs(np.y + np.h - (a.y + a.h)) <= 0.05 && np.y < a.y - 0.05);
+        np.y + np.h < a.y + a.h - gain ||
+        (np.rotated === a.rotated && Math.abs(np.y + np.h - (a.y + a.h)) <= 0.05 && np.y < a.y - 0.05);
       if (improves) {
         Object.assign(a, np);
         moved = true;
@@ -420,6 +426,12 @@ function repositionSheet(
     compactSheet(placed, geo);
     if (!moved) break;
   }
+}
+
+function countRotated(sheets: Placed[][]): number {
+  let n = 0;
+  for (const sh of sheets) for (const p of sh) if (p.rotated) n++;
+  return n;
 }
 
 function sheetExtent(placed: Placed[], geo: Geo): number {
@@ -512,14 +524,30 @@ function nestDtf(
 
   // --- Sheet geometry ------------------------------------------------------
   const preset = findPresetById(settings.filmWidthPreset);
-  const dtfPreset = preset && preset.printType === 'dtf' ? preset : undefined;
-  // Width always comes from the DTF roll (22", or the locked 22.5" roll), never from item sizes.
-  const filmWidthMm = (dtfPreset?.widthIn ?? DTF_ROLL_WIDTH_IN) * MM_PER_INCH;
-  const minLengthMm = (dtfPreset?.minLengthIn ?? DTF_MIN_LENGTH_IN) * MM_PER_INCH;
-  const maxLengthMm = (dtfPreset?.maxLengthIn ?? DTF_MAX_LENGTH_IN) * MM_PER_INCH;
+  const isUvdtf = (settings.printType || 'dtf') === 'uvdtf';
+  const sheetPreset = preset && preset.printType === (isUvdtf ? 'uvdtf' : 'dtf') ? preset : undefined;
+  let filmWidthMm: number;
+  let minLengthMm: number;
+  let maxLengthMm: number;
+  if (isUvdtf) {
+    // UVDTF sheets: A4 11×8", A3 11×17", Meter 22×39" (fixed) and the 23×100" roll.
+    // The sheet's width (or a custom UVDTF width, max 23" as before) is used as is.
+    const widthMm = settings.filmWidthMm > 0 ? settings.filmWidthMm : (sheetPreset?.widthIn ?? 22) * MM_PER_INCH;
+    filmWidthMm = Math.min(23 * MM_PER_INCH, Math.max(MM_PER_INCH, widthMm));
+    minLengthMm = (sheetPreset?.minLengthIn ?? 1) * MM_PER_INCH;
+    maxLengthMm = (sheetPreset?.maxLengthIn ?? (filmWidthMm <= 11.1 * MM_PER_INCH ? 17 : 100)) * MM_PER_INCH;
+  } else {
+    // DTF: width always comes from the DTF roll (22", or the locked 22.5" roll), never from item sizes.
+    filmWidthMm = (sheetPreset?.widthIn ?? DTF_ROLL_WIDTH_IN) * MM_PER_INCH;
+    minLengthMm = (sheetPreset?.minLengthIn ?? DTF_MIN_LENGTH_IN) * MM_PER_INCH;
+    maxLengthMm = (sheetPreset?.maxLengthIn ?? DTF_MAX_LENGTH_IN) * MM_PER_INCH;
+  }
 
-  const isFixed = settings.lengthMode === 'fixed';
-  const fixedLengthMm = Math.min(maxLengthMm, Math.max(minLengthMm, settings.fixedLengthMm || minLengthMm));
+  // Fixed-size sheets (A4, A3, Meter) always use their exact length.
+  const isFixed = settings.lengthMode === 'fixed' || Boolean(sheetPreset?.isFixedLength);
+  const fixedLengthMm = sheetPreset?.isFixedLength
+    ? maxLengthMm
+    : Math.min(maxLengthMm, Math.max(minLengthMm, settings.fixedLengthMm || minLengthMm));
   const sheetMaxLengthMm = isFixed ? fixedLengthMm : maxLengthMm;
 
   const spacingMm = Math.max(5, settings.spacingMm ?? 5);
@@ -633,8 +661,8 @@ function nestDtf(
   const sheetFilmLength = (extent: number): number =>
     isFixed ? fixedLengthMm : Math.min(maxLengthMm, Math.max(minLengthMm, extent + marginMm * 2));
 
-  const evaluate = (order: NestItem[], heuristic: Heuristic, rotate: boolean): Candidate => {
-    const sheets = packSequence(order, heuristic, binW, binH, geo, rotate);
+  const evaluate = (order: NestItem[], heuristic: Heuristic, plan: OrientPlan): Candidate => {
+    const sheets = packSequence(order, heuristic, binW, binH, geo, plan);
     let filmLengthMm = 0;
     let extentMm = 0;
     for (const s of sheets) {
@@ -646,12 +674,13 @@ function nestDtf(
     return {
       order,
       heuristic,
-      rotate,
+      plan,
       sheets,
       sheetCount: sheets.length,
       filmLengthMm,
       extentMm,
-      groupScore: groupingScore(sheets)
+      groupScore: groupingScore(sheets),
+      rotatedCount: countRotated(sheets)
     };
   };
 
@@ -676,6 +705,35 @@ function nestDtf(
     orders.push(rr);
   }
 
+  // --- 90° rotation: orientation plans ------------------------------------
+  // "free" lets every copy pick its orientation as it is placed. Greedy placement
+  // alone rarely turns a whole design (e.g. five 12×4 designs standing as 4×12
+  // across the sheet), so plans that rotate entire designs are evaluated too.
+  // Upright layouts always compete, so rotation can never make a layout worse.
+  const fitsRotated = (it: NestItem) =>
+    it.canRotate && it.h <= usableW + EPS && it.w <= usableL + EPS && Math.abs(it.w - it.h) > EPS;
+  const rotatedOnly = (it: NestItem): Orient[] => [{ w: it.h, h: it.w, e: it.extRot, rotated: true }];
+  const planUpright: OrientPlan = (it) => orientsFor(it, false);
+  const planFree: OrientPlan = (it) => orientsFor(it, true);
+  const planForce = (assetIds: Set<string> | null, othersFree: boolean): OrientPlan => (it) => {
+    const forced = assetIds === null || assetIds.has(it.assetId);
+    if (forced && fitsRotated(it)) return rotatedOnly(it);
+    return orientsFor(it, othersFree || forced); // a design that cannot rotate stays free
+  };
+  const plans: { plan: OrientPlan; core: boolean }[] = [{ plan: planUpright, core: true }];
+  if (rotationEnabled) {
+    plans.push({ plan: planFree, core: true });
+    plans.push({ plan: planForce(null, false), core: true }); // every design rotated
+    const rotatable = activeAssets.filter((a) => items.some((it) => it.assetId === a.id && fitsRotated(it)));
+    if (rotatable.length > 1 && rotatable.length <= 8 && items.length <= 300) {
+      for (const a of rotatable) {
+        const one = new Set([a.id]);
+        plans.push({ plan: planForce(one, true), core: false }); // this design rotated, others free
+        plans.push({ plan: planForce(one, false), core: false }); // this design rotated, others upright
+      }
+    }
+  }
+
   const timeBudgetMs = options.timeBudgetMs ?? 150;
   const deadline = startTime + timeBudgetMs;
   const pool: Candidate[] = [];
@@ -685,11 +743,10 @@ function nestDtf(
     const order = orders[oi];
     // Always try the first ordering with every heuristic; very large jobs stop early.
     if (oi > 0 && performance.now() > deadline) break;
-    // With rotation enabled, upright layouts are candidates too, so enabling
-    // rotation can never produce a longer sheet than leaving it off.
-    for (const rotate of rotationEnabled ? [true, false] : [false]) {
+    for (const { plan, core } of plans) {
+      if (!core && oi > 1) continue; // per-design plans: first two orderings only
       for (const heur of HEURISTICS) {
-        const c = evaluate(order, heur, rotate);
+        const c = evaluate(order, heur, plan);
         pool.push(c);
         if (!best || better(c, best)) best = c;
       }
@@ -715,7 +772,7 @@ function nestDtf(
       order.splice(Math.min(i, j), 0, moved);
     }
     const heur = rand() < 0.7 ? current.heuristic : HEURISTICS[Math.floor(rand() * HEURISTICS.length)];
-    const c = evaluate(order, heur, current.rotate);
+    const c = evaluate(order, heur, current.plan);
     if (!better(current, c)) {
       // Accept improvements and sideways moves (lets the search escape plateaus).
       current = c;
@@ -725,6 +782,26 @@ function nestDtf(
   }
 
   // --- Final choice ---------------------------------------------------------
+  // 90° rotation is used only when it clearly helps: among layouts that need the same
+  // sheets and film and are within 2 mm (or 0.5%) of the best length, take the one
+  // that rotates the fewest designs.
+  const preferOriginalOrientation = (candidates: Candidate[], top: Candidate): Candidate => {
+    if (!rotationEnabled) return top;
+    const tol = Math.max(2, top.extentMm * 0.005);
+    let pick = top;
+    for (const c of candidates) {
+      if (
+        c.sheetCount === top.sheetCount &&
+        c.filmLengthMm <= top.filmLengthMm + 1e-3 &&
+        c.extentMm <= top.extentMm + tol &&
+        (c.rotatedCount < pick.rotatedCount || (c.rotatedCount === pick.rotatedCount && c.extentMm < pick.extentMm - 1e-3))
+      ) {
+        pick = c;
+      }
+    }
+    return pick;
+  };
+
   const selectWithGrouping = (candidates: Candidate[], top: Candidate): Candidate => {
     let pick = top;
     if (!keepTogether) return pick;
@@ -738,6 +815,7 @@ function nestDtf(
         c.sheetCount === top.sheetCount &&
         c.filmLengthMm <= top.filmLengthMm + 1e-3 &&
         c.extentMm <= top.extentMm + tol &&
+        c.rotatedCount <= top.rotatedCount &&
         c.groupScore < pick.groupScore - 1e-6
       ) {
         pick = c;
@@ -745,14 +823,14 @@ function nestDtf(
     }
     return pick;
   };
-  let chosen = selectWithGrouping(pool, best!);
+  let chosen = selectWithGrouping(pool, preferOriginalOrientation(pool, best!));
 
   // --- Repositioning: move designs into side gaps left anywhere on the sheet --
   {
     const sheetsR = chosen.sheets.map((sh) => sh.map((p) => ({ ...p })));
     const repoDeadline = performance.now() + 250;
     for (const sh of sheetsR) {
-      if (sh.length <= 400) repositionSheet(sh, binW, binH, geo, chosen.rotate, repoDeadline);
+      if (sh.length <= 400) repositionSheet(sh, binW, binH, geo, chosen.plan, repoDeadline);
     }
     let filmLengthMm = 0;
     let extentMm = 0;
@@ -762,7 +840,8 @@ function nestDtf(
       filmLengthMm += sheetFilmLength(e);
     }
     const repositioned: Candidate = {
-      ...chosen, sheets: sheetsR, filmLengthMm, extentMm, groupScore: groupingScore(sheetsR)
+      ...chosen, sheets: sheetsR, filmLengthMm, extentMm, groupScore: groupingScore(sheetsR),
+      rotatedCount: countRotated(sheetsR)
     };
     if (!better(chosen, repositioned)) {
       pool.push(repositioned);

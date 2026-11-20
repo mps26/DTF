@@ -16,6 +16,8 @@ import {
 import { SheetSettings, LayoutResult } from '../types';
 import { UserProfile } from '../types/auth';
 import { mmToUnit } from '../utils/units';
+
+const ROTATION_TOOLTIP = 'Automatically rotates designs by 90° when doing so improves sheet utilization.';
 import {
   RollPreset,
   getPresetsForPrintType,
@@ -69,6 +71,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
   const isFixedPreset = activePreset?.isFixedLength ?? false;
 
   const [lengthInput, setLengthInput] = useState<string>(() => (settings.fixedLength || currentMinLen).toString());
+  const rotationOn = Boolean(settings.allowItemRotation);
   const [spacingMmInput, setSpacingMmInput] = useState<string>(() =>
     (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()
   );
@@ -272,6 +275,37 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
                   mm
                 </span>
               </div>
+            </div>
+
+            {/* 90° ROTATION (auto-rotate designs when it improves the layout) */}
+            <div className="flex-shrink-0" title={ROTATION_TOOLTIP}>
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 mb-0.5 whitespace-nowrap">
+                90° Rotation
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={rotationOn}
+                aria-label="90° Rotation"
+                title={ROTATION_TOOLTIP}
+                onClick={() => onUpdateSettings({ allowItemRotation: !rotationOn })}
+                className="h-[30px] flex items-center gap-2 bg-[#132c40] border border-[#183750] rounded-xl px-2.5 cursor-pointer"
+              >
+                <span
+                  className={`w-8 h-4.5 rounded-full p-0.5 transition-colors flex items-center ${
+                    rotationOn ? 'bg-[#EF7F1A]' : 'bg-slate-600'
+                  }`}
+                >
+                  <span
+                    className={`w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform ${
+                      rotationOn ? 'translate-x-3.5' : 'translate-x-0'
+                    }`}
+                  />
+                </span>
+                <span className={`text-xs sm:text-[13px] font-bold ${rotationOn ? 'text-[#EF7F1A]' : 'text-slate-300'}`}>
+                  {rotationOn ? 'On' : 'Off'}
+                </span>
+              </button>
             </div>
 
             {/* SHEET LENGTH */}
@@ -631,6 +665,25 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
             </div>
           </div>
         </div>
+
+        {/* ROW 2b: 90° Rotation */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={rotationOn}
+          aria-label="90° Rotation"
+          title={ROTATION_TOOLTIP}
+          onClick={() => onUpdateSettings({ allowItemRotation: !rotationOn })}
+          className="h-9 w-full flex items-center justify-between bg-[#132c40] border border-[#183750] rounded-xl px-3"
+        >
+          <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">90° Rotation</span>
+          <span className="flex items-center gap-2">
+            <span className={`text-xs font-bold ${rotationOn ? 'text-[#EF7F1A]' : 'text-slate-400'}`}>{rotationOn ? 'On' : 'Off'}</span>
+            <span className={`w-8 h-4.5 rounded-full p-0.5 transition-colors flex items-center ${rotationOn ? 'bg-[#EF7F1A]' : 'bg-slate-600'}`}>
+              <span className={`w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform ${rotationOn ? 'translate-x-3.5' : 'translate-x-0'}`} />
+            </span>
+          </span>
+        </button>
 
         {/* ROW 3: Copies, Sheet Length, Waste */}
         <div className="grid grid-cols-3 gap-2">
