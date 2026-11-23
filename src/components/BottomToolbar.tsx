@@ -598,7 +598,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
         </div>
 
         {/* ROW 2: Gap (Spacing mm) & Sheet Length (Auto / Fixed) */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] min-[400px]:grid-cols-2 gap-2">
           {/* Gap */}
           <div className="h-9 flex items-center justify-between bg-[#132c40] border border-[#183750] rounded-xl px-3">
             <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Gap</span>
@@ -620,13 +620,13 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
           </div>
 
           {/* Sheet Length (Auto / Fixed) */}
-          <div className="h-9 flex items-center justify-between bg-[#132c40] p-1 rounded-xl border border-[#183750]">
-            <span className="text-[10px] text-slate-400 uppercase font-sans font-bold px-1.5">Length</span>
-            <div className="flex items-center space-x-1 h-full">
+          <div className="h-9 min-w-0 flex items-center justify-between bg-[#132c40] p-1 rounded-xl border border-[#183750]">
+            <span className="text-[10px] text-slate-400 uppercase font-sans font-bold px-1 min-[360px]:px-1.5">Length</span>
+            <div className="flex items-center gap-0.5 min-[360px]:gap-1 h-full">
               <button
                 type="button"
                 onClick={() => onUpdateSettings({ lengthMode: 'auto' })}
-                className={`h-7 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                className={`h-7 px-2 min-[360px]:px-2.5 rounded-lg text-xs font-bold transition-all ${
                   settings.lengthMode === 'auto' ? 'bg-[#EF7F1A] text-[#204563] font-black shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -635,36 +635,45 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
               <button
                 type="button"
                 onClick={() => onUpdateSettings({ lengthMode: 'fixed' })}
-                className={`h-7 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                className={`h-7 px-2 min-[360px]:px-2.5 rounded-lg text-xs font-bold transition-all ${
                   settings.lengthMode === 'fixed' ? 'bg-[#EF7F1A] text-[#204563] font-black shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Fixed
               </button>
-              {settings.lengthMode === 'fixed' && (
-                <div className="flex items-center bg-[#0b1723] border border-[#183750] rounded-md px-1 py-0.5 ml-0.5">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={isLengthFocused ? lengthInput : (settings.fixedLength || currentMinLen).toString()}
-                    onFocus={() => {
-                      setIsLengthFocused(true);
-                      setLengthInput((settings.fixedLength || currentMinLen).toString());
-                    }}
-                    onChange={(e) => handleLengthChange(e.target.value)}
-                    onBlur={handleLengthBlur}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                    }}
-                    className="w-7 bg-transparent text-[11px] font-bold text-white focus:outline-none font-mono text-center"
-                    placeholder={currentMinLen.toString()}
-                  />
-                  <span className="text-slate-400 text-[8px] uppercase font-bold">in</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
+
+        {/* ROW 2a: Fixed sheet length — own full-width row so the box is always visible */}
+        {settings.lengthMode === 'fixed' && (
+          <label className="h-9 w-full flex items-center justify-between gap-2 bg-[#132c40] border border-[#EF7F1A]/60 rounded-xl px-3">
+            <span className="text-[10px] text-slate-400 uppercase font-sans font-bold whitespace-nowrap">
+              Sheet length <span className="normal-case font-semibold text-slate-500">({currentMinLen}"–{currentMaxLen}")</span>
+            </span>
+            <span className="flex items-center gap-1.5 bg-[#0b1723] border border-[#183750] focus-within:border-[#EF7F1A] rounded-lg px-2 h-7">
+              <input
+                type="text"
+                inputMode="decimal"
+                aria-label="Fixed sheet length in inches"
+                value={isLengthFocused ? lengthInput : (settings.fixedLength || currentMinLen).toString()}
+                onFocus={(e) => {
+                  setIsLengthFocused(true);
+                  setLengthInput((settings.fixedLength || currentMinLen).toString());
+                  e.target.select();
+                }}
+                onChange={(e) => handleLengthChange(e.target.value)}
+                onBlur={handleLengthBlur}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                }}
+                className="w-12 bg-transparent text-sm font-bold text-white focus:outline-none font-mono text-right"
+                placeholder={currentMinLen.toString()}
+              />
+              <span className="text-slate-400 text-[10px] uppercase font-bold">in</span>
+            </span>
+          </label>
+        )}
 
         {/* ROW 2b: 90° Rotation */}
         <button

@@ -128,6 +128,26 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  /* Phones only (< 768px): hide scrollbars of swipeable bars; desktop keeps them. */
+  @media (max-width: 767px) {
+    /* Design Studio settings panel: finger-friendly controls (desktop unchanged). */
+    .ds-panel input[type='range'] {
+      box-sizing: content-box;
+      padding: 12px 0;
+      background-clip: content-box;
+      touch-action: pan-y;
+    }
+    .ds-panel button.w-full {
+      min-height: 44px;
+    }
+    .no-scrollbar-mobile::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar-mobile {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  }
 }
 
 

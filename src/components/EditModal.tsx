@@ -37,6 +37,7 @@ import {
   ArrowRight,
   Images,
   ChevronLeft,
+  ChevronDown,
   Copy
 } from 'lucide-react';
 import { ArtworkAsset } from '../types';
@@ -202,6 +203,16 @@ export const EditModal: React.FC<EditModalProps> = ({
 
   // File replacement & eraser canvas refs
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ---- Responsive layout (phones < 768px) ----
+  // Settings panel can be collapsed on phones so the preview gets the screen.
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState<boolean>(true);
+  // Bars whose active tab/tool is scrolled into view automatically.
+  const categoryBarRef = useRef<HTMLDivElement>(null);
+  const toolBarRef = useRef<HTMLDivElement>(null);
+  // Real height of the preview pane, so images always fit inside it (never cut off).
+  const [previewPaneEl, setPreviewPaneEl] = useState<HTMLDivElement | null>(null);
+  const [previewMaxH, setPreviewMaxH] = useState<number | null>(null);
   const eraserCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Tool Specific States:
@@ -441,9 +452,50 @@ export const EditModal: React.FC<EditModalProps> = ({
     };
   }, [currentUrl, paddingPx]);
 
-  // Global mousemove and mouseup listeners for split comparison sliders (vector & upscale)
+  // Keep the preview image inside the visible preview pane on every screen size.
+  // Re-measured whenever the pane resizes (rotation, browser bars, settings panel
+  // collapsing) and on window resize.
   useEffect(() => {
-    const handleGlobalMouseMove = (e: MouseEvent) => {
+    const pane = previewPaneEl;
+    if (!pane) return;
+    const update = () => {
+      const cs = getComputedStyle(pane);
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      // minus the preview frame's own padding / border
+      const framePad = window.innerWidth < 640 ? 20 : 52; // frame padding x2 + border
+      setPreviewMaxH(Math.max(48, Math.floor(pane.clientHeight - padY - framePad)));
+    };
+    update();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    ro?.observe(pane);
+    window.addEventListener('resize', update);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [previewPaneEl]);
+
+  // Bring the active category tab and tool button into view (horizontal bars on phones).
+  useEffect(() => {
+    const reveal = () => {
+      for (const bar of [categoryBarRef.current, toolBarRef.current]) {
+        const active = bar?.querySelector<HTMLElement>('[data-active="true"]');
+        if (!bar || !active) continue;
+        // Scroll only the bar itself (never the page) so the active item is fully visible.
+        const br = bar.getBoundingClientRect();
+        const ar = active.getBoundingClientRect();
+        if (ar.left < br.left) bar.scrollBy({ left: ar.left - br.left - 12, behavior: 'smooth' });
+        else if (ar.right > br.right) bar.scrollBy({ left: ar.right - br.right + 12, behavior: 'smooth' });
+      }
+    };
+    reveal();
+    window.addEventListener('resize', reveal);
+    return () => window.removeEventListener('resize', reveal);
+  }, [activeCategory, activeTool]);
+
+  // Global pointer (mouse + touch + pen) listeners for split comparison sliders (vector & upscale)
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: PointerEvent) => {
       if (isDraggingSplit && vectorContainerRef.current) {
         const rect = vectorContainerRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -468,12 +520,14 @@ export const EditModal: React.FC<EditModalProps> = ({
     };
 
     if (isDraggingSplit || isDraggingUpscaleSplit) {
-      window.addEventListener('mousemove', handleGlobalMouseMove);
-      window.addEventListener('mouseup', handleGlobalMouseUp);
+      window.addEventListener('pointermove', handleGlobalMouseMove);
+      window.addEventListener('pointerup', handleGlobalMouseUp);
+      window.addEventListener('pointercancel', handleGlobalMouseUp);
     }
     return () => {
-      window.removeEventListener('mousemove', handleGlobalMouseMove);
-      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      window.removeEventListener('pointermove', handleGlobalMouseMove);
+      window.removeEventListener('pointerup', handleGlobalMouseUp);
+      window.removeEventListener('pointercancel', handleGlobalMouseUp);
     };
   }, [isDraggingSplit, isDraggingUpscaleSplit]);
 
@@ -897,7 +951,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 
   // Interactive 8-Handle Crop Box Handlers
   const startDrag = (
-    e: React.MouseEvent,
+    e: React.PointerEvent | React.MouseEvent,
     action: 'move' | 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
   ) => {
     e.stopPropagation();
@@ -1003,11 +1057,14 @@ export const EditModal: React.FC<EditModalProps> = ({
       dragInfoRef.current = null;
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    // Pointer events: the crop box and its handles work with mouse, touch and pen.
+    window.addEventListener('pointermove', onMouseMove);
+    window.addEventListener('pointerup', onMouseUp);
+    window.addEventListener('pointercancel', onMouseUp);
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('pointermove', onMouseMove);
+      window.removeEventListener('pointerup', onMouseUp);
+      window.removeEventListener('pointercancel', onMouseUp);
     };
   }, [cropAspectRatio, imageNaturalSize]);
 
@@ -1507,18 +1564,18 @@ export const EditModal: React.FC<EditModalProps> = ({
   const currentCategoryObj = categories.find((c) => c.id === activeCategory) || categories[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in select-none">
-      <div className="bg-white text-slate-800 rounded-3xl border border-slate-200 shadow-2xl max-w-6xl w-full h-[94vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-2 md:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in select-none">
+      <div className="bg-white text-slate-800 rounded-none sm:rounded-3xl border border-slate-200 shadow-2xl max-w-6xl w-full h-[100dvh] sm:h-[94vh] flex flex-col overflow-hidden">
         
         {/* Top Header Bar: Clean White with Crisp Dark Typography */}
-        <div className="px-6 py-3.5 border-b border-[#E5D9C8] bg-white flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#204563] flex items-center justify-center text-[#EF7F1A] shadow-md shadow-[#204563]/25">
+        <div className="px-3 py-2 md:px-6 md:py-3.5 border-b border-[#E5D9C8] bg-white flex flex-wrap md:flex-nowrap items-center justify-between gap-x-2 gap-y-1.5 flex-shrink-0">
+          <div className="flex items-center space-x-2 md:space-x-3 min-w-0 w-full sm:w-auto sm:flex-1">
+            <div className="hidden sm:flex w-8 h-8 md:w-10 md:h-10 flex-shrink-0 rounded-2xl bg-[#204563] flex items-center justify-center text-[#EF7F1A] shadow-md shadow-[#204563]/25">
               <Sparkles className="w-5 h-5 text-[#EF7F1A]" />
             </div>
-            <div>
-              <div className="flex items-center space-x-2.5">
-                <h3 className="font-black text-base text-[#204563] tracking-tight">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <h3 className="font-black text-sm md:text-base text-[#204563] tracking-tight whitespace-nowrap">
                   Design Studio & Image Suite
                 </h3>
                 {assets && assets.length > 1 ? (
@@ -1530,14 +1587,14 @@ export const EditModal: React.FC<EditModalProps> = ({
                         const prevIdx = (idx - 1 + assets.length) % assets.length;
                         handleSwitchAsset(assets[prevIdx]);
                       }}
-                      className="p-1 rounded-lg text-[#526A7B] hover:text-[#EF7F1A] hover:bg-[#FAF7F1] transition-colors cursor-pointer"
+                      className="p-2 md:p-1 rounded-lg text-[#526A7B] hover:text-[#EF7F1A] hover:bg-[#FAF7F1] transition-colors cursor-pointer"
                       title="Previous image"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
                     </button>
 
                     <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#FAF7F1] text-[#204563] border border-[#E5D9C8] flex items-center space-x-1.5 shadow-xs">
-                      <span className="truncate max-w-[140px]">{currentAsset.filename}</span>
+                      <span className="truncate max-w-[110px] sm:max-w-[140px]">{currentAsset.filename}</span>
                       <span className="text-[10px] text-[#EF7F1A] font-extrabold">
                         ({assets.findIndex((a) => a.id === currentAsset.id) + 1}/{assets.length})
                       </span>
@@ -1550,7 +1607,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                         const nextIdx = (idx + 1) % assets.length;
                         handleSwitchAsset(assets[nextIdx]);
                       }}
-                      className="p-1 rounded-lg text-[#526A7B] hover:text-[#EF7F1A] hover:bg-[#FAF7F1] transition-colors cursor-pointer"
+                      className="p-2 md:p-1 rounded-lg text-[#526A7B] hover:text-[#EF7F1A] hover:bg-[#FAF7F1] transition-colors cursor-pointer"
                       title="Next image"
                     >
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -1562,13 +1619,13 @@ export const EditModal: React.FC<EditModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#526A7B] font-medium">
+              <p className="text-[11px] md:text-xs text-[#526A7B] font-medium truncate">
                 Active: <span className="text-[#EF7F1A] font-bold capitalize">{activeTool.replace('-', ' ')}</span> • {currentAsset.trimmedWidth || currentAsset.originalWidth || imageNaturalSize.width} × {currentAsset.trimmedHeight || currentAsset.originalHeight || imageNaturalSize.height} px • 300 DPI High-Res
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-end space-x-1.5 md:space-x-2 flex-shrink-0 ml-auto w-full sm:w-auto">
             <input
               type="file"
               ref={fileInputRef}
@@ -1578,11 +1635,12 @@ export const EditModal: React.FC<EditModalProps> = ({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#FAF7F1] text-[#204563] text-xs font-bold transition-all flex items-center space-x-1.5 border border-[#E5D9C8] shadow-xs"
+              className="px-2.5 py-2 md:px-3.5 md:py-1.5 rounded-xl bg-white hover:bg-[#FAF7F1] text-[#204563] text-xs font-bold transition-all flex items-center space-x-1.5 border border-[#E5D9C8] shadow-xs"
               title="Replace current image"
+              aria-label="Replace file"
             >
               <UploadCloud className="w-3.5 h-3.5 text-[#204563]" />
-              <span>Replace File</span>
+              <span className="hidden sm:inline">Replace File</span>
             </button>
 
             <button
@@ -1621,7 +1679,7 @@ export const EditModal: React.FC<EditModalProps> = ({
         </div>
 
         {/* 1. TOP CATEGORY SWITCHER (Clean White Tabs) */}
-        <div className="bg-[#FAF7F1] border-b border-[#E5D9C8] px-6 py-2 flex items-center space-x-2 overflow-x-auto flex-shrink-0">
+        <div ref={categoryBarRef} className="bg-[#FAF7F1] border-b border-[#E5D9C8] px-3 md:px-6 py-1.5 md:py-2 flex items-center space-x-2 overflow-x-auto overscroll-x-contain no-scrollbar-mobile flex-shrink-0">
           {categories.map((cat) => {
             const Icon = cat.icon;
             const catLocked = isCategoryLocked(cat.id);
@@ -1629,6 +1687,7 @@ export const EditModal: React.FC<EditModalProps> = ({
             return (
               <button
                 key={cat.id}
+                data-active={isCatActive}
                 disabled={catLocked}
                 aria-disabled={catLocked}
                 title={catLocked ? `${cat.name} is locked` : undefined}
@@ -1647,7 +1706,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                     }
                   }
                 }}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap flex-shrink-0 min-h-11 md:min-h-0 ${
                   catLocked
                     ? 'bg-white text-[#526A7B]/60 border border-[#E5D9C8] cursor-not-allowed'
                     : isCatActive
@@ -1672,8 +1731,8 @@ export const EditModal: React.FC<EditModalProps> = ({
         </div>
 
         {/* 2. SUB-BAR: ALL TOOLS OF ACTIVE CATEGORY PROMINENTLY VISIBLE */}
-        <div className="bg-white border-b border-[#E5D9C8] px-6 py-2.5 flex items-center space-x-2 overflow-x-auto flex-shrink-0">
-          <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#526A7B] mr-2 flex-shrink-0">
+        <div ref={toolBarRef} className="bg-white border-b border-[#E5D9C8] px-3 md:px-6 py-1.5 md:py-2.5 flex items-center space-x-2 overflow-x-auto overscroll-x-contain no-scrollbar-mobile flex-shrink-0">
+          <div className="hidden sm:block text-[11px] font-extrabold uppercase tracking-wider text-[#526A7B] mr-2 flex-shrink-0">
             {currentCategoryObj.name} Tools:
           </div>
           {currentCategoryObj.tools.map((t) => {
@@ -1681,6 +1740,7 @@ export const EditModal: React.FC<EditModalProps> = ({
             return (
               <button
                 key={t.id}
+                data-active={isToolActive}
                 onClick={() => {
                   if (t.id === 'print-check' && onOpenAudit) {
                     onOpenAudit();
@@ -1690,7 +1750,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                     setActiveTool(t.id);
                   }
                 }}
-                className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
+                className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 whitespace-nowrap min-h-11 md:min-h-0 ${
                   isToolActive
                     ? 'bg-[#EF7F1A] border-2 border-[#EF7F1A] text-[#204563] font-black shadow-xs'
                     : 'bg-[#FAF7F1] hover:bg-white text-[#204563] border border-[#E5D9C8]'
@@ -1713,10 +1773,14 @@ export const EditModal: React.FC<EditModalProps> = ({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           
           {/* Left Canvas Preview Pane with Garment Simulator & Checkerboard */}
-          <div className="flex-1 bg-[#F3EBDD] p-4 sm:p-6 pt-16 flex flex-col items-center justify-center relative overflow-auto min-w-0 min-h-0">
+          <div
+            ref={setPreviewPaneEl}
+            className="flex-1 bg-[#F3EBDD] p-2 sm:p-6 pt-12 sm:pt-16 flex flex-col items-center justify-center relative overflow-auto min-w-0 min-h-[160px] md:min-h-0"
+            style={previewMaxH ? ({ '--preview-max-h': `${previewMaxH}px` } as React.CSSProperties) : undefined}
+          >
             
             {/* Viewport Zoom & Garment Background Strip */}
-            <div className="absolute top-4 left-4 z-20 flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#E5D9C8] shadow-sm text-xs font-bold text-[#204563]">
+            <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20 flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#E5D9C8] shadow-sm text-xs font-bold text-[#204563]">
               <span className="text-[10px] uppercase text-[#526A7B] font-extrabold mr-1">Zoom:</span>
               <button
                 onClick={() => setZoom((z) => Math.max(0.3, Number((z - 0.15).toFixed(2))))}
@@ -1768,7 +1832,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               <div className="flex flex-col items-center justify-center w-full max-h-full">
                 {/* Upscaler Comparison Preview Canvas */}
                 <div
-                  className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-4 sm:p-6 w-full h-full"
+                  className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-2 sm:p-6 w-full h-full"
                   style={{
                     maxHeight: 'calc(100% - 1rem)',
                     maxWidth: 'calc(100% - 1rem)',
@@ -1787,16 +1851,16 @@ export const EditModal: React.FC<EditModalProps> = ({
                 >
                   <div
                     ref={upscaleContainerRef}
-                    className="relative inline-block select-none max-h-[min(540px,calc(100vh-280px))] max-w-full"
+                    className="relative inline-block select-none max-h-[min(540px,calc(100vh-280px),var(--preview-max-h,9999px))] max-w-full"
                   >
                     {/* Top Badges */}
                     <div className="absolute top-2 left-2 z-20 pointer-events-none">
-                      <span className="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-white font-extrabold text-[10px] tracking-wide shadow-md">
+                      <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-white font-extrabold text-[10px] tracking-wide shadow-md">
                         Original: {currentAsset?.originalWidth || imageNaturalSize.width} × {currentAsset?.originalHeight || imageNaturalSize.height} px
                       </span>
                     </div>
                     <div className="absolute top-2 right-2 z-20 pointer-events-none">
-                      <span className="px-2.5 py-1 rounded-full bg-[#204563] text-white font-extrabold text-[10px] tracking-wide shadow-md">
+                      <span className="inline-block max-w-[calc(100vw-5rem)] sm:max-w-none truncate align-top px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[#204563] text-white font-extrabold text-[9px] sm:text-[10px] tracking-wide shadow-md">
                         {upscaledDims
                           ? `AI Upscaled (${upscaleFactor}× • ${upscaleSharpness}% Sharp): ${upscaledDims.width} × ${upscaledDims.height} px`
                           : `AI Target (${upscaleFactor}×): ${(currentAsset?.originalWidth || imageNaturalSize.width) * upscaleFactor} × ${(currentAsset?.originalHeight || imageNaturalSize.height) * upscaleFactor} px`}
@@ -1807,7 +1871,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                     <img
                       src={upscaledUrl || currentUrl}
                       alt="Upscaled Preview"
-                      className="max-h-[min(540px,calc(100vh-280px))] max-w-full w-auto h-auto object-contain block drop-shadow-sm select-none"
+                      className="max-h-[min(540px,calc(100vh-280px),var(--preview-max-h,9999px))] max-w-full w-auto h-auto object-contain block drop-shadow-sm select-none"
                     />
 
                     {/* Overlaid clipped Original for split comparison */}
@@ -1819,7 +1883,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                         <img
                           src={currentAsset?.originalUrl || currentUrl}
                           alt="Original Input"
-                          className="max-h-[min(540px,calc(100vh-280px))] max-w-none w-auto h-auto object-contain block select-none"
+                          className="max-h-[min(540px,calc(100vh-280px),var(--preview-max-h,9999px))] max-w-none w-auto h-auto object-contain block select-none"
                           style={{
                             width: upscaleContainerRef.current?.clientWidth,
                             height: upscaleContainerRef.current?.clientHeight
@@ -1832,8 +1896,11 @@ export const EditModal: React.FC<EditModalProps> = ({
                     {upscaleCompareMode && upscaledUrl && (
                       <div
                         className="absolute top-0 bottom-0 z-30 cursor-ew-resize flex items-center justify-center pointer-events-auto"
-                        style={{ left: `${upscaleSplitPos}%`, transform: 'translateX(-50%)' }}
-                        onMouseDown={() => setIsDraggingUpscaleSplit(true)}
+                        style={{ left: `${upscaleSplitPos}%`, transform: 'translateX(-50%)', touchAction: 'none' }}
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          setIsDraggingUpscaleSplit(true);
+                        }}
                       >
                         <div className="w-0.5 h-full bg-white shadow-md shadow-black/40" />
                         <div className="absolute w-7 h-7 rounded-full bg-white border border-slate-300 shadow-lg flex items-center justify-center text-slate-700 hover:scale-110 active:scale-95 transition-transform">
@@ -1848,7 +1915,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               <div className="flex flex-col items-center justify-center w-full max-h-full">
                 {/* Comparison Preview Canvas */}
                 <div
-                  className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-4 sm:p-6 w-full h-full"
+                  className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-2 sm:p-6 w-full h-full"
                   style={{
                     maxHeight: 'calc(100% - 1rem)',
                     maxWidth: 'calc(100% - 1rem)',
@@ -1867,7 +1934,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                 >
                   <div
                     ref={vectorContainerRef}
-                    className="relative inline-block select-none max-h-[min(540px,calc(100vh-280px))] max-w-full"
+                    className="relative inline-block select-none max-h-[min(540px,calc(100vh-280px),var(--preview-max-h,9999px))] max-w-full"
                   >
                     {/* Top Badges */}
                     <div className="absolute top-2 left-2 z-20 pointer-events-none">
@@ -1885,7 +1952,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                     <img
                       src={vectorizedSvgUrl || currentUrl}
                       alt="Vectorized Output"
-                      className="max-h-[min(540px,calc(100vh-280px))] max-w-full w-auto h-auto object-contain block drop-shadow-sm select-none"
+                      className="max-h-[min(540px,calc(100vh-280px),var(--preview-max-h,9999px))] max-w-full w-auto h-auto object-contain block drop-shadow-sm select-none"
                     />
 
                     {/* Overlaid clipped Original for split comparison */}
@@ -1897,7 +1964,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                         <img
                           src={currentAsset?.originalUrl || currentUrl}
                           alt="Original Raster"
-                          className="max-h-[min(540px,calc(100vh-280px))] max-w-none w-auto h-auto object-contain block select-none"
+                          className="max-h-[min(540px,calc(100vh-280px),var(--preview-max-h,9999px))] max-w-none w-auto h-auto object-contain block select-none"
                           style={{
                             width: vectorContainerRef.current?.clientWidth,
                             height: vectorContainerRef.current?.clientHeight
@@ -1910,8 +1977,11 @@ export const EditModal: React.FC<EditModalProps> = ({
                     {vectorCompareMode && (
                       <div
                         className="absolute top-0 bottom-0 z-30 cursor-ew-resize flex items-center justify-center pointer-events-auto"
-                        style={{ left: `${vectorSplitPos}%`, transform: 'translateX(-50%)' }}
-                        onMouseDown={() => setIsDraggingSplit(true)}
+                        style={{ left: `${vectorSplitPos}%`, transform: 'translateX(-50%)', touchAction: 'none' }}
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          setIsDraggingSplit(true);
+                        }}
                       >
                         <div className="w-0.5 h-full bg-white shadow-md shadow-black/40" />
                         <div className="absolute w-7 h-7 rounded-full bg-white border border-slate-300 shadow-lg flex items-center justify-center text-slate-700 hover:scale-110 active:scale-95 transition-transform">
@@ -1924,7 +1994,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               </div>
             ) : (
             <div
-              className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-4 sm:p-6"
+              className="rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative flex items-center justify-center transition-transform duration-150 p-2 sm:p-6"
               style={{
                 maxHeight: 'calc(100% - 0.5rem)',
                 maxWidth: 'calc(100% - 0.5rem)',
@@ -1944,10 +2014,12 @@ export const EditModal: React.FC<EditModalProps> = ({
               {activeTool === 'eraser' ? (
                 <canvas
                   ref={eraserCanvasRef}
-                  onMouseDown={handleEraserCanvasMouseDown}
-                  onMouseMove={handleEraserCanvasMouseMove}
-                  onMouseUp={handleEraserCanvasMouseUp}
-                  className="max-h-[min(500px,calc(100vh-320px))] max-w-full w-auto h-auto object-contain cursor-crosshair block"
+                  onPointerDown={handleEraserCanvasMouseDown}
+                  onPointerMove={handleEraserCanvasMouseMove}
+                  onPointerUp={handleEraserCanvasMouseUp}
+                  onPointerCancel={handleEraserCanvasMouseUp}
+                  style={{ touchAction: 'none' }}
+                  className="max-h-[min(500px,calc(100vh-320px),var(--preview-max-h,9999px))] max-w-full w-auto h-auto object-contain cursor-crosshair block"
                 />
               ) : (
                 <div ref={cropWrapperRef} className="relative inline-block select-none max-h-full max-w-full">
@@ -1975,7 +2047,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                           }
                         : undefined
                     }
-                    className="max-h-[min(500px,calc(100vh-320px))] max-w-full w-auto h-auto object-contain block pointer-events-none select-none drop-shadow-sm"
+                    className="max-h-[min(500px,calc(100vh-320px),var(--preview-max-h,9999px))] max-w-full w-auto h-auto object-contain block pointer-events-none select-none drop-shadow-sm"
                   />
 
                   {/* Interactive 8-Handle Crop Box Overlay */}
@@ -2011,12 +2083,13 @@ export const EditModal: React.FC<EditModalProps> = ({
                       <div
                         className="absolute border-2 border-dashed border-blue-600 shadow-sm cursor-move select-none"
                         style={{
+                          touchAction: 'none',
                           left: `${cropBox.x * 100}%`,
                           top: `${cropBox.y * 100}%`,
                           width: `${cropBox.width * 100}%`,
                           height: `${cropBox.height * 100}%`
                         }}
-                        onMouseDown={(e) => startDrag(e, 'move')}
+                        onPointerDown={(e) => startDrag(e, 'move')}
                       >
                         {/* Live Dimension Tag */}
                         <div className="absolute top-1.5 left-1.5 bg-blue-600/90 text-white font-mono text-[9px] px-1.5 py-0.5 rounded shadow pointer-events-none font-bold">
@@ -2026,50 +2099,50 @@ export const EditModal: React.FC<EditModalProps> = ({
                         {/* 8 Square Handles (Solid blue square with white border, matching screenshot) */}
                         {/* Top-Left */}
                         <div
-                          className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-600 border border-white shadow-md cursor-nwse-resize z-20"
-                          onMouseDown={(e) => startDrag(e, 'nw')}
+                          className="absolute -top-2.5 md:-top-1.5 -left-2.5 md:-left-1.5 w-5 h-5 md:w-3 md:h-3 bg-blue-600 border border-white shadow-md touch-none cursor-nwse-resize z-20"
+                          onPointerDown={(e) => startDrag(e, 'nw')}
                           title="Resize Top-Left"
                         />
                         {/* Top-Center */}
                         <div
-                          className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-600 border border-white shadow-md cursor-ns-resize z-20"
-                          onMouseDown={(e) => startDrag(e, 'n')}
+                          className="absolute -top-2.5 md:-top-1.5 left-1/2 -translate-x-1/2 w-5 h-5 md:w-3 md:h-3 bg-blue-600 border border-white shadow-md touch-none cursor-ns-resize z-20"
+                          onPointerDown={(e) => startDrag(e, 'n')}
                           title="Resize Top"
                         />
                         {/* Top-Right */}
                         <div
-                          className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-600 border border-white shadow-md cursor-nesw-resize z-20"
-                          onMouseDown={(e) => startDrag(e, 'ne')}
+                          className="absolute -top-2.5 md:-top-1.5 -right-2.5 md:-right-1.5 w-5 h-5 md:w-3 md:h-3 bg-blue-600 border border-white shadow-md touch-none cursor-nesw-resize z-20"
+                          onPointerDown={(e) => startDrag(e, 'ne')}
                           title="Resize Top-Right"
                         />
                         {/* Right-Center */}
                         <div
-                          className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-3 h-3 bg-blue-600 border border-white shadow-md cursor-ew-resize z-20"
-                          onMouseDown={(e) => startDrag(e, 'e')}
+                          className="absolute top-1/2 -translate-y-1/2 -right-2.5 md:-right-1.5 w-5 h-5 md:w-3 md:h-3 bg-blue-600 border border-white shadow-md touch-none cursor-ew-resize z-20"
+                          onPointerDown={(e) => startDrag(e, 'e')}
                           title="Resize Right"
                         />
                         {/* Bottom-Right */}
                         <div
-                          className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-600 border border-white shadow-md cursor-nwse-resize z-20"
-                          onMouseDown={(e) => startDrag(e, 'se')}
+                          className="absolute -bottom-2.5 md:-bottom-1.5 -right-2.5 md:-right-1.5 w-5 h-5 md:w-3 md:h-3 bg-blue-600 border border-white shadow-md touch-none cursor-nwse-resize z-20"
+                          onPointerDown={(e) => startDrag(e, 'se')}
                           title="Resize Bottom-Right"
                         />
                         {/* Bottom-Center */}
                         <div
-                          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-600 border border-white shadow-md cursor-ns-resize z-20"
-                          onMouseDown={(e) => startDrag(e, 's')}
+                          className="absolute -bottom-2.5 md:-bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 md:w-3 md:h-3 bg-blue-600 border border-white shadow-md touch-none cursor-ns-resize z-20"
+                          onPointerDown={(e) => startDrag(e, 's')}
                           title="Resize Bottom"
                         />
                         {/* Bottom-Left */}
                         <div
-                          className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-600 border border-white shadow-md cursor-nesw-resize z-20"
-                          onMouseDown={(e) => startDrag(e, 'sw')}
+                          className="absolute -bottom-2.5 md:-bottom-1.5 -left-2.5 md:-left-1.5 w-5 h-5 md:w-3 md:h-3 bg-blue-600 border border-white shadow-md touch-none cursor-nesw-resize z-20"
+                          onPointerDown={(e) => startDrag(e, 'sw')}
                           title="Resize Bottom-Left"
                         />
                         {/* Left-Center */}
                         <div
-                          className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-3 h-3 bg-blue-600 border border-white shadow-md cursor-ew-resize z-20"
-                          onMouseDown={(e) => startDrag(e, 'w')}
+                          className="absolute top-1/2 -translate-y-1/2 -left-2.5 md:-left-1.5 w-5 h-5 md:w-3 md:h-3 bg-blue-600 border border-white shadow-md touch-none cursor-ew-resize z-20"
+                          onPointerDown={(e) => startDrag(e, 'w')}
                           title="Resize Left"
                         />
                       </div>
@@ -2092,11 +2165,32 @@ export const EditModal: React.FC<EditModalProps> = ({
           </div>
 
           {/* Right Tools Controls Pane: Clean White Panel */}
-          <div className="w-full md:w-96 bg-white border-l border-[#E5D9C8] p-5 flex flex-col justify-between overflow-y-auto flex-shrink-0">
-            <div className="space-y-4">
+          <div className="w-full md:w-96 bg-white border-t md:border-t-0 md:border-l border-[#E5D9C8] px-3 pb-0 pt-1 md:p-5 flex flex-col justify-between overflow-y-auto overscroll-contain flex-shrink-0 max-h-[42dvh] md:max-h-none ds-panel">
+            {/* Phones: collapsible settings bar (tool name + DTF READY) */}
+            <button
+              type="button"
+              onClick={() => setMobileSettingsOpen((o) => !o)}
+              aria-expanded={mobileSettingsOpen}
+              className="md:hidden sticky top-0 z-10 bg-white flex items-center justify-between w-full min-h-11 py-1.5 gap-2 flex-shrink-0"
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="font-extrabold text-sm text-[#204563] capitalize truncate">
+                  {activeTool === 'texture' ? 'Texture Effects' : activeTool === 'stroke-outline' ? 'Stroke Outline' : activeTool.replace('-', ' ')}
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EF7F1A]/10 text-[#EF7F1A] border border-[#EF7F1A]/30 uppercase flex-shrink-0">
+                  DTF Ready
+                </span>
+              </span>
+              <span className="flex items-center gap-1 text-[11px] font-bold text-[#526A7B] flex-shrink-0">
+                {mobileSettingsOpen ? 'Hide settings' : 'Show settings'}
+                <ChevronDown className={`w-4 h-4 transition-transform ${mobileSettingsOpen ? '' : 'rotate-180'}`} />
+              </span>
+            </button>
+
+            <div className={`space-y-4 ${mobileSettingsOpen ? '' : 'hidden md:block'}`}>
               
               {/* Tool Title & Description */}
-              <div className="border-b border-[#E5D9C8] pb-3">
+              <div className="hidden md:block border-b border-[#E5D9C8] pb-3">
                 <div className="flex items-center space-x-2">
                   <h4 className="font-extrabold text-sm text-[#204563] capitalize">
                     {activeTool === 'texture' ? 'Texture Effects' : activeTool === 'stroke-outline' ? 'Stroke Outline' : activeTool.replace('-', ' ')}
@@ -2131,7 +2225,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                   </div>
 
                   {/* Grid of uploaded images */}
-                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-0.5">
+                  <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:max-h-48 md:overflow-y-auto md:overflow-x-visible md:pb-0 pr-0.5">
                     {assets.map((item, idx) => {
                       const isSelected = item.id === currentAsset.id;
                       return (
@@ -2139,7 +2233,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                           key={item.id}
                           type="button"
                           onClick={() => handleSwitchAsset(item)}
-                          className={`group relative flex flex-col items-center p-1.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          className={`group relative flex flex-col items-center p-1.5 rounded-xl border text-center transition-all cursor-pointer w-[72px] flex-shrink-0 md:w-auto ${
                             isSelected
                               ? 'bg-white border-[#204563] ring-2 ring-[#204563]/30 shadow-sm shadow-[#204563]/10'
                               : 'bg-white/80 border-[#E5D9C8] hover:bg-white hover:border-[#204563]/40 hover:shadow-xs'
@@ -3491,8 +3585,12 @@ export const EditModal: React.FC<EditModalProps> = ({
 
             </div>
 
-            {/* Bottom Actions: Save to Gang Sheet */}
-            <div className="pt-4 border-t border-[#E5D9C8] space-y-2 mt-4 flex-shrink-0">
+            {/* Bottom Actions: Save to Gang Sheet (sticky at the bottom of the panel on phones) */}
+            <div
+              className={`pt-3 md:pt-4 border-t border-[#E5D9C8] space-y-2 mt-4 flex-shrink-0 sticky bottom-0 md:static bg-white pb-[max(0.5rem,env(safe-area-inset-bottom))] md:pb-0 ${
+                mobileSettingsOpen ? '' : 'hidden md:block'
+              }`}
+            >
               <button
                 onClick={handleSaveModal}
                 disabled={isProcessing}

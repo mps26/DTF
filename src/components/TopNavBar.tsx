@@ -599,7 +599,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         </div>
 
         {/* Mobile Second Row: Horizontal Scrollable Category Toolbar */}
-        <div className="h-8.5 px-2 flex items-center space-x-1.5 overflow-x-auto no-scrollbar scroll-smooth bg-[#0a1622] border-b border-[#183750]">
+        <div className="h-12 px-3 flex items-center gap-2 overflow-x-auto overscroll-x-contain no-scrollbar scroll-smooth scroll-px-3 snap-x bg-[#0a1622] border-b border-[#183750]">
           {categories.map((cat) => {
             const locked = isCategoryLocked(cat.id);
             const isOpen = !locked && activeDropdown === cat.id;
@@ -620,20 +620,20 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 }}
                 aria-disabled={locked}
                 title={locked ? `${cat.name} is locked` : undefined}
-                className={`h-6.5 px-2 rounded-md font-semibold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 transition-all ${
+                className={`h-9 pl-3 pr-2.5 rounded-xl font-semibold text-[13px] tracking-tight flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 snap-start transition-all active:scale-[0.97] ${
                   locked
-                    ? 'text-slate-500 bg-[#132c40] border border-[#183750] cursor-not-allowed'
+                    ? 'text-slate-400 bg-[#0f2232] border border-dashed border-[#2a4a66] cursor-not-allowed'
                     : isOpen
-                      ? 'bg-[#EF7F1A] text-[#204563] font-bold shadow-xs'
-                      : 'text-slate-300 bg-[#132c40] border border-[#183750] hover:text-white'
+                      ? 'bg-[#EF7F1A] text-[#204563] font-bold border border-[#EF7F1A] shadow-[0_2px_8px_rgba(239,127,26,0.35)]'
+                      : 'text-white bg-[#132c40] border border-[#24496a] hover:border-[#EF7F1A]/60'
                 }`}
               >
-                <Icon className={`w-3 h-3 ${isOpen ? 'text-[#204563]' : locked ? 'text-slate-500' : 'text-slate-300'}`} />
+                <Icon className={`w-4 h-4 ${isOpen ? 'text-[#204563]' : locked ? 'text-slate-500' : 'text-[#EF7F1A]'}`} />
                 <span>{cat.name}</span>
                 {locked ? (
-                  <Lock className="w-2.5 h-2.5 text-slate-500" />
+                  <Lock className="w-3.5 h-3.5 text-slate-500" aria-label="Locked" />
                 ) : (
-                  <ChevronDown className={`w-2.5 h-2.5 transition-transform ${isOpen ? 'rotate-180 text-[#204563]' : 'text-slate-400'}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180 text-[#204563]' : 'text-slate-400'}`} />
                 )}
               </button>
             );
@@ -643,16 +643,16 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           <button
             type="button"
             onClick={onOpenGuide}
-            className="h-6.5 px-2 rounded-md font-semibold text-[11px] flex items-center space-x-1 whitespace-nowrap flex-shrink-0 text-slate-300 bg-[#132c40] border border-[#183750] hover:text-white"
+            className="h-9 px-3 rounded-xl font-semibold text-[13px] tracking-tight flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 snap-start text-white bg-[#132c40] border border-[#24496a] hover:border-[#EF7F1A]/60 active:scale-[0.97]"
           >
-            <HelpCircle className="w-3 h-3 text-[#EF7F1A]" />
+            <HelpCircle className="w-4 h-4 text-[#EF7F1A]" />
             <span>Guide</span>
           </button>
         </div>
 
         {/* Mobile Dropdown Dialog & Backdrop */}
         {activeDropdown && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 select-none">
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-28 px-4 select-none">
             {/* Backdrop */}
             <div
               className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs"
