@@ -9,9 +9,11 @@
  *
  * Pipeline:
  *  1. The model predicts a soft foreground matte at the original resolution.
- *  2. Matte clean-up: confident subject → fully opaque, confident background →
- *     fully transparent, the uncertain band (hair, soft edges) keeps its soft alpha.
- *     No erosion/dilation, no blur of the subject.
+ *  2. Matte clean-up (src/utils/cutoutRefine.ts): on a plain backdrop (stickers,
+ *     logos, product shots) the cut follows the artwork's outline and everything
+ *     inside it is fully opaque, white sticker border included; on photos the
+ *     uncertain band at the edge (hair, soft edges) keeps its soft alpha while
+ *     the inside of the subject is made fully opaque. No blur of the subject.
  *  3. Edge colour decontamination: in semi-transparent pixels the local background
  *     colour is un-mixed, so there are no light/dark halos on the cut-out.
  *  4. The matte is applied to the ORIGINAL pixels (exact colours, full resolution)
@@ -24,6 +26,7 @@
  */
 
 import type { WorkerRequest, WorkerResponse } from '../workers/bgRemovalWorker';
+import { refineCutout } from './cutoutRefine';
 
 export type AiProgress =
   | { stage: 'loading'; percent: number | null; totalMb?: number }
@@ -188,10 +191,7 @@ export async function removeBackgroundAI(
     if (result.width !== w || result.height !== h) {
       throw new BackgroundRemovalError('The AI result did not match the image size, so nothing was changed.');
     }
-    const alpha = refineMatte(result.matte);
-    const { subjectPercent } = validateMatte(alpha);
-
-    // Apply to the original pixels at full resolution.
+    // Original pixels at full resolution.
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
@@ -199,6 +199,11 @@ export async function removeBackgroundAI(
     if (!ctx) throw new BackgroundRemovalError('Your browser could not create the image, so nothing was changed.');
     ctx.drawImage(img, 0, 0);
     const imageData = ctx.getImageData(0, 0, w, h);
+
+    // AI matte → final alpha: on a plain backdrop the cut follows the artwork's
+    // outline (sticker border kept); the object itself is always fully opaque.
+    const { alpha } = refineCutout(imageData.data, w, h, refineMatte(result.matte));
+    const { subjectPercent } = validateMatte(alpha);
     applyMatte(imageData.data, w, h, alpha);
     ctx.putImageData(imageData, 0, 0);
     return { dataUrl: canvas.toDataURL('image/png'), subjectPercent, width: w, height: h };

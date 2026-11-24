@@ -1567,8 +1567,77 @@ export const EditModal: React.FC<EditModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-2 md:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in select-none">
       <div className="bg-white text-slate-800 rounded-none sm:rounded-3xl border border-slate-200 shadow-2xl max-w-6xl w-full h-[100dvh] sm:h-[94vh] flex flex-col overflow-hidden">
         
+        {/* Phone header: title row + file/action toolbar row */}
+        {(() => {
+          const idx = assets ? assets.findIndex((a) => a.id === currentAsset.id) : -1;
+          const multi = !!assets && assets.length > 1;
+          const go = (d: number) => {
+            if (!assets || !multi) return;
+            handleSwitchAsset(assets[(idx + d + assets.length) % assets.length]);
+          };
+          const iconBtn = 'w-10 h-10 flex items-center justify-center rounded-xl border border-[#E5D9C8] bg-white text-[#526A7B] active:bg-[#FAF7F1] disabled:opacity-30 transition-colors flex-shrink-0';
+          return (
+            <div className="sm:hidden flex-shrink-0 bg-white border-b border-[#E5D9C8] px-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2.5 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="hidden min-[400px]:flex w-9 h-9 flex-shrink-0 rounded-xl bg-[#204563] items-center justify-center shadow-md shadow-[#204563]/25">
+                  <Sparkles className="w-4.5 h-4.5 text-[#EF7F1A]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-black text-[15px] leading-tight text-[#204563] tracking-tight truncate">
+                    Design Studio<span className="hidden min-[400px]:inline"> &amp; Image Suite</span>
+                  </h3>
+                  <p className="text-[11px] leading-snug text-[#526A7B] font-medium truncate">
+                    <span className="text-[#EF7F1A] font-bold capitalize">{activeTool.replace('-', ' ')}</span>
+                    <span className="mx-1 text-[#C9B8A0]">•</span>
+                    {currentAsset.trimmedWidth || currentAsset.originalWidth || imageNaturalSize.width} × {currentAsset.trimmedHeight || currentAsset.originalHeight || imageNaturalSize.height} px
+                    <span className="hidden min-[430px]:inline"><span className="mx-1 text-[#C9B8A0]">•</span>300 DPI</span>
+                  </p>
+                </div>
+                <button type="button" onClick={handleUndo} disabled={historyIndex <= 0} className={iconBtn} title="Undo last change" aria-label="Undo">
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+                <button type="button" onClick={handleRedo} disabled={historyIndex >= history.length - 1} className={iconBtn} title="Redo last undone change" aria-label="Redo">
+                  <RotateCw className="w-4 h-4" />
+                </button>
+                <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#204563] text-white active:bg-[#183750] flex-shrink-0" aria-label="Close editor">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 h-10 flex items-center rounded-xl bg-[#FAF7F1] border border-[#E5D9C8]">
+                  {multi && (
+                    <button type="button" onClick={() => go(-1)} className="w-9 h-full flex items-center justify-center text-[#526A7B] active:text-[#EF7F1A] flex-shrink-0" aria-label="Previous image">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  )}
+                  <div className={`flex-1 min-w-0 flex items-center gap-1.5 ${multi ? 'justify-center' : 'px-3'}`}>
+                    <span className="truncate text-xs font-bold text-[#204563]">{currentAsset.filename}</span>
+                    {multi && (
+                      <span className="flex-shrink-0 text-[10px] font-extrabold text-[#EF7F1A] bg-[#EF7F1A]/10 rounded-full px-1.5 py-0.5">
+                        {idx + 1}/{assets!.length}
+                      </span>
+                    )}
+                  </div>
+                  {multi && (
+                    <button type="button" onClick={() => go(1)} className="w-9 h-full flex items-center justify-center text-[#526A7B] active:text-[#EF7F1A] flex-shrink-0" aria-label="Next image">
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <button type="button" onClick={() => fileInputRef.current?.click()} className={iconBtn} title="Replace current image" aria-label="Replace file">
+                  <UploadCloud className="w-4 h-4 text-[#204563]" />
+                </button>
+                <button type="button" onClick={handleRevertOriginal} className="h-10 px-3 rounded-xl text-amber-700 bg-amber-50/60 active:bg-amber-100 text-xs font-bold border border-amber-200 flex-shrink-0" title="Revert to original uploaded file">
+                  Revert
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Top Header Bar: Clean White with Crisp Dark Typography */}
-        <div className="px-3 py-2 md:px-6 md:py-3.5 border-b border-[#E5D9C8] bg-white flex flex-wrap md:flex-nowrap items-center justify-between gap-x-2 gap-y-1.5 flex-shrink-0">
+        <div className="px-3 py-2 md:px-6 md:py-3.5 border-b border-[#E5D9C8] bg-white hidden sm:flex flex-wrap md:flex-nowrap items-center justify-between gap-x-2 gap-y-1.5 flex-shrink-0">
           <div className="flex items-center space-x-2 md:space-x-3 min-w-0 w-full sm:w-auto sm:flex-1">
             <div className="hidden sm:flex w-8 h-8 md:w-10 md:h-10 flex-shrink-0 rounded-2xl bg-[#204563] flex items-center justify-center text-[#EF7F1A] shadow-md shadow-[#204563]/25">
               <Sparkles className="w-5 h-5 text-[#EF7F1A]" />
@@ -1775,7 +1844,7 @@ export const EditModal: React.FC<EditModalProps> = ({
           {/* Left Canvas Preview Pane with Garment Simulator & Checkerboard */}
           <div
             ref={setPreviewPaneEl}
-            className="flex-1 bg-[#F3EBDD] p-2 sm:p-6 pt-12 sm:pt-16 flex flex-col items-center justify-center relative overflow-auto min-w-0 min-h-[160px] md:min-h-0"
+            className="flex-1 bg-[#F3EBDD] p-2 sm:p-6 pt-12 sm:pt-16 flex flex-col items-center justify-center relative overflow-auto min-w-0 min-h-[120px] md:min-h-0"
             style={previewMaxH ? ({ '--preview-max-h': `${previewMaxH}px` } as React.CSSProperties) : undefined}
           >
             
@@ -2165,13 +2234,13 @@ export const EditModal: React.FC<EditModalProps> = ({
           </div>
 
           {/* Right Tools Controls Pane: Clean White Panel */}
-          <div className="w-full md:w-96 bg-white border-t md:border-t-0 md:border-l border-[#E5D9C8] px-3 pb-0 pt-1 md:p-5 flex flex-col justify-between overflow-y-auto overscroll-contain flex-shrink-0 max-h-[42dvh] md:max-h-none ds-panel">
+          <div className="w-full md:w-96 bg-white border-t md:border-t-0 md:border-l border-[#E5D9C8] md:p-5 flex flex-col justify-between overflow-hidden md:overflow-y-auto overscroll-contain flex-shrink-0 max-h-[min(42dvh,calc(100dvh-350px))] md:max-h-none ds-panel shadow-[0_-4px_12px_rgba(32,69,99,0.06)] md:shadow-none">
             {/* Phones: collapsible settings bar (tool name + DTF READY) */}
             <button
               type="button"
               onClick={() => setMobileSettingsOpen((o) => !o)}
               aria-expanded={mobileSettingsOpen}
-              className="md:hidden sticky top-0 z-10 bg-white flex items-center justify-between w-full min-h-11 py-1.5 gap-2 flex-shrink-0"
+              className={`md:hidden relative z-10 bg-white flex items-center justify-between w-full min-h-12 px-3 py-1.5 gap-2 flex-shrink-0 ${mobileSettingsOpen ? 'border-b border-[#E5D9C8]' : ''}`}
             >
               <span className="flex items-center gap-2 min-w-0">
                 <span className="font-extrabold text-sm text-[#204563] capitalize truncate">
@@ -2187,7 +2256,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               </span>
             </button>
 
-            <div className={`space-y-4 ${mobileSettingsOpen ? '' : 'hidden md:block'}`}>
+            <div className={`space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 md:flex-none md:overflow-visible md:p-0 ${mobileSettingsOpen ? '' : 'hidden md:block'}`}>
               
               {/* Tool Title & Description */}
               <div className="hidden md:block border-b border-[#E5D9C8] pb-3">
@@ -3587,14 +3656,14 @@ export const EditModal: React.FC<EditModalProps> = ({
 
             {/* Bottom Actions: Save to Gang Sheet (sticky at the bottom of the panel on phones) */}
             <div
-              className={`pt-3 md:pt-4 border-t border-[#E5D9C8] space-y-2 mt-4 flex-shrink-0 sticky bottom-0 md:static bg-white pb-[max(0.5rem,env(safe-area-inset-bottom))] md:pb-0 ${
+              className={`px-3 pt-2.5 md:px-0 md:pt-4 border-t border-[#E5D9C8] flex items-center gap-2 md:block md:space-y-2 md:mt-4 flex-shrink-0 bg-white pb-[max(0.625rem,env(safe-area-inset-bottom))] md:pb-0 ${
                 mobileSettingsOpen ? '' : 'hidden md:block'
               }`}
             >
               <button
                 onClick={handleSaveModal}
                 disabled={isProcessing}
-                className="w-full py-3 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] text-xs font-black shadow-lg shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2"
+                className="flex-1 md:w-full min-h-11 md:min-h-0 py-3 rounded-xl bg-[#EF7F1A] hover:bg-[#d97014] text-[#204563] text-xs font-black shadow-lg shadow-[#EF7F1A]/25 transition-all flex items-center justify-center space-x-2"
               >
                 <Check className="w-4 h-4 text-[#204563]" />
                 <span>Save & Apply to Gang Sheet</span>
@@ -3602,7 +3671,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 
               <button
                 onClick={onClose}
-                className="w-full py-2 rounded-xl text-[#526A7B] hover:text-[#204563] text-xs font-bold hover:bg-[#FAF7F1] transition-colors"
+                className="flex-shrink-0 px-4 min-h-11 md:min-h-0 md:w-full py-2 rounded-xl text-[#526A7B] hover:text-[#204563] text-xs font-bold border border-[#E5D9C8] md:border-0 hover:bg-[#FAF7F1] transition-colors"
               >
                 Cancel
               </button>
