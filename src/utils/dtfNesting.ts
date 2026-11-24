@@ -550,7 +550,7 @@ function nestDtf(
     : Math.min(maxLengthMm, Math.max(minLengthMm, settings.fixedLengthMm || minLengthMm));
   const sheetMaxLengthMm = isFixed ? fixedLengthMm : maxLengthMm;
 
-  const spacingMm = Math.max(5, settings.spacingMm ?? 5);
+  const spacingMm = Math.max(4, settings.spacingMm ?? 4);
   const marginMm = Math.max(0, settings.marginMm ?? 5);
   const keepTogether = settings.keepDesignsTogether ?? true;
   const rotationEnabled = Boolean(settings.allowItemRotation);

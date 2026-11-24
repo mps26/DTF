@@ -950,13 +950,13 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={spacingInput !== null ? spacingInput : (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()}
-                  onFocus={() => setSpacingInput((Math.round((settings.spacingMm ?? 5) * 100) / 100).toString())}
+                  value={spacingInput !== null ? spacingInput : (Math.round((settings.spacingMm ?? 4) * 100) / 100).toString()}
+                  onFocus={() => setSpacingInput((Math.round((settings.spacingMm ?? 4) * 100) / 100).toString())}
                   onChange={(e) => {
                     const text = e.target.value;
                     setSpacingInput(text);
                     const val = parseFloat(text);
-                    if (!isNaN(val) && val >= 5) {
+                    if (!isNaN(val) && val >= 4) {
                       onUpdateSettings({
                         spacingMm: val,
                         spacing: Math.round(mmToUnit(val, settings.unit) * 1000) / 1000
@@ -965,7 +965,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                   }}
                   onBlur={() => {
                     const val = spacingInput !== null ? parseFloat(spacingInput) : settings.spacingMm;
-                    const clamped = isNaN(val) ? Math.max(5, settings.spacingMm ?? 5) : Math.max(5, val);
+                    const clamped = isNaN(val) ? Math.max(4, settings.spacingMm ?? 4) : Math.max(4, val);
                     const rounded = Math.round(clamped * 100) / 100;
                     onUpdateSettings({
                       spacingMm: rounded,

@@ -229,7 +229,7 @@ export async function exportHighResolutionPng(
     const errors = layout.validationErrors?.length
       ? layout.validationErrors
       : validateLayout(layout, {
-          spacingMm: Math.max(5, settings.spacingMm ?? 5),
+          spacingMm: Math.max(4, settings.spacingMm ?? 4),
           marginMm: Math.max(0, settings.marginMm ?? 5)
         });
     if (errors.length > 0) {

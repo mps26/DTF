@@ -45,6 +45,7 @@ import { removeBackgroundAI, BackgroundRemovalError } from './utils/aiBackground
 import { LandingPage } from './components/LandingPage';
 import { AuthModal } from './components/AuthModal';
 import { HomeSelectorView } from './components/HomeSelectorView';
+import { Hd3dStudio } from './hd3d/Hd3dStudio';
 import {
   RollPreset,
   DTF_PRESETS,
@@ -122,12 +123,12 @@ export const App: React.FC = () => {
   // Sheet Settings state
   const [settings, setSettings] = useState<SheetSettings>({
     printType: 'dtf',
-    filmWidthPreset: 'dtf-22x100',
-    filmWidth: 22,
-    filmWidthMm: 22 * 25.4,
+    filmWidthPreset: 'dtf-22.2x100',
+    filmWidth: 22.2,
+    filmWidthMm: 22.2 * 25.4,
     unit: 'inch',
-    spacing: mmToUnit(5, 'inch'),
-    spacingMm: 5,
+    spacing: mmToUnit(4, 'inch'),
+    spacingMm: 4,
     margin: 0.2,
     marginMm: 0.2 * 25.4,
     lengthMode: 'auto',
@@ -207,7 +208,7 @@ export const App: React.FC = () => {
     showNotification(
       printType === 'uvdtf'
         ? 'UVDTF Gang Sheet Studio ready (A4, A3, Meter 22×39, 23×100)'
-        : 'DTF Gang Sheet Studio ready (22×100 & 22.5×100)',
+        : 'DTF Gang Sheet Studio ready (22.2×100 & 22.5×100)',
       'success'
     );
   };
@@ -284,7 +285,7 @@ export const App: React.FC = () => {
       updates.filmWidthMm = Math.min(24 * 25.4, Math.max(25.4, updates.filmWidthMm));
     }
 
-    // Standard DTF: the roll width is fixed by the selected DTF preset (22", or the locked 22.5" roll).
+    // Standard DTF: the roll width is fixed by the selected DTF preset (22.2", or the locked 22.5" roll).
     // Ignore free-form widths so the nesting engine, preview and export always use the same width.
     if ((updates.printType ?? settings.printType ?? 'dtf') === 'dtf' &&
         (updates.filmWidth !== undefined || updates.filmWidthMm !== undefined || updates.filmWidthPreset !== undefined)) {
@@ -344,9 +345,9 @@ export const App: React.FC = () => {
       updates.fixedLength = parseFloat(mmToUnit(clampedMm, effUnit).toFixed(2));
     }
 
-    // Enforce minimum 5 mm spacing
+    // Enforce minimum 4 mm spacing
     if (updates.spacingMm !== undefined) {
-      const clampedSpacingMm = Math.max(5, updates.spacingMm);
+      const clampedSpacingMm = Math.max(4, updates.spacingMm);
       const effUnit = updates.unit ?? settings.unit;
       updates.spacingMm = clampedSpacingMm;
       updates.spacing = Math.round(mmToUnit(clampedSpacingMm, effUnit) * 1000) / 1000;
@@ -1062,10 +1063,20 @@ export const App: React.FC = () => {
             currentUser={currentUser}
             activePrintType={settings.printType || 'dtf'}
             onSelectPrintType={handleSelectPrintType}
+            onSelect3dHd={() => {
+              setNavTab('3dhd');
+              showNotification('3D HD Gang Sheet Studio ready (11 × 17 fixed)', 'success');
+            }}
             onOpenAuth={(mode) => {
               setAuthModalMode(mode);
               setIsAuthModalOpen(true);
             }}
+          />
+        ) : navTab === '3dhd' ? (
+          <Hd3dStudio
+            currentUser={currentUser}
+            onBack={() => setNavTab('home')}
+            onNotification={showNotification}
           />
         ) : navTab === 'tiff-export' ? (
           <TiffExportStudio

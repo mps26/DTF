@@ -73,7 +73,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
   const [lengthInput, setLengthInput] = useState<string>(() => (settings.fixedLength || currentMinLen).toString());
   const rotationOn = Boolean(settings.allowItemRotation);
   const [spacingMmInput, setSpacingMmInput] = useState<string>(() =>
-    (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()
+    (Math.round((settings.spacingMm ?? 4) * 100) / 100).toString()
   );
   const [isLengthFocused, setIsLengthFocused] = useState<boolean>(false);
   const [isSpacingFocused, setIsSpacingFocused] = useState<boolean>(false);
@@ -96,7 +96,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
 
   useEffect(() => {
     if (!isSpacingFocused) {
-      setSpacingMmInput((Math.round((settings.spacingMm ?? 5) * 100) / 100).toString());
+      setSpacingMmInput((Math.round((settings.spacingMm ?? 4) * 100) / 100).toString());
     }
   }, [settings.spacingMm, isSpacingFocused]);
 
@@ -129,7 +129,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
   const handleSpacingChange = (valStr: string) => {
     setSpacingMmInput(valStr);
     const val = parseFloat(valStr);
-    if (!isNaN(val) && val >= 5) {
+    if (!isNaN(val) && val >= 4) {
       onUpdateSettings({
         spacingMm: val,
         spacing: Math.round(mmToUnit(val, settings.unit) * 1000) / 1000
@@ -140,7 +140,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
   const handleSpacingBlur = () => {
     setIsSpacingFocused(false);
     const val = parseFloat(spacingMmInput);
-    const clamped = isNaN(val) ? Math.max(5, settings.spacingMm ?? 5) : Math.max(5, val);
+    const clamped = isNaN(val) ? Math.max(4, settings.spacingMm ?? 4) : Math.max(4, val);
     const rounded = Math.round(clamped * 100) / 100;
     setSpacingMmInput(rounded.toString());
     onUpdateSettings({
@@ -258,10 +258,10 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={isSpacingFocused ? spacingMmInput : (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()}
+                  value={isSpacingFocused ? spacingMmInput : (Math.round((settings.spacingMm ?? 4) * 100) / 100).toString()}
                   onFocus={() => {
                     setIsSpacingFocused(true);
-                    setSpacingMmInput((Math.round((settings.spacingMm ?? 5) * 100) / 100).toString());
+                    setSpacingMmInput((Math.round((settings.spacingMm ?? 4) * 100) / 100).toString());
                   }}
                   onChange={(e) => handleSpacingChange(e.target.value)}
                   onBlur={handleSpacingBlur}
@@ -269,7 +269,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
                     if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                   }}
                   className="w-10 bg-transparent text-xs sm:text-[13px] font-bold text-white focus:outline-none font-mono text-center"
-                  placeholder="5"
+                  placeholder="4"
                 />
                 <span className="text-slate-300 text-[11px] font-bold uppercase ml-1">
                   mm
@@ -606,10 +606,10 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
               <input
                 type="text"
                 inputMode="decimal"
-                value={isSpacingFocused ? spacingMmInput : (Math.round((settings.spacingMm ?? 5) * 100) / 100).toString()}
+                value={isSpacingFocused ? spacingMmInput : (Math.round((settings.spacingMm ?? 4) * 100) / 100).toString()}
                 onFocus={() => {
                   setIsSpacingFocused(true);
-                  setSpacingMmInput((Math.round((settings.spacingMm ?? 5) * 100) / 100).toString());
+                  setSpacingMmInput((Math.round((settings.spacingMm ?? 4) * 100) / 100).toString());
                 }}
                 onChange={(e) => handleSpacingChange(e.target.value)}
                 onBlur={handleSpacingBlur}

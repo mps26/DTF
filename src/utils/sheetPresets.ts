@@ -17,17 +17,17 @@ export interface RollPreset {
 
 export const DTF_PRESETS: RollPreset[] = [
   {
-    id: 'dtf-22x100',
+    id: 'dtf-22.2x100',
     printType: 'dtf',
-    label: '22" × 100"',
-    shortLabel: '22 × 100',
-    widthIn: 22,
+    label: '22.2" × 100"',
+    shortLabel: '22.2 × 100',
+    widthIn: 22.2,
     minLengthIn: 39,
     maxLengthIn: 100,
     defaultLengthIn: 39,
     isFixedLength: false,
     isLocked: false,
-    description: 'Standard DTF roll, 22" wide (length 39"–100")'
+    description: 'Standard DTF roll, 22.2" wide (length 39"–100")'
   },
   {
     id: 'dtf-22.5x100',
@@ -144,6 +144,7 @@ export function getPresetsForPrintType(printType: PrintType): RollPreset[] {
 }
 
 export function findPresetById(presetId: string): RollPreset | undefined {
+  if (presetId === 'dtf-22x100') return DTF_PRESETS[0];
   return ALL_ROLL_PRESETS.find((p) => p.id === presetId);
 }
 
