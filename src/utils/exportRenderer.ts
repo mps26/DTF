@@ -221,7 +221,8 @@ export async function exportHighResolutionPng(
   layout: LayoutResult,
   settings: SheetSettings,
   onProgress?: (progressPercent: number, statusText?: string) => void,
-  singleSheetIndex?: number
+  singleSheetIndex?: number,
+  format: 'png' | 'pdf' = 'png'
 ): Promise<string> {
   // DTF and UVDTF: never write a print file from a layout that fails the
   // collision / spacing / boundary check (same rules the nesting engine uses).
@@ -364,10 +365,14 @@ export async function exportHighResolutionPng(
       ctx.restore();
     }
 
-    // Safely convert canvas to PNG blob with fallback to prevent null blob failures
     let actualDpi = effectiveDpi;
     let finalWidthPx = outputWidthPx;
     let finalHeightPx = outputHeightPx;
+    let fileBlob: Blob;
+    if (format === 'pdf') {
+      fileBlob = await canvasToTransparentPdf(canvas, filmWidthInches, sheetLengthInches);
+    } else {
+    // Safely convert canvas to PNG blob with fallback to prevent null blob failures
     const rawBlob = await new Promise<Blob>((resolve, reject) => {
       try {
         canvas.toBlob(
@@ -405,7 +410,7 @@ export async function exportHighResolutionPng(
       }
     });
 
-    const dpiBlob = await injectPngDpi(
+    fileBlob = await injectPngDpi(
       rawBlob,
       actualDpi,
       finalWidthPx,
@@ -413,12 +418,13 @@ export async function exportHighResolutionPng(
       filmWidthInches,
       sheetLengthInches
     );
-    const blobUrl = URL.createObjectURL(dpiBlob);
+    }
+    const blobUrl = URL.createObjectURL(fileBlob);
 
     const a = document.createElement('a');
     a.style.display = 'none';
     const suffix = allSheets.length > 1 ? `_Sheet${sheetNum}` : '';
-    const filename = `DTF_GangSheet${suffix}_${filmWidthInches.toFixed(1)}x${sheetLengthInches.toFixed(1)}in_${Math.round(actualDpi)}DPI.png`;
+    const filename = `DTF_GangSheet${suffix}_${filmWidthInches.toFixed(1)}x${sheetLengthInches.toFixed(1)}in_${Math.round(actualDpi)}DPI.${format}`;
     a.href = blobUrl;
     a.download = filename;
     document.body.appendChild(a);
@@ -444,6 +450,87 @@ export async function exportHighResolutionPng(
 
   driver.finish(totalSheets > 1 ? `All ${totalSheets} sheets downloaded separately!` : 'Download complete!');
   return lastUrl;
+}
+
+/**
+ * Generates and downloads print-ready PDF gang sheets (one PDF per sheet): the
+ * same 300 DPI render as the PNG export, on a page of the exact physical sheet
+ * size, with the transparency kept (soft mask) so the RIP sees no background.
+ */
+export async function exportHighResolutionPdf(
+  layout: LayoutResult,
+  settings: SheetSettings,
+  onProgress?: (progressPercent: number, statusText?: string) => void
+): Promise<string> {
+  return exportHighResolutionPng(layout, settings, onProgress, undefined, 'pdf');
+}
+
+/**
+ * Builds a one-page PDF holding the canvas as an RGB image with an alpha soft
+ * mask, sized widthIn × heightIn inches. Pixels are read in horizontal bands so
+ * a 22" × 100" sheet never needs one giant pixel buffer.
+ */
+export async function canvasToTransparentPdf(canvas: HTMLCanvasElement, widthIn: number, heightIn: number): Promise<Blob> {
+  const W = canvas.width;
+  const H = canvas.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D context unavailable');
+  const BAND = Math.max(1, Math.floor(4_000_000 / W)); // ~16 MB of RGBA per band
+  const rgb = new CompressionStream('deflate');
+  const alpha = new CompressionStream('deflate');
+  const rgbW = rgb.writable.getWriter();
+  const aW = alpha.writable.getWriter();
+  const rgbOut = new Response(rgb.readable).arrayBuffer();
+  const aOut = new Response(alpha.readable).arrayBuffer();
+  for (let y = 0; y < H; y += BAND) {
+    const h = Math.min(BAND, H - y);
+    const d = ctx.getImageData(0, y, W, h).data;
+    const n = W * h;
+    const c = new Uint8Array(n * 3);
+    const a = new Uint8Array(n);
+    for (let i = 0, j = 0; i < n; i++, j += 4) {
+      // Canvas pixels are un-premultiplied, which is what a PDF soft mask expects.
+      c[i * 3] = d[j];
+      c[i * 3 + 1] = d[j + 1];
+      c[i * 3 + 2] = d[j + 2];
+      a[i] = d[j + 3];
+    }
+    await Promise.all([rgbW.write(c), aW.write(a)]);
+  }
+  await Promise.all([rgbW.close(), aW.close()]);
+  const rgbData = new Uint8Array(await rgbOut);
+  const aData = new Uint8Array(await aOut);
+
+  const pw = +(widthIn * 72).toFixed(3);
+  const ph = +(heightIn * 72).toFixed(3);
+  const content = new TextEncoder().encode(`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`);
+  const enc = new TextEncoder();
+  const parts: Uint8Array[] = [];
+  const offsets: number[] = [];
+  let pos = 0;
+  const push = (p: Uint8Array | string) => { const b = typeof p === 'string' ? enc.encode(p) : p; parts.push(b); pos += b.length; };
+  const obj = (n: number, dict: string, stream?: Uint8Array) => {
+    offsets[n] = pos;
+    if (stream) {
+      push(`${n} 0 obj\n${dict.replace(/>>$/, ` /Length ${stream.length} >>`)}\nstream\n`);
+      push(stream);
+      push('\nendstream\nendobj\n');
+    } else {
+      push(`${n} 0 obj\n${dict}\nendobj\n`);
+    }
+  };
+  push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>`);
+  obj(4, '<< >>', content);
+  obj(5, `<< /Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /SMask 6 0 R >>`, rgbData);
+  obj(6, `<< /Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode >>`, aData);
+  const xref = pos;
+  let x = 'xref\n0 7\n0000000000 65535 f \n';
+  for (let n = 1; n <= 6; n++) x += `${String(offsets[n]).padStart(10, '0')} 00000 n \n`;
+  push(`${x}trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts as BlobPart[], { type: 'application/pdf' });
 }
 
 /**

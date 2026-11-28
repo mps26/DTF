@@ -36,7 +36,7 @@ import {
   cropImageToBoundingBox
 } from './utils/imageProcessing';
 import { isPdfFile, renderPdfPages } from './utils/pdfProcessor';
-import { exportHighResolutionPng, exportSingleSheetPng, exportJobTicketJson } from './utils/exportRenderer';
+import { exportHighResolutionPng, exportHighResolutionPdf, exportSingleSheetPng, exportJobTicketJson } from './utils/exportRenderer';
 import { Layers, Copy } from 'lucide-react';
 import { UserProfile } from './types/auth';
 import { getCurrentUser, logoutUser } from './utils/auth';
@@ -885,7 +885,9 @@ export const App: React.FC = () => {
   };
 
   // Print-Ready Export Handlers
-  const handleExportPng = async () => {
+  const handleExportPng = () => runExport('png');
+
+  const runExport = async (format: 'png' | 'pdf') => {
     if (layout.placements.length === 0) {
       showNotification('No placements to export');
       return;
@@ -895,10 +897,12 @@ export const App: React.FC = () => {
     setExportProgress(5);
     setExportStatusText(totalSheets > 1 ? `Starting export of ${totalSheets} sheets...` : 'Starting export...');
     try {
-      await exportHighResolutionPng(layout, settings, (prog, status) => {
+      const onProg = (prog: number, status?: string) => {
         setExportProgress(prog);
         if (status) setExportStatusText(status);
-      });
+      };
+      if (format === 'pdf') await exportHighResolutionPdf(layout, settings, onProg);
+      else await exportHighResolutionPng(layout, settings, onProg);
       confetti({
         particleCount: 75,
         spread: 60,
@@ -906,8 +910,8 @@ export const App: React.FC = () => {
       });
       showNotification(
         totalSheets > 1
-          ? `All ${totalSheets} sheets downloaded as separate files!`
-          : 'Print-Ready Transparent PNG downloaded!'
+          ? `All ${totalSheets} sheets downloaded as separate ${format.toUpperCase()} files!`
+          : `Print-Ready Transparent ${format.toUpperCase()} downloaded!`
       );
     } catch (err) {
       console.error(err);
@@ -919,9 +923,7 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleExportPdf = () => {
-    handleExportPng();
-  };
+  const handleExportPdf = () => runExport('pdf');
 
   const handleExportSingleSheet = async (sheetIndex: number) => {
     if (layout.placements.length === 0) {

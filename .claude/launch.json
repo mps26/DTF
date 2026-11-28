@@ -6,6 +6,13 @@
       "runtimeExecutable": "C:\\Users\\ADMIN\\AppData\\Roaming\\fnm\\node-versions\\v26.13.1\\installation\\node.exe",
       "runtimeArgs": ["node_modules/vite/bin/vite.js", "--port", "5173"],
       "port": 5173
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "C:\\Users\\ADMIN\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "server.main:app", "--host", "127.0.0.1", "--port", "8000"],
+      "port": 8000,
+      "autoPort": false
     }
   ]
 }

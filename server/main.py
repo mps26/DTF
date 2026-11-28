@@ -178,7 +178,12 @@ def init_auth_db() -> None:
         conn.close()
 
 
-init_auth_db()
+# Without a database the image tools (trim, vectorize, pack, export, ...) must
+# still work: only the account endpoints need PostgreSQL.
+try:
+    init_auth_db()
+except Exception as db_err:
+    print("WARNING: user database unavailable, account endpoints will fail:", db_err)
 
 
 def row_to_user_dict(row: dict) -> dict:
