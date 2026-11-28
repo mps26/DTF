@@ -28,6 +28,7 @@ const SHADOW_MAX = 60; // a drop shadow is at most this much darker than the bac
 const SHADOW_CHROMA = 14; // shadow = backdrop darkened evenly on R, G and B
 const AI_OBJECT = 200; // AI matte at/above this: definitely object, never removed
 const EDGE = 2; // photos: soft-alpha band kept along the outside edge (px)
+const PLAIN_BORDER_SHARE = 0.5; // share of the border that must be the backdrop colour
 const HOLE_MIN = 6; // enclosed backdrop areas smaller than this (px) are noise, kept
 const HOLE_AI_MAX = 64; // enclosed backdrop area is cut only if the AI's mean matte is below this (confident background)
 
@@ -69,7 +70,8 @@ export function detectPlainBackground(
     const o = p * 4;
     if (Math.max(Math.abs(rgba[o] - bg.r), Math.abs(rgba[o + 1] - bg.g), Math.abs(rgba[o + 2] - bg.b)) <= BG_TOL) near++;
   }
-  return near >= idx.length * 0.85 ? { r: Math.round(bg.r), g: Math.round(bg.g), b: Math.round(bg.b) } : null;
+  // Half the border is enough: artwork often runs off one or two edges.
+  return near >= idx.length * PLAIN_BORDER_SHARE ?{ r: Math.round(bg.r), g: Math.round(bg.g), b: Math.round(bg.b) } : null;
 }
 
 /**
@@ -133,7 +135,6 @@ function plainBackgroundCut(
   }
 
   const alpha = new Uint8Array(N);
-  for (let p = 0; p < N; p++) alpha[p] = outside[p] ? 0 : 255;
 
   // 2. Enclosed areas of the backdrop colour (the inside of letters such as
   //    O, A, B, e, ®, gaps between design parts) are cut only when the AI also

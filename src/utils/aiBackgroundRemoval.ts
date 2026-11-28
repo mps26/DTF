@@ -47,7 +47,7 @@ function getWorker(): Worker {
 }
 
 function runModel(
-  url: string,
+  pixels: ImageData,
   onProgress?: (p: AiProgress) => void
 ): Promise<{ matte: Uint8Array; width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -91,7 +91,11 @@ function runModel(
     };
     w.addEventListener('message', onMessage);
     w.addEventListener('error', onError);
-    w.postMessage({ id, url } satisfies WorkerRequest);
+    // RGB only: the model ignores alpha anyway, and sending it would only cost memory.
+    const src = pixels.data;
+    const rgb = new Uint8ClampedArray(pixels.width * pixels.height * 3);
+    for (let i = 0, j = 0; i < src.length; i += 4, j += 3) { rgb[j] = src[i]; rgb[j + 1] = src[i + 1]; rgb[j + 2] = src[i + 2]; }
+    w.postMessage({ id, rgb, width: pixels.width, height: pixels.height } satisfies WorkerRequest, [rgb.buffer]);
   });
 }
 
@@ -197,6 +201,12 @@ export function pickBackdrop(rgba: Uint8ClampedArray): { r: number; g: number; b
       if (Math.abs(rgba[o] - k.r) <= TOL && Math.abs(rgba[o + 1] - k.g) <= TOL && Math.abs(rgba[o + 2] - k.b) <= TOL) hits[c]++;
     }
   }
+  // The model is most reliable on a natural white/black backdrop: use the first
+  // candidate the artwork (almost) never uses, else the least used one.
+  let opaque = 0;
+  for (let o = 0; o < rgba.length; o += step) if (rgba[o + 3] >= 128) opaque++;
+  const free = hits.findIndex((n) => n <= opaque * 0.005);
+  if (free >= 0) return candidates[free];
   let best = 0;
   for (let c = 1; c < candidates.length; c++) if (hits[c] < hits[best]) best = c;
   return candidates[best];
@@ -234,7 +244,6 @@ export async function removeBackgroundAI(
   for (let o = 3; o < original.data.length; o += 4) {
     if (original.data[o] < 255) { hasTransparency = true; break; }
   }
-  let modelUrl = imageUrl;
   let pixels = original;
   if (hasTransparency) {
     const bd = pickBackdrop(original.data);
@@ -242,10 +251,9 @@ export async function removeBackgroundAI(
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(img, 0, 0);
     pixels = ctx.getImageData(0, 0, w, h);
-    modelUrl = canvas.toDataURL('image/png');
   }
 
-  const result = await runModel(modelUrl, onProgress);
+  const result = await runModel(pixels, onProgress);
   if (result.width !== w || result.height !== h) {
     throw new BackgroundRemovalError('The AI result did not match the image size, so nothing was changed.');
   }

@@ -1,7 +1,8 @@
 /// <reference lib="webworker" />
 /**
  * Runs the AI background-removal model off the UI thread.
- * Input: an image URL (data: URL). Output: the subject matte (0–255, one byte per
+ * Input: the image's RGB pixels (decoded on the main thread, so every format the
+ * browser can show — SVG included — works). Output: the subject matte (0–255, one byte per
  * pixel, original resolution).
  *
  *  - Graphics card able to run it (WebGPU, >16 storage buffers per shader):
@@ -10,16 +11,16 @@
  *    8-bit quantised (~44 MB) on the CPU. BiRefNet-lite cannot run on the CPU in
  *    a browser: its 1024×1024 Swin backbone exceeds WebAssembly's memory limit.
  */
-import { pipeline, env } from '@huggingface/transformers';
+import { pipeline, env, RawImage } from '@huggingface/transformers';
 
 const GPU_MODEL = 'onnx-community/BiRefNet_lite-ONNX';
 const CPU_MODEL = 'onnx-community/ormbg-ONNX';
 const MIN_STORAGE_BUFFERS = 17; // BiRefNet's WebGPU shaders need > 16 per stage
 
 type Device = 'webgpu' | 'wasm';
-type Segmenter = (input: string) => Promise<{ data: Uint8ClampedArray | Uint8Array; width: number; height: number; channels: number }>;
+type Segmenter = (input: RawImage) => Promise<{ data: Uint8ClampedArray | Uint8Array; width: number; height: number; channels: number }>;
 
-export type WorkerRequest = { id: number; url: string };
+export type WorkerRequest = { id: number; rgb: Uint8ClampedArray; width: number; height: number };
 export type WorkerResponse =
   | { id: number; type: 'progress'; stage: 'loading'; percent: number | null; totalMb?: number }
   | { id: number; type: 'progress'; stage: 'processing' }
@@ -85,8 +86,9 @@ async function getSegmenter(): Promise<{ seg: Segmenter; device: Device }> {
 }
 
 ctx.onmessage = async (e: MessageEvent<WorkerRequest>) => {
-  const { id, url } = e.data;
+  const { id, rgb, width: inW, height: inH } = e.data;
   activeId = id;
+  const image = new RawImage(rgb, inW, inH, 3);
   let segInfo: { seg: Segmenter; device: Device };
   try {
     segInfo = await getSegmenter();
@@ -97,7 +99,7 @@ ctx.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   ctx.postMessage({ id, type: 'progress', stage: 'processing' } satisfies WorkerResponse);
   let result: Awaited<ReturnType<Segmenter>>;
   try {
-    result = await segInfo.seg(url);
+    result = await segInfo.seg(image);
   } catch (err) {
     if (segInfo.device !== 'webgpu') {
       ctx.postMessage({ id, type: 'error', phase: 'run', message: String(err) } satisfies WorkerResponse);
@@ -109,7 +111,7 @@ ctx.onmessage = async (e: MessageEvent<WorkerRequest>) => {
     try {
       segInfo = await getSegmenter();
       ctx.postMessage({ id, type: 'progress', stage: 'processing' } satisfies WorkerResponse);
-      result = await segInfo.seg(url);
+      result = await segInfo.seg(image);
     } catch (err2) {
       ctx.postMessage({ id, type: 'error', phase: 'run', message: String(err2) } satisfies WorkerResponse);
       return;
