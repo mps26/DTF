@@ -175,6 +175,34 @@ export function validateMatte(alpha: Uint8Array): { subjectPercent: number } {
 }
 
 /**
+ * Picks a flat backdrop colour for an image that already has transparent pixels:
+ * the candidate that the artwork's opaque pixels are least similar to, so the
+ * backdrop never merges with the artwork. Pure function (testable).
+ */
+export function pickBackdrop(rgba: Uint8ClampedArray): { r: number; g: number; b: number } {
+  const candidates = [
+    { r: 255, g: 255, b: 255 },
+    { r: 0, g: 0, b: 0 },
+    { r: 255, g: 0, b: 255 },
+    { r: 0, g: 255, b: 0 },
+    { r: 0, g: 255, b: 255 }
+  ];
+  const TOL = 40;
+  const hits = new Array(candidates.length).fill(0);
+  const step = Math.max(1, Math.floor(rgba.length / 4 / 200000)) * 4; // sample ≤ ~200k px
+  for (let o = 0; o < rgba.length; o += step) {
+    if (rgba[o + 3] < 128) continue;
+    for (let c = 0; c < candidates.length; c++) {
+      const k = candidates[c];
+      if (Math.abs(rgba[o] - k.r) <= TOL && Math.abs(rgba[o + 1] - k.g) <= TOL && Math.abs(rgba[o + 2] - k.b) <= TOL) hits[c]++;
+    }
+  }
+  let best = 0;
+  for (let c = 1; c < candidates.length; c++) if (hits[c] < hits[best]) best = c;
+  return candidates[best];
+}
+
+/**
  * Removes the background with AI. Resolves to a full-resolution PNG data URL
  * with a real alpha channel; rejects with BackgroundRemovalError on failure
  * (the caller keeps the original image).
@@ -186,26 +214,59 @@ export async function removeBackgroundAI(
   const img = await loadImageEl(imageUrl);
   const w = img.naturalWidth;
   const h = img.naturalHeight;
-  {
-    const result = await runModel(imageUrl, onProgress);
-    if (result.width !== w || result.height !== h) {
-      throw new BackgroundRemovalError('The AI result did not match the image size, so nothing was changed.');
-    }
-    // Original pixels at full resolution.
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) throw new BackgroundRemovalError('Your browser could not create the image, so nothing was changed.');
-    ctx.drawImage(img, 0, 0);
-    const imageData = ctx.getImageData(0, 0, w, h);
+  if (!w || !h) throw new BackgroundRemovalError('Could not read the image.');
 
-    // AI matte → final alpha: on a plain backdrop the cut follows the artwork's
-    // outline (sticker border kept); the object itself is always fully opaque.
-    const { alpha } = refineCutout(imageData.data, w, h, refineMatte(result.matte));
-    const { subjectPercent } = validateMatte(alpha);
-    applyMatte(imageData.data, w, h, alpha);
-    ctx.putImageData(imageData, 0, 0);
-    return { dataUrl: canvas.toDataURL('image/png'), subjectPercent, width: w, height: h };
+  // Original pixels at full resolution.
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) throw new BackgroundRemovalError('Your browser could not create the image, so nothing was changed.');
+  ctx.drawImage(img, 0, 0);
+  const original = ctx.getImageData(0, 0, w, h);
+
+  // The model ignores alpha: transparent pixels reach it with whatever colour is
+  // stored behind them (usually black), and it then cuts into the artwork. So an
+  // image that already has transparency is flattened onto a flat backdrop colour
+  // the artwork does not use; the model and the clean-up both work on that, and
+  // the original transparency is kept in the result.
+  let hasTransparency = false;
+  for (let o = 3; o < original.data.length; o += 4) {
+    if (original.data[o] < 255) { hasTransparency = true; break; }
   }
+  let modelUrl = imageUrl;
+  let pixels = original;
+  if (hasTransparency) {
+    const bd = pickBackdrop(original.data);
+    ctx.fillStyle = `rgb(${bd.r},${bd.g},${bd.b})`;
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0);
+    pixels = ctx.getImageData(0, 0, w, h);
+    modelUrl = canvas.toDataURL('image/png');
+  }
+
+  const result = await runModel(modelUrl, onProgress);
+  if (result.width !== w || result.height !== h) {
+    throw new BackgroundRemovalError('The AI result did not match the image size, so nothing was changed.');
+  }
+
+  // AI matte → final alpha: on a plain backdrop the cut follows the artwork's
+  // outline (sticker border kept); the object itself is always fully opaque.
+  const { alpha } = refineCutout(pixels.data, w, h, refineMatte(result.matte));
+  if (hasTransparency) {
+    // Keep the original transparency: alpha = cut × original alpha.
+    for (let i = 0; i < alpha.length; i++) alpha[i] = Math.round((alpha[i] * original.data[i * 4 + 3]) / 255);
+  }
+  const { subjectPercent } = validateMatte(alpha);
+  applyMatte(pixels.data, w, h, alpha);
+  if (hasTransparency) {
+    // Partly transparent original pixels keep their own colour (not the backdrop mix).
+    const o = original.data, p = pixels.data;
+    for (let i = 0; i < alpha.length; i++) {
+      const k = i * 4;
+      if (o[k + 3] < 255) { p[k] = o[k]; p[k + 1] = o[k + 1]; p[k + 2] = o[k + 2]; }
+    }
+  }
+  ctx.putImageData(pixels, 0, 0);
+  return { dataUrl: canvas.toDataURL('image/png'), subjectPercent, width: w, height: h };
 }

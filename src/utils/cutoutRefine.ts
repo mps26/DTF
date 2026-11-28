@@ -15,8 +15,9 @@
  *         darker, so the cut lands on the sticker's outline and the white sticker
  *         border inside it is kept;
  *       - a pixel the AI is confident belongs to the object never joins.
- *     Everything the background cannot reach is the object and becomes fully
- *     opaque, so the object is never see-through or cut inside.
+ *     Enclosed backdrop-coloured holes (inside letters) are cut only where the AI
+ *     agrees they are background. Everything else becomes fully opaque, so the
+ *     object is never see-through.
  *  B. Any other background (photos): the AI matte is kept, but semi-transparent
  *     pixels inside the object (more than EDGE px from the background) are made
  *     fully opaque. Soft edges (hair, fur) keep their alpha.
@@ -27,6 +28,8 @@ const SHADOW_MAX = 60; // a drop shadow is at most this much darker than the bac
 const SHADOW_CHROMA = 14; // shadow = backdrop darkened evenly on R, G and B
 const AI_OBJECT = 200; // AI matte at/above this: definitely object, never removed
 const EDGE = 2; // photos: soft-alpha band kept along the outside edge (px)
+const HOLE_MIN = 6; // enclosed backdrop areas smaller than this (px) are noise, kept
+const HOLE_AI_MAX = 64; // enclosed backdrop area is cut only if the AI's mean matte is below this (confident background)
 
 export interface CutoutInfo {
   mode: 'plain-background' | 'photo';
@@ -132,10 +135,32 @@ function plainBackgroundCut(
   const alpha = new Uint8Array(N);
   for (let p = 0; p < N; p++) alpha[p] = outside[p] ? 0 : 255;
 
-  // 2. Enclosed areas are never cut: highlights on glossy artwork (headlights,
-  //    windscreen reflections) are often exactly the backdrop colour, and the AI is
-  //    least reliable there. Gaps inside a design can still be cleared with
-  //    Remove / Replace Color.
+  // 2. Enclosed areas of the backdrop colour (the inside of letters such as
+  //    O, A, B, e, ®, gaps between design parts) are cut only when the AI also
+  //    sees them as background. Highlights on glossy artwork (headlights,
+  //    windscreen reflections) are often exactly the backdrop colour too, but the
+  //    AI marks those as object, so they stay.
+  const seen = new Uint8Array(N);
+  const comp: number[] = [];
+  for (let s = 0; s < N; s++) {
+    if (seen[s] || outside[s] || dist[s] > BG_TOL) continue;
+    comp.length = 0;
+    let aiSum = 0;
+    seen[s] = 1;
+    queue[0] = s;
+    head = 0; tail = 1;
+    while (head < tail) {
+      const p = queue[head++];
+      comp.push(p);
+      aiSum += ai[p];
+      const x = p % w;
+      for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, p >= w ? p - w : -1, p < N - w ? p + w : -1]) {
+        if (q >= 0 && !seen[q] && !outside[q] && dist[q] <= BG_TOL) { seen[q] = 1; queue[tail++] = q; }
+      }
+    }
+    if (comp.length >= HOLE_MIN && aiSum / comp.length < HOLE_AI_MAX) for (const p of comp) outside[p] = 1;
+  }
+  for (let p = 0; p < N; p++) alpha[p] = outside[p] ? 0 : 255;
 
   // 3. One-pixel anti-aliased rim on the outer cut (no jagged edge, no halo).
   for (let p = 0; p < N; p++) {
